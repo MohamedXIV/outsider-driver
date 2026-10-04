@@ -52,7 +52,12 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
 
     if (text.startsWith(prefix)) {
       lastStage = text.slice(prefix.length);
+      console.log(`Inochi probe stage: ${lastStage}`);
     }
+  });
+
+  page.on('crash', () => {
+    console.log(`Inochi probe page crashed after: ${lastStage}`);
   });
 
   const response = await page.goto('/?inochiProbe=1', {
