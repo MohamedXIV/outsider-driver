@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const RUNTIME_ARCHIVE_URL =
   'https://github.com/Inochi2D/inochi2d/releases/download/nightly/inochi2d-wasm-release.tar';
@@ -118,7 +119,7 @@ async function main() {
 
 if (
   process.argv[1] !== undefined &&
-  import.meta.url === new URL(`file://${process.argv[1]}`).href
+  import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   await main();
 }
