@@ -1,7 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const port = 4173;
-const baseURL = `http://127.0.0.1:${port}`;
+const baseURL = 'http://127.0.0.1:4173';
 const isCi = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -25,7 +24,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
+    command: 'npm run preview -- --host 127.0.0.1 --port 4173',
     url: baseURL,
     reuseExistingServer: !isCi,
     timeout: 30_000,
