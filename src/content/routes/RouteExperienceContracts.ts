@@ -128,6 +128,7 @@ export const RouteSceneryModuleSchema = z
 export const RouteSegmentScenerySchema = z
   .object({
     segmentId: entityIdSchema('route-segment'),
+    travelDistanceMeters: z.number().positive(),
     modules: z.array(RouteSceneryModuleSchema),
   })
   .strict()

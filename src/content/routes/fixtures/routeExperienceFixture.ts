@@ -27,6 +27,7 @@ export function createRouteExperienceFixture(): unknown {
     segmentScenery: [
       {
         segmentId: 'route-segment:docks-night-01',
+        travelDistanceMeters: 36,
         modules: [
           {
             id: 'dock-wall-left',

@@ -172,10 +172,12 @@ export function createBranchingRouteFlowFixture(): BranchingRouteFlowFixture {
       segmentScenery: [
         {
           segmentId: 'route-segment:docks-main',
+          travelDistanceMeters: 36,
           modules: [],
         },
         {
           segmentId: 'route-segment:docks-diversion',
+          travelDistanceMeters: 24,
           modules: [],
         },
       ],
