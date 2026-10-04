@@ -4,9 +4,9 @@ import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const RUNTIME_ARCHIVE_URL =
-  'https://github.com/Inochi2D/inochi2d/releases/download/nightly/inochi2d-wasm-release.tar';
+  'https://github.com/Inochi2D/inochi2d/releases/download/nightly/inochi2d-wasm-debug.tar';
 const RUNTIME_ARCHIVE_SHA256 =
-  'd32dc0d463b0883e08cad3a74d2a8f9fb85e09e5777daaa6635ba9c407603b54';
+  'd8c0e21d109d4681e5f24b730190fa0b016e9449d094ec4901d1e0a0aa8aec6e';
 const OUTPUT_PATH = resolve(
   'public/vendor/inochi2d/inochi2d.wasm',
 );
@@ -316,7 +316,7 @@ async function main() {
   await writeFile(OUTPUT_PATH, patched.bytes);
 
   process.stdout.write(
-    `Prepared Inochi2D runtime ${wasm.name} (${String(patched.bytes.byteLength)} bytes) from verified archive; initial memory ${String(patched.originalMinimumPages)} -> ${String(patched.patchedMinimumPages)} pages, max ${String(patched.maximumPages ?? 'unbounded')}.\n`,
+    `Prepared pinned Inochi2D debug runtime ${wasm.name} (${String(patched.bytes.byteLength)} bytes); initial memory ${String(patched.originalMinimumPages)} -> ${String(patched.patchedMinimumPages)} pages, max ${String(patched.maximumPages ?? 'unbounded')}. Debug is used because the current upstream nightly release WASM returns null from nu_malloc even for a 702-byte fixture.\n`,
   );
 }
 
