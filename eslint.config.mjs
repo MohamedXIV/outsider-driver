@@ -1,15 +1,23 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
+const typescriptFiles = ['**/*.ts'];
+
 export default tseslint.config(
   {
     ignores: ['dist/**', 'coverage/**', 'node_modules/**'],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
+  ...tseslint.configs.strictTypeChecked.map((config) => ({
+    ...config,
+    files: typescriptFiles,
+  })),
+  ...tseslint.configs.stylisticTypeChecked.map((config) => ({
+    ...config,
+    files: typescriptFiles,
+  })),
   {
-    files: ['**/*.ts'],
+    files: typescriptFiles,
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -28,7 +36,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['eslint.config.mjs'],
+    files: ['**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
   },
 );
