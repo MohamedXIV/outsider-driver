@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Lint, test, typecheck, build
+    name: Lint, test, typecheck, build, browser smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -34,3 +34,9 @@ jobs:
 
       - name: Verify production foundation
         run: npm run check
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke
+        run: npm run test:browser
