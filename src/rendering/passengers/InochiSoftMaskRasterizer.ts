@@ -160,6 +160,42 @@ function frameVertexIndex(
     : localIndex;
 }
 
+function edgeValue(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  px: number,
+  py: number,
+): number {
+  return (
+    (bx - ax) * (py - ay) -
+    (by - ay) * (px - ax)
+  );
+}
+
+function isTopLeftEdge(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): boolean {
+  const dy = by - ay;
+  const dx = bx - ax;
+
+  return dy > 0 || (Math.abs(dy) <= EPSILON && dx < 0);
+}
+
+function includesEdge(
+  value: number,
+  topLeft: boolean,
+): boolean {
+  return (
+    value > EPSILON ||
+    (Math.abs(value) <= EPSILON && topLeft)
+  );
+}
+
 function rasterizeTriangle(
   target: Float32Array,
   resolution: number,
@@ -167,13 +203,29 @@ function rasterizeTriangle(
   texture: InochiTextureFrame,
   mode: InochiDrawCommand['maskMode'],
   blend: MaskBlend,
-  a: InochiVertex,
-  b: InochiVertex,
-  c: InochiVertex,
+  aInput: InochiVertex,
+  bInput: InochiVertex,
+  cInput: InochiVertex,
 ): void {
-  const [ax, ay] = maskPixelCoordinate(a, bounds, resolution);
-  const [bx, by] = maskPixelCoordinate(b, bounds, resolution);
-  const [cx, cy] = maskPixelCoordinate(c, bounds, resolution);
+  let a = aInput;
+  let b = bInput;
+  let c = cInput;
+  let [ax, ay] = maskPixelCoordinate(a, bounds, resolution);
+  let [bx, by] = maskPixelCoordinate(b, bounds, resolution);
+  let [cx, cy] = maskPixelCoordinate(c, bounds, resolution);
+  let area = edgeValue(ax, ay, bx, by, cx, cy);
+
+  if (Math.abs(area) <= EPSILON) {
+    return;
+  }
+
+  if (area < 0) {
+    [b, c] = [c, b];
+    [bx, cx] = [cx, bx];
+    [by, cy] = [cy, by];
+    area = -area;
+  }
+
   const minX = Math.max(0, Math.floor(Math.min(ax, bx, cx)));
   const minY = Math.max(0, Math.floor(Math.min(ay, by, cy)));
   const maxX = Math.min(
@@ -184,34 +236,50 @@ function rasterizeTriangle(
     resolution - 1,
     Math.ceil(Math.max(ay, by, cy)),
   );
-  const denominator =
-    (by - cy) * (ax - cx) +
-    (cx - bx) * (ay - cy);
-
-  if (Math.abs(denominator) <= EPSILON) {
-    return;
-  }
+  const edgeBCIsTopLeft = isTopLeftEdge(bx, by, cx, cy);
+  const edgeCAIsTopLeft = isTopLeftEdge(cx, cy, ax, ay);
+  const edgeABIsTopLeft = isTopLeftEdge(ax, ay, bx, by);
 
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
-      const w0 =
-        ((by - cy) * (x - cx) +
-          (cx - bx) * (y - cy)) /
-        denominator;
-      const w1 =
-        ((cy - ay) * (x - cx) +
-          (ax - cx) * (y - cy)) /
-        denominator;
-      const w2 = 1 - w0 - w1;
+      const sampleX = x + 0.5;
+      const sampleY = y + 0.5;
+      const edgeBC = edgeValue(
+        bx,
+        by,
+        cx,
+        cy,
+        sampleX,
+        sampleY,
+      );
+      const edgeCA = edgeValue(
+        cx,
+        cy,
+        ax,
+        ay,
+        sampleX,
+        sampleY,
+      );
+      const edgeAB = edgeValue(
+        ax,
+        ay,
+        bx,
+        by,
+        sampleX,
+        sampleY,
+      );
 
       if (
-        w0 < -EPSILON ||
-        w1 < -EPSILON ||
-        w2 < -EPSILON
+        !includesEdge(edgeBC, edgeBCIsTopLeft) ||
+        !includesEdge(edgeCA, edgeCAIsTopLeft) ||
+        !includesEdge(edgeAB, edgeABIsTopLeft)
       ) {
         continue;
       }
 
+      const w0 = edgeBC / area;
+      const w1 = edgeCA / area;
+      const w2 = edgeAB / area;
       const u = a.u * w0 + b.u * w1 + c.u * w2;
       const v = a.v * w0 + b.v * w1 + c.v * w2;
       const alpha = sampleAlpha(texture, u, v);

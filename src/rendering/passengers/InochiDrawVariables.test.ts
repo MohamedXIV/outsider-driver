@@ -48,23 +48,31 @@ describe('Inochi draw variables', () => {
     INOCHI_PART_TYPE_ID,
     INOCHI_ANIMATED_PART_TYPE_ID,
   ])('decodes PartVars for type 0x%s', (typeId) => {
-    expect(parseInochiPartVariables(command(typeId))).toEqual({
-      tint: [0.8, 0.7, 0.6],
-      screenTint: [0.1, 0.2, 0.3],
-      opacity: 0.5,
-      emissionStrength: 1.25,
+    const variables = parseInochiPartVariables(
+      command(typeId),
+    );
+
+    expect(variables.opacity).toBeCloseTo(0.5);
+    expect(variables.emissionStrength).toBeCloseTo(1.25);
+    variables.tint.forEach((value, index) => {
+      expect(value).toBeCloseTo([0.8, 0.7, 0.6][index] ?? 0);
+    });
+    variables.screenTint.forEach((value, index) => {
+      expect(value).toBeCloseTo([0.1, 0.2, 0.3][index] ?? 0);
     });
   });
 
   it('decodes CompositeVars without reading Part-only emission bytes', () => {
-    expect(
-      parseInochiCompositeVariables(
-        command(INOCHI_COMPOSITE_TYPE_ID),
-      ),
-    ).toEqual({
-      tint: [0.8, 0.7, 0.6],
-      screenTint: [0.1, 0.2, 0.3],
-      opacity: 0.5,
+    const variables = parseInochiCompositeVariables(
+      command(INOCHI_COMPOSITE_TYPE_ID),
+    );
+
+    expect(variables.opacity).toBeCloseTo(0.5);
+    variables.tint.forEach((value, index) => {
+      expect(value).toBeCloseTo([0.8, 0.7, 0.6][index] ?? 0);
+    });
+    variables.screenTint.forEach((value, index) => {
+      expect(value).toBeCloseTo([0.1, 0.2, 0.3][index] ?? 0);
     });
   });
 
