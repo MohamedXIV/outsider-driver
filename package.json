@@ -11,11 +11,12 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "content:check": "vitest run src/content/validation/ProductionContentValidator.test.ts --reporter=verbose",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:browser": "playwright test",
     "build": "npm run typecheck && vite build",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run content:check && npm run test && npm run build"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",

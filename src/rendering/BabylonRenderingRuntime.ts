@@ -1,6 +1,6 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
 import type { RenderingRuntimePort } from '../app/ports/RenderingRuntimePort';
-import { defaultTaxiSceneDefinition } from '../content/presentation/defaultTaxiScene';
+import { productionContent } from '../content/production/ProductionContent';
 import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
 
 export class BabylonRenderingRuntime implements RenderingRuntimePort {
@@ -18,7 +18,7 @@ export class BabylonRenderingRuntime implements RenderingRuntimePort {
   public constructor(canvas: HTMLCanvasElement) {
     this.#engine = new Engine(canvas, true, { stencil: true }, true);
     this.#scenes = new BabylonSceneOrchestrator(this.#engine);
-    this.#scenes.showTaxi(defaultTaxiSceneDefinition);
+    this.#scenes.showTaxi(productionContent.taxiScene);
   }
 
   public start(): void {
