@@ -71,6 +71,7 @@ interface InochiWasmExports extends WebAssembly.Exports {
 
 const WASM_PAGE_BYTES = 65_536;
 const WASM_START_SECTION_ID = 8;
+const MIN_UPLOAD_SCRATCH_BYTES = 16 * 1024 * 1024;
 
 function readUnsignedLeb128(
   bytes: Uint8Array,
@@ -205,6 +206,8 @@ export class InochiWasmBindings
 {
   readonly #exports: InochiWasmExports;
   #countPointer = 0;
+  #uploadPointer = 0;
+  #uploadCapacity = 0;
   #disposed = false;
 
   private constructor(exports: InochiWasmExports) {
@@ -244,38 +247,35 @@ export class InochiWasmBindings
       exports.in_init();
     }
 
-    // The official WASM build uses
-    // Numem's walloc hookset, which owns heap growth through
-    // llvm.wasm.memory.grow when an allocation needs more pages.
+    // The official WASM build uses Numem's walloc hookset.
+    // Large transient asset uploads are kept outside walloc because the
+    // current nightly runtime cannot reliably satisfy multi-megabyte
+    // contiguous nu_malloc requests.
     return new InochiWasmBindings(exports);
   }
 
   public loadPuppet(data: ArrayBuffer): number {
     this.#assertAlive();
-    const dataPointer = this.#exports.nu_malloc(data.byteLength);
 
-    if (dataPointer === 0) {
-      const memoryBytes = this.#exports.memory.buffer.byteLength;
-      throw new Error(
-        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset with ${String(memoryBytes)} bytes of linear memory (${String(Math.trunc(memoryBytes / WASM_PAGE_BYTES))} pages).`,
-      );
+    if (data.byteLength === 0) {
+      throw new Error('Inochi2D puppet asset must not be empty.');
     }
 
-    try {
-      new Uint8Array(
-        this.#exports.memory.buffer,
-        dataPointer,
-        data.byteLength,
-      ).set(new Uint8Array(data));
+    const dataPointer = this.#ensureUploadScratch(
+      data.byteLength,
+    );
 
-      return this.#exports.in_puppet_load_from_memory(
-        dataPointer,
-        data.byteLength,
-        0,
-      );
-    } finally {
-      this.#exports.nu_free(dataPointer);
-    }
+    new Uint8Array(
+      this.#exports.memory.buffer,
+      dataPointer,
+      data.byteLength,
+    ).set(new Uint8Array(data));
+
+    return this.#exports.in_puppet_load_from_memory(
+      dataPointer,
+      data.byteLength,
+      0,
+    );
   }
 
   public freePuppet(puppetPointer: number): void {
@@ -556,7 +556,65 @@ export class InochiWasmBindings
       this.#countPointer = 0;
     }
 
+    // WebAssembly linear memory cannot shrink. Upload scratch is
+    // intentionally not passed to nu_free because walloc never owned it.
+    this.#uploadPointer = 0;
+    this.#uploadCapacity = 0;
     this.#disposed = true;
+  }
+
+  #ensureUploadScratch(byteLength: number): number {
+    if (
+      !Number.isSafeInteger(byteLength) ||
+      byteLength <= 0
+    ) {
+      throw new RangeError(
+        'Inochi2D upload byte length must be a positive safe integer.',
+      );
+    }
+
+    if (
+      this.#uploadPointer !== 0 &&
+      this.#uploadCapacity >= byteLength
+    ) {
+      return this.#uploadPointer;
+    }
+
+    // Initialize walloc before externally growing memory. Once walloc has
+    // observed the original heap boundary, pages grown here form a stable
+    // JS-owned gap that walloc will skip when it later grows its own heap.
+    this.#getCountPointer();
+
+    const scratchBytes = Math.max(
+      byteLength,
+      MIN_UPLOAD_SCRATCH_BYTES,
+    );
+    const pages = Math.ceil(
+      scratchBytes / WASM_PAGE_BYTES,
+    );
+
+    let previousPages: number;
+
+    try {
+      previousPages = this.#exports.memory.grow(pages);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'unknown WebAssembly memory growth error';
+
+      throw new Error(
+        `Failed to reserve ${String(pages)} WASM pages for Inochi2D asset upload scratch: ${message}`,
+        { cause: error },
+      );
+    }
+
+    this.#uploadPointer =
+      previousPages * WASM_PAGE_BYTES;
+    this.#uploadCapacity =
+      pages * WASM_PAGE_BYTES;
+
+    return this.#uploadPointer;
   }
 
   #parameterDimensions(parameterPointer: number): number {
