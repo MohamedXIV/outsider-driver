@@ -5,6 +5,7 @@ import {
 } from '../../domain/social/SocialStealthState';
 import { entityId } from '../../domain/ids/EntityId';
 import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
 import { SocialStealthNarrativeAdapter } from './SocialStealthNarrativeAdapter';
 
@@ -158,6 +159,7 @@ describe('SocialStealthNarrativeAdapter', () => {
       {
         rideSession: null,
         socialState: store.exportState(),
+        translatorState: createInitialTranslatorState(),
       },
       '2026-10-04T10:00:00.000Z',
     );
