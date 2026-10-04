@@ -42,7 +42,7 @@ function splitEntityId(value: string): EntityIdParts | null {
   if (
     separatorIndex <= 0 ||
     separatorIndex === value.length - 1 ||
-    value.indexOf(':', separatorIndex + 1) !== -1
+    value.includes(':', separatorIndex + 1)
   ) {
     return null;
   }
