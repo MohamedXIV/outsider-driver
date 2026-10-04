@@ -67,7 +67,7 @@ describe('InochiPuppetSession', () => {
     const harness = createHarness();
     const session = await InochiPuppetSession.load(harness.runtime, {
       id: 'fixture-puppet',
-      load: async () => new Uint8Array([1, 2, 3]).buffer,
+      load: () => Promise.resolve(new Uint8Array([1, 2, 3]).buffer),
     });
 
     expect(session.name).toBe('Fixture Puppet');
@@ -88,35 +88,43 @@ describe('InochiPuppetSession', () => {
     await expect(
       InochiPuppetSession.load(harness.runtime, {
         id: 'empty-puppet',
-        load: async () => new ArrayBuffer(0),
+        load: () => Promise.resolve(new ArrayBuffer(0)),
       }),
     ).rejects.toThrow(/asset is empty/);
 
     const session = await InochiPuppetSession.load(harness.runtime, {
       id: 'fixture-puppet',
-      load: async () => new Uint8Array([1]).buffer,
+      load: () => Promise.resolve(new Uint8Array([1]).buffer),
     });
 
-    expect(() => session.setParameter('Missing', [0])).toThrow(
+    expect(() => {
+      session.setParameter('Missing', [0]);
+    }).toThrow(
       /Unknown Inochi parameter/,
     );
-    expect(() => session.setParameter('Gaze', [0])).toThrow(
+    expect(() => {
+      session.setParameter('Gaze', [0]);
+    }).toThrow(
       /expects 2 values/,
     );
-    expect(() => session.frame(-0.1)).toThrow(/finite non-negative/);
+    expect(() => {
+      session.frame(-0.1);
+    }).toThrow(/finite non-negative/);
   });
 
   it('disposes the runtime handle once and fails closed afterwards', async () => {
     const harness = createHarness();
     const session = await InochiPuppetSession.load(harness.runtime, {
       id: 'fixture-puppet',
-      load: async () => new Uint8Array([1]).buffer,
+      load: () => Promise.resolve(new Uint8Array([1]).buffer),
     });
 
     session.dispose();
     session.dispose();
 
     expect(harness.dispose).toHaveBeenCalledTimes(1);
-    expect(() => session.frame(0)).toThrow(/disposed/);
+    expect(() => {
+      session.frame(0);
+    }).toThrow(/disposed/);
   });
 });

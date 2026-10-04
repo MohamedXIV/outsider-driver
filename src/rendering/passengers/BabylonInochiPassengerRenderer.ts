@@ -81,7 +81,19 @@ function alphaModeForBlendMode(mode: InochiBlendMode): number {
       return Constants.ALPHA_ADD;
     case 'subtract':
       return Constants.ALPHA_SUBTRACT;
-    default:
+    case 'overlay':
+    case 'darken':
+    case 'lighten':
+    case 'color-dodge':
+    case 'color-burn':
+    case 'hard-light':
+    case 'soft-light':
+    case 'difference':
+    case 'exclusion':
+    case 'inverse':
+    case 'destination-in':
+    case 'source-in':
+    case 'source-out':
       throw new Error(
         `Inochi blend mode is not yet represented exactly by the Babylon bridge: ${mode}`,
       );
@@ -255,8 +267,7 @@ export class BabylonInochiPassengerRenderer {
       const current = this.#textures.get(source.id);
 
       if (
-        current !== undefined &&
-        current.width === source.width &&
+        current?.width === source.width &&
         current.height === source.height
       ) {
         current.texture.update(data);

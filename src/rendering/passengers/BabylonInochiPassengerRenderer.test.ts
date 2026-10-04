@@ -95,7 +95,9 @@ describe('BabylonInochiPassengerRenderer', () => {
       taxi.anchors.passengerSeat,
     );
 
-    expect(() => renderer.render(frame(blendMode))).not.toThrow();
+    expect(() => {
+      renderer.render(frame(blendMode));
+    }).not.toThrow();
 
     renderer.dispose();
     taxi.scene.dispose();
@@ -110,7 +112,9 @@ describe('BabylonInochiPassengerRenderer', () => {
       taxi.anchors.passengerSeat,
     );
 
-    expect(() => renderer.render(frame('overlay'))).toThrow(
+    expect(() => {
+      renderer.render(frame('overlay'));
+    }).toThrow(
       /not yet represented exactly/,
     );
 
@@ -143,7 +147,9 @@ describe('BabylonInochiPassengerRenderer', () => {
       ],
     };
 
-    expect(() => renderer.render(input)).toThrow(
+    expect(() => {
+      renderer.render(input);
+    }).toThrow(
       /mask\/composite pass backend/,
     );
 
@@ -164,7 +170,9 @@ describe('BabylonInochiPassengerRenderer', () => {
     renderer.dispose();
     renderer.dispose();
 
-    expect(() => renderer.render(frame())).toThrow(/disposed/);
+    expect(() => {
+      renderer.render(frame());
+    }).toThrow(/disposed/);
 
     taxi.scene.dispose();
     engine.dispose();
