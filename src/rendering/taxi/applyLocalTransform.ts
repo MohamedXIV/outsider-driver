@@ -4,7 +4,7 @@ import type { LocalTransform } from '../../content/presentation/TaxiSceneDefinit
 interface TransformTarget {
   position: Vector3;
   rotation: Vector3;
-  scaling: Vector3;
+  scaling?: Vector3;
 }
 
 function vectorFromTuple(tuple: readonly [number, number, number]): Vector3 {
@@ -17,5 +17,8 @@ export function applyLocalTransform(
 ): void {
   target.position.copyFrom(vectorFromTuple(transform.position));
   target.rotation.copyFrom(vectorFromTuple(transform.rotation));
-  target.scaling.copyFrom(vectorFromTuple(transform.scale));
+
+  if (target.scaling !== undefined) {
+    target.scaling.copyFrom(vectorFromTuple(transform.scale));
+  }
 }
