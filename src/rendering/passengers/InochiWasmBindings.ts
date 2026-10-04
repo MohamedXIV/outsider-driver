@@ -204,18 +204,11 @@ export class InochiWasmBindings
   implements OfficialInochiBindings
 {
   readonly #exports: InochiWasmExports;
-  readonly #countPointer: number;
+  #countPointer = 0;
   #disposed = false;
 
   private constructor(exports: InochiWasmExports) {
     this.#exports = exports;
-    this.#countPointer = this.#exports.nu_realloc(0, 128);
-
-    if (this.#countPointer === 0) {
-      throw new Error(
-        'Inochi2D WASM failed to allocate the official 128-byte scratchpad.',
-      );
-    }
   }
 
   public static async create(
@@ -226,6 +219,7 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
+    const startRunsAutomatically = hasWasmStartSection(bytes);
     const instantiated = await WebAssembly.instantiate(
       bytes,
       createWasiImports(),
@@ -243,10 +237,12 @@ export class InochiWasmBindings
       );
     }
 
-    // Match the current official TypeScript wrapper exactly: invoke
-    // in_init after instantiation, then create the scratchpad in the
-    // constructor through nu_realloc(0, 128). Do not pre-grow memory.
-    exports.in_init();
+    // Current release builds link in_init as the entry function. Avoid
+    // rerunning static constructors when the module has a Start section.
+    // Keep the fallback for a future reactor build without one.
+    if (!startRunsAutomatically) {
+      exports.in_init();
+    }
 
     // The official WASM build uses
     // Numem's walloc hookset, which owns heap growth through
@@ -341,7 +337,7 @@ export class InochiWasmBindings
     this.#assertAlive();
     const pointer = this.#exports.in_puppet_get_parameters(
       puppetPointer,
-      this.#countPointer,
+      this.#getCountPointer(),
     );
     return this.#readPointerArray(
       pointer,
@@ -449,7 +445,7 @@ export class InochiWasmBindings
     const pointer =
       this.#exports.in_texture_cache_get_textures(
         textureCachePointer,
-        this.#countPointer,
+        this.#getCountPointer(),
       );
     return this.#readPointerArray(
       pointer,
@@ -492,7 +488,7 @@ export class InochiWasmBindings
     this.#assertAlive();
     const pointer = this.#exports.in_drawlist_get_commands(
       drawListPointer,
-      this.#countPointer,
+      this.#getCountPointer(),
     );
     return {
       pointer,
@@ -507,7 +503,7 @@ export class InochiWasmBindings
     const pointer =
       this.#exports.in_drawlist_get_vertex_data(
         drawListPointer,
-        this.#countPointer,
+        this.#getCountPointer(),
       );
     return {
       pointer,
@@ -522,7 +518,7 @@ export class InochiWasmBindings
     const pointer =
       this.#exports.in_drawlist_get_index_data(
         drawListPointer,
-        this.#countPointer,
+        this.#getCountPointer(),
       );
     return {
       pointer,
@@ -537,7 +533,7 @@ export class InochiWasmBindings
     const pointer =
       this.#exports.in_drawlist_get_allocations(
         drawListPointer,
-        this.#countPointer,
+        this.#getCountPointer(),
       );
     return {
       pointer,
@@ -555,7 +551,11 @@ export class InochiWasmBindings
       return;
     }
 
-    this.#exports.nu_free(this.#countPointer);
+    if (this.#countPointer !== 0) {
+      this.#exports.nu_free(this.#countPointer);
+      this.#countPointer = 0;
+    }
+
     this.#disposed = true;
   }
 
@@ -581,7 +581,7 @@ export class InochiWasmBindings
   #readCount(): number {
     return new DataView(
       this.#exports.memory.buffer,
-      this.#countPointer,
+      this.#getCountPointer(),
       4,
     ).getUint32(0, true);
   }
