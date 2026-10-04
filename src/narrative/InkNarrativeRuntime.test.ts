@@ -16,6 +16,8 @@ function createQueries(hasFact: boolean): NarrativeQueryPort {
   return {
     hasFact: () => hasFact,
     hasClaim: () => false,
+    coverIdentityMatches: () => false,
+    wouldContradictClaim: () => false,
     getPassengerSuspicion: () => 12,
     getCityAttention: () => 3,
   };

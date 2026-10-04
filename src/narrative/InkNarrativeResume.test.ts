@@ -11,6 +11,8 @@ import { InkNarrativeRuntime } from './InkNarrativeRuntime';
 const queries: NarrativeQueryPort = {
   hasFact: () => false,
   hasClaim: () => false,
+  coverIdentityMatches: () => false,
+  wouldContradictClaim: () => false,
   getPassengerSuspicion: () => 0,
   getCityAttention: () => 0,
 };
