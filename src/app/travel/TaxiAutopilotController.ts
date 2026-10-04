@@ -50,6 +50,15 @@ function requireMotionProfile(
   return profile;
 }
 
+function stoppedMotion(): RouteMotionSample {
+  return RouteMotionSampleSchema.parse({
+    progress: 1,
+    targetSpeedMps: 0,
+    curvature: 0,
+    surfaceRoughness: 0,
+  });
+}
+
 export class TaxiAutopilotController {
   readonly #world: WorldContentCatalog;
   readonly #motionCatalog: RouteMotionCatalog;
@@ -92,11 +101,7 @@ export class TaxiAutopilotController {
   }
 
   public step(deltaSeconds: number): TaxiAutopilotSnapshot {
-    if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
-      throw new RangeError(
-        'Autopilot delta must be a finite non-negative number.',
-      );
-    }
+    this.#validateDelta(deltaSeconds);
 
     const deltaGameMinutes =
       deltaSeconds * this.#gameMinutesPerRealSecond;
@@ -110,8 +115,34 @@ export class TaxiAutopilotController {
       this.#routeState,
       this.#world,
     );
-    const motion = this.#sampleMotion(routeSnapshot);
 
+    return this.#stepDynamics(
+      routeSnapshot,
+      this.#sampleMotion(routeSnapshot),
+      deltaSeconds,
+    );
+  }
+
+  public settle(deltaSeconds: number): TaxiAutopilotSnapshot {
+    this.#validateDelta(deltaSeconds);
+
+    return this.#stepDynamics(
+      getRouteProgressSnapshot(this.#routeState, this.#world),
+      stoppedMotion(),
+      deltaSeconds,
+    );
+  }
+
+  public replaceRoute(routeId: RouteId): TaxiAutopilotSnapshot {
+    this.#routeState = createRouteProgress(routeId, this.#world);
+    return this.getSnapshot();
+  }
+
+  #stepDynamics(
+    routeSnapshot: RouteProgressSnapshot,
+    motion: RouteMotionSample,
+    deltaSeconds: number,
+  ): TaxiAutopilotSnapshot {
     this.#dynamicsState = stepVehicleDynamics(
       this.#dynamicsState,
       motion,
@@ -127,12 +158,7 @@ export class TaxiAutopilotController {
 
   #sampleMotion(route: RouteProgressSnapshot): RouteMotionSample {
     if (route.state.status === 'arrived') {
-      return RouteMotionSampleSchema.parse({
-        progress: 1,
-        targetSpeedMps: 0,
-        curvature: 0,
-        surfaceRoughness: 0,
-      });
+      return stoppedMotion();
     }
 
     const profile = requireMotionProfile(
@@ -141,5 +167,13 @@ export class TaxiAutopilotController {
     );
 
     return sampleRouteMotion(profile, route.segmentProgress);
+  }
+
+  #validateDelta(deltaSeconds: number): void {
+    if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
+      throw new RangeError(
+        'Autopilot delta must be a finite non-negative number.',
+      );
+    }
   }
 }
