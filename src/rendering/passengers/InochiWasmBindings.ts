@@ -4,6 +4,7 @@ interface InochiWasmExports extends WebAssembly.Exports {
   readonly memory: WebAssembly.Memory;
   in_init(): void;
   nu_malloc(size: number): number;
+  nu_realloc(pointer: number, size: number): number;
   nu_free(pointer: number): void;
 
   in_puppet_load_from_memory(
@@ -208,11 +209,11 @@ export class InochiWasmBindings
 
   private constructor(exports: InochiWasmExports) {
     this.#exports = exports;
-    this.#countPointer = this.#exports.nu_malloc(4);
+    this.#countPointer = this.#exports.nu_realloc(0, 128);
 
     if (this.#countPointer === 0) {
       throw new Error(
-        'Inochi2D WASM failed to allocate count scratch memory.',
+        'Inochi2D WASM failed to allocate the official 128-byte scratchpad.',
       );
     }
   }
@@ -225,7 +226,6 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
-    const startRunsAutomatically = hasWasmStartSection(bytes);
     const instantiated = await WebAssembly.instantiate(
       bytes,
       createWasiImports(),
@@ -243,16 +243,12 @@ export class InochiWasmBindings
       );
     }
 
-    // The pinned Inochi WASM build links in_init as the entry point.
-    // A WASM start function runs automatically during instantiation.
-    // Calling in_init again would rerun __wasm_call_ctors and corrupt
-    // allocator/global state. Keep an explicit fallback only for a
-    // future build that ships without a Start section.
-    if (!startRunsAutomatically) {
-      exports.in_init();
-    }
+    // Match the current official TypeScript wrapper exactly: invoke
+    // in_init after instantiation, then create the scratchpad in the
+    // constructor through nu_realloc(0, 128). Do not pre-grow memory.
+    exports.in_init();
 
-    // Do not pre-grow linear memory here. The official WASM build uses
+    // The official WASM build uses
     // Numem's walloc hookset, which owns heap growth through
     // llvm.wasm.memory.grow when an allocation needs more pages.
     return new InochiWasmBindings(exports);
