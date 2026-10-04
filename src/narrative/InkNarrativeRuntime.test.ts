@@ -73,6 +73,7 @@ describe('Ink narrative boundary', () => {
   it('rejects invalid domain event arguments at the boundary', () => {
     const source = `
 EXTERNAL GAME_REVEAL_FACT(fact_id)
+-> start
 === start ===
 ~ GAME_REVEAL_FACT("passenger:not-a-fact")
 -> END

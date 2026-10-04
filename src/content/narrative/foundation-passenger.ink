@@ -2,6 +2,8 @@ EXTERNAL GAME_HAS_FACT(fact_id)
 EXTERNAL GAME_REVEAL_FACT(fact_id)
 EXTERNAL GAME_ADJUST_CITY_ATTENTION(delta, reason)
 
+-> start
+
 === start ===
 ~ temp knows_checkpoint = GAME_HAS_FACT("fact:docks-checkpoint-rumor")
 { knows_checkpoint:
