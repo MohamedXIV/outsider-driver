@@ -76,6 +76,8 @@ function createHarness(options: HarnessOptions = {}) {
     narrativeQueries: {
       hasFact: () => false,
       hasClaim: () => false,
+      coverIdentityMatches: () => false,
+      wouldContradictClaim: () => false,
       getPassengerSuspicion: () => 0,
       getCityAttention: () => 0,
     },
@@ -267,6 +269,7 @@ describe('PassengerRideOrchestrator', () => {
 
     const state: GameState = {
       rideSession: original.getSessionSave(),
+      socialState: null,
     };
     const serialized = gameSaveCodec.serialize(
       state,

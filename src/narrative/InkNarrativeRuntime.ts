@@ -1,26 +1,44 @@
 import { Story } from 'inkjs';
+import * as z from 'zod';
+import { entityIdSchema } from '../domain/ids/EntityId';
+import {
+  ClaimAudienceSchema,
+  ClaimValueSchema,
+  SocialKeySchema,
+  type ClaimAudience,
+} from '../domain/social/SocialStealthState';
 import {
   NarrativeDomainEventSchema,
   type NarrativeEventSink,
   type NarrativeQueryPort,
 } from './contracts/NarrativeBoundary';
 import {
-  compileInkSource,
-  type CompiledInkStory,
-} from './compileInkSource';
-import { entityIdSchema } from '../domain/ids/EntityId';
-import {
   NarrativeTurnSchema,
   type NarrativeLine,
   type NarrativeTurn,
 } from './contracts/NarrativePresentation';
-
-import * as z from 'zod';
+import {
+  compileInkSource,
+  type CompiledInkStory,
+} from './compileInkSource';
 
 const adjustmentSchema = z.number().min(-100).max(100);
-const reasonSchema = z
-  .string()
-  .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
+const reasonSchema = SocialKeySchema;
+
+function parseClaimAudience(input: unknown): ClaimAudience {
+  const token = z.string().parse(input);
+
+  if (token === 'public') {
+    return ClaimAudienceSchema.parse({
+      kind: 'public',
+    });
+  }
+
+  return ClaimAudienceSchema.parse({
+    kind: 'passenger',
+    passengerId: entityIdSchema('passenger').parse(token),
+  });
+}
 
 export class InkNarrativeRuntime {
   readonly #story: Story;
@@ -121,6 +139,31 @@ export class InkNarrativeRuntime {
     );
 
     this.#story.BindExternalFunction(
+      'GAME_COVER_MATCHES',
+      (key: unknown, value: unknown) =>
+        this.#queries.coverIdentityMatches(
+          SocialKeySchema.parse(key),
+          ClaimValueSchema.parse(value),
+        ),
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_CLAIM_CONTRADICTS',
+      (
+        subject: unknown,
+        value: unknown,
+        context: unknown,
+        audience: unknown,
+      ) =>
+        this.#queries.wouldContradictClaim({
+          subject: SocialKeySchema.parse(subject),
+          value: ClaimValueSchema.parse(value),
+          context: SocialKeySchema.parse(context),
+          audience: parseClaimAudience(audience),
+        }),
+    );
+
+    this.#story.BindExternalFunction(
       'GAME_PASSENGER_SUSPICION',
       (passengerId: unknown) =>
         this.#queries.getPassengerSuspicion(
@@ -139,6 +182,36 @@ export class InkNarrativeRuntime {
           NarrativeDomainEventSchema.parse({
             type: 'knowledge.reveal',
             factId,
+          }),
+        );
+        return 0;
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_RECORD_CLAIM',
+      (
+        claimId: unknown,
+        subject: unknown,
+        value: unknown,
+        context: unknown,
+        audience: unknown,
+        sourceId: unknown,
+      ) => {
+        this.#events.emit(
+          NarrativeDomainEventSchema.parse({
+            type: 'claim.record',
+            claim: {
+              id: entityIdSchema('claim').parse(claimId),
+              subject: SocialKeySchema.parse(subject),
+              value: ClaimValueSchema.parse(value),
+              context: SocialKeySchema.parse(context),
+              audience: parseClaimAudience(audience),
+              source: {
+                kind: 'narrative',
+                sourceId: SocialKeySchema.parse(sourceId),
+              },
+            },
           }),
         );
         return 0;
