@@ -62,6 +62,8 @@ Prioritize deterministic tests for:
 
 Rendering behavior that cannot be proven in unit tests should receive focused browser/visual verification rather than fake assertions.
 
+Every production PR must keep the automated quality gate green. Rendering/bootstrap changes must preserve the browser smoke contract unless the contract itself is deliberately revised.
+
 ## 6. Content is data, behavior is code
 
 Passengers, routes, jobs, translator packs, broadcasts, upgrades, facts, and similar authored content should scale through validated data and Ink rather than bespoke conditionals in runtime systems.
@@ -86,7 +88,13 @@ Blender, Inochi Creator, visual inspectors, and other editors may author assets,
 
 If an editor emits a binary asset, its integration metadata and semantic identity must remain versioned and reviewable.
 
-## 10. Issue and PR discipline
+## 10. Online verification first
+
+GitHub CI is the canonical merge gate. Vercel previews are review surfaces, not alternative truth.
+
+Prefer exact-head online evidence over asking for local verification when CI/browser automation can prove the requirement. See `docs/DEPLOYMENT.md`.
+
+## 11. Issue and PR discipline
 
 - Continue the canonical branch/PR for an issue instead of creating competing implementations.
 - Respect explicit issue dependencies even when GitHub Projects cannot represent them natively.
