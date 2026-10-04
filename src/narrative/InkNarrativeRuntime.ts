@@ -76,7 +76,7 @@ export class InkNarrativeRuntime {
       if (normalized.length > 0) {
         lines.push({
           text: normalized,
-          tags: [...this.#story.currentTags],
+          tags: [...(this.#story.currentTags ?? [])],
         });
       }
     }
