@@ -19,7 +19,7 @@ Application/domain event handlers
 
 Ink may author dialogue/choices and narrative-local temporary state, query approved game state through typed external functions, and request approved consequences through typed events.
 
-Ink may not own authoritative relationships, economy, cover identity, persistent claims/lies, knowledge, suspicion, city attention, route truth, or permanent world state.
+Ink may not own authoritative relationships, economy, cover identity, persistent claims/lies, knowledge, suspicion, city attention, translator ownership, route truth, or permanent world state.
 
 ## Approved query boundary
 
@@ -30,11 +30,21 @@ The production query port currently exposes:
 - `GAME_COVER_MATCHES(key, value)`;
 - `GAME_CLAIM_CONTRADICTS(subject, value, context, audience)`;
 - `GAME_PASSENGER_SUSPICION(passenger_id)`;
-- `GAME_CITY_ATTENTION()`.
+- `GAME_CITY_ATTENTION()`;
+- `GAME_TRANSLATION_LEVEL(language_id, register, vocabulary_key, difficulty)`.
 
-Stable IDs and social keys are validated before the application query port is invoked. Ink never receives a reference to the underlying domain store.
+Stable IDs and typed social/translator fields are validated before the application query port is invoked. Ink never receives a reference to the underlying domain stores.
 
 `GAME_CLAIM_CONTRADICTS` is audience-aware. A private claim heard by one passenger is not treated as known by every other passenger; public claims overlap every audience.
+
+`GAME_TRANSLATION_LEVEL` returns a stable ordinal level:
+
+- 0 = none;
+- 1 = gist;
+- 2 = partial;
+- 3 = full.
+
+Ink branches on comprehension, not pack IDs. An empty `vocabulary_key` means general vocabulary. Authored dialogue can therefore present partial or uncertain text without moving translator state into Ink.
 
 ## Approved event boundary
 
@@ -52,9 +62,15 @@ Ink invokes explicit external functions rather than a generic mutation API:
 - `GAME_ADJUST_SUSPICION(passenger_id, delta, reason)`;
 - `GAME_ADJUST_CITY_ATTENTION(delta, reason)`.
 
-The runtime validates IDs, keys, claim values, audience tokens, bounded adjustments, and reason tokens before emitting a domain event. The narrative runtime never applies those events itself.
+Translator ownership/activation is intentionally not a narrative mutation event. Economy/work systems may grant or purchase packs through their owning application flow.
 
-`SocialStealthNarrativeAdapter` is the application-side bridge that answers queries from `SocialStealthStateStore` and applies typed social events to that store.
+## Application adapters
+
+`SocialStealthNarrativeAdapter` answers social queries and applies typed social events.
+
+`TranslatorNarrativeAdapter` exposes deterministic comprehension assessment from `TranslatorRuntime`.
+
+`withTranslatorNarrativeQueries` composes translator capability onto an existing narrative query port without forcing the social adapter to own translator state.
 
 ## Compile and contract verification
 
@@ -65,13 +81,11 @@ The runtime validates IDs, keys, claim values, audience tokens, bounded adjustme
 
 Runtime tests load compiled JSON through the real `inkjs Story`, bind the typed game boundary, advance authored conversation, and assert queries/events.
 
-Cross-ride tests additionally prove that a later Ink runtime can use knowledge learned earlier and detect a contradiction in a prior audience-visible claim.
+Cross-ride tests prove prior knowledge/claims survive between rides. Translator tests prove real Ink can branch into partial-comprehension prose from active pack capabilities without knowing pack identity.
 
 ## Source layout
 
 Production-authored Ink lives under `src/content/narrative/`.
-
-The foundation story is intentionally small. It demonstrates the production pipeline rather than becoming a parallel prototype narrative.
 
 Future passenger content should add or include `.ink` files while preserving the same domain boundary.
 
@@ -79,4 +93,4 @@ Future passenger content should add or include `.ink` files while preserving the
 
 Ink story state is serialized only to resume the position inside an active conversation.
 
-Persistent facts, cover identity, claims/lies, passenger suspicion, and city attention are stored in `SocialStealthState`, which is part of the versioned production save. They are never reconstructed from Ink variables.
+Persistent facts, cover identity, claims/lies, passenger suspicion, city attention, and translator ownership/activation are stored by their owning domain state and production save schemas. They are never reconstructed from Ink variables.
