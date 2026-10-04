@@ -18,7 +18,8 @@
     "check": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
-    "@babylonjs/core": "9.28.0"
+    "@babylonjs/core": "9.28.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
