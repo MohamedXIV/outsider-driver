@@ -9,6 +9,7 @@ import {
   type PassengerId,
 } from '../../domain/ids/EntityId';
 import type { NarrativeDomainEvent } from '../../narrative/contracts/NarrativeBoundary';
+import { createInitialEconomyState } from '../../domain/economy/EconomyState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   gameSaveCodec,
@@ -49,6 +50,24 @@ function createJob(passengerId: PassengerId) {
         minuteOfDay: 2 * 60,
       },
     },
+    source: {
+      kind: 'underground' as const,
+      minimumUndergroundAccess: 0,
+      riskFootprint: 15,
+    },
+    fare: {
+      baseCredits: 30,
+      perMinuteCredits: 2,
+      completionBonusCredits: 5,
+    },
+    expenses: {
+      dispatchFeeCredits: 3,
+      operatingCreditsPerMinute: 1,
+    },
+    completionEffects: {
+      officialStandingDelta: 0,
+      undergroundAccessDelta: 1,
+    },
   };
 }
 
@@ -86,6 +105,11 @@ function createHarness(options: HarnessOptions = {}) {
       emit: (event) => {
         narrativeEvents.push(event);
       },
+    },
+    workEligibility: {
+      officialStanding: 0,
+      undergroundAccess: 100,
+      coverIdentityMatches: () => false,
     },
     completion: {
       commit: (context) => {
@@ -272,6 +296,7 @@ describe('PassengerRideOrchestrator', () => {
       rideSession: original.getSessionSave(),
       socialState: null,
       translatorState: createInitialTranslatorState(),
+      economyState: createInitialEconomyState(),
     };
     const serialized = gameSaveCodec.serialize(
       state,
@@ -314,6 +339,34 @@ describe('PassengerRideOrchestrator', () => {
     expect(restored.getPresentation().phase).toBe('dropoff-ready');
     restored.dropOff(completedAt);
     expect(secondHarness.completions).toHaveLength(1);
+  });
+
+  it('rejects an official job when the authoritative work eligibility context lacks its cover', () => {
+    const harness = createHarness();
+    const passengerId = entityId('passenger', 'routine-rider');
+    const official = {
+      ...createJob(passengerId),
+      id: 'job:official-gated',
+      source: {
+        kind: 'official' as const,
+        minimumOfficialStanding: 0,
+        requiredCoverAttributes: [
+          {
+            key: 'work-permit',
+            value: 'licensed-driver',
+          },
+        ],
+      },
+    };
+
+    expect(() =>
+      PassengerRideOrchestrator.acceptJob(
+        official,
+        entityId('ride', 'official-gated'),
+        acceptedAt,
+        harness.dependencies,
+      ),
+    ).toThrow(/cover:work-permit/);
   });
 
   it('rejects acceptance outside the authored job availability window', () => {

@@ -3,10 +3,12 @@ import {
   type GameTime,
 } from '../../domain/time/GameTime';
 import {
+  requireJobEligibility,
   validateJobReferences,
   validateRideReferences,
   type JobContract,
   type RideContract,
+  type WorkEligibilityContext,
 } from '../../domain/work/JobRideContracts';
 import type {
   PassengerId,
@@ -65,6 +67,7 @@ export interface PassengerRideDependencies {
   readonly narrativeStories: NarrativeStorySourcePort;
   readonly narrativeQueries: NarrativeQueryPort;
   readonly narrativeEvents: NarrativeEventSink;
+  readonly workEligibility: WorkEligibilityContext;
   readonly completion: RideCompletionCommitPort;
   readonly autopilot: TaxiAutopilotConfig;
 }
@@ -163,10 +166,14 @@ export class PassengerRideOrchestrator {
     dependencies: PassengerRideDependencies,
   ): PassengerRideOrchestrator {
     const passengers = validatePassengerCatalog(dependencies.passengers);
-    const job = validateJobReferences(
+    const referencedJob = validateJobReferences(
       jobInput,
       dependencies.world,
       knownPassengerIds(passengers),
+    );
+    const job = requireJobEligibility(
+      referencedJob,
+      dependencies.workEligibility,
     );
     assertAcceptedWithinAvailability(acceptedAt, job);
     const passenger = requirePassenger(job.passengerId, passengers);

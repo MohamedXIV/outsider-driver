@@ -4,6 +4,8 @@ import { entityId } from '../ids/EntityId';
 import {
   JobContractSchema,
   RideContractSchema,
+  evaluateJobEligibility,
+  getUndergroundJobRiskSignal,
   validateJobReferences,
   validateRideReferences,
 } from './JobRideContracts';
@@ -26,6 +28,29 @@ const jobFixture = {
       day: 19,
       minuteOfDay: 2 * 60,
     },
+  },
+  source: {
+    kind: 'official',
+    minimumOfficialStanding: 10,
+    requiredCoverAttributes: [
+      {
+        key: 'work-permit',
+        value: 'licensed-driver',
+      },
+    ],
+  },
+  fare: {
+    baseCredits: 40,
+    perMinuteCredits: 3,
+    completionBonusCredits: 10,
+  },
+  expenses: {
+    dispatchFeeCredits: 4,
+    operatingCreditsPerMinute: 1,
+  },
+  completionEffects: {
+    officialStandingDelta: 2,
+    undergroundAccessDelta: 0,
   },
 } as const;
 
@@ -59,6 +84,63 @@ describe('JobContract', () => {
     expect(() =>
       validateJobReferences(jobFixture, createWorldFixture(), new Set()),
     ).toThrow(/Unknown passenger reference/);
+  });
+
+  it('gates official work on authored standing and cover requirements', () => {
+    expect(
+      evaluateJobEligibility(jobFixture, {
+        officialStanding: 5,
+        undergroundAccess: 100,
+        coverIdentityMatches: () => false,
+      }),
+    ).toEqual({
+      eligible: false,
+      reasons: ['official-standing', 'cover:work-permit'],
+    });
+
+    expect(
+      evaluateJobEligibility(jobFixture, {
+        officialStanding: 10,
+        undergroundAccess: 0,
+        coverIdentityMatches: (key, value) =>
+          key === 'work-permit' && value === 'licensed-driver',
+      }),
+    ).toEqual({
+      eligible: true,
+      reasons: [],
+    });
+  });
+
+  it('makes underground access and risk first-class rather than cosmetic', () => {
+    const underground = {
+      ...jobFixture,
+      id: 'job:docks-underground',
+      source: {
+        kind: 'underground',
+        minimumUndergroundAccess: 20,
+        riskFootprint: 35,
+      },
+      completionEffects: {
+        officialStandingDelta: 0,
+        undergroundAccessDelta: 4,
+      },
+    } as const;
+
+    expect(
+      evaluateJobEligibility(underground, {
+        officialStanding: 100,
+        undergroundAccess: 19,
+        coverIdentityMatches: () => true,
+      }),
+    ).toEqual({
+      eligible: false,
+      reasons: ['underground-access'],
+    });
+    expect(getUndergroundJobRiskSignal(underground)).toEqual({
+      jobId: 'job:docks-underground',
+      source: 'underground',
+      riskFootprint: 35,
+    });
   });
 });
 

@@ -67,9 +67,104 @@ export const productionContent = {
   },
   passengers: {
     schemaVersion: 1,
-    passengers: [],
+    passengers: [
+      {
+        schemaVersion: 1,
+        id: 'passenger:official-clinic-rider',
+        data: {
+          displayName: 'Clinic Dispatcher',
+          lifecycleKind: 'routine',
+          narrativeStoryId: 'foundation-passenger',
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'passenger:underground-clinic-rider',
+        data: {
+          displayName: 'Backchannel Rider',
+          lifecycleKind: 'recurring',
+          narrativeStoryId: 'foundation-passenger',
+        },
+      },
+    ],
   },
-  jobs: [],
+  jobs: [
+    {
+      id: 'job:docks-official-clinic',
+      passengerId: 'passenger:official-clinic-rider',
+      pickupLocationId: 'location:docks-taxi-rank',
+      destinationLocationId: 'location:docks-clinic',
+      routeId: 'route:docks-night',
+      availability: {
+        opensAt: {
+          day: 1,
+          minuteOfDay: 18 * 60,
+        },
+        closesAt: {
+          day: 2,
+          minuteOfDay: 2 * 60,
+        },
+      },
+      source: {
+        kind: 'official',
+        minimumOfficialStanding: 0,
+        requiredCoverAttributes: [
+          {
+            key: 'work-permit',
+            value: 'licensed-driver',
+          },
+        ],
+      },
+      fare: {
+        baseCredits: 42,
+        perMinuteCredits: 3,
+        completionBonusCredits: 8,
+      },
+      expenses: {
+        dispatchFeeCredits: 6,
+        operatingCreditsPerMinute: 1,
+      },
+      completionEffects: {
+        officialStandingDelta: 2,
+        undergroundAccessDelta: 0,
+      },
+    },
+    {
+      id: 'job:docks-underground-clinic',
+      passengerId: 'passenger:underground-clinic-rider',
+      pickupLocationId: 'location:docks-taxi-rank',
+      destinationLocationId: 'location:docks-clinic',
+      routeId: 'route:docks-night',
+      availability: {
+        opensAt: {
+          day: 1,
+          minuteOfDay: 18 * 60,
+        },
+        closesAt: {
+          day: 2,
+          minuteOfDay: 2 * 60,
+        },
+      },
+      source: {
+        kind: 'underground',
+        minimumUndergroundAccess: 0,
+        riskFootprint: 28,
+      },
+      fare: {
+        baseCredits: 56,
+        perMinuteCredits: 4,
+        completionBonusCredits: 12,
+      },
+      expenses: {
+        dispatchFeeCredits: 10,
+        operatingCreditsPerMinute: 1,
+      },
+      completionEffects: {
+        officialStandingDelta: 0,
+        undergroundAccessDelta: 3,
+      },
+    },
+  ],
   routeMotion: {
     schemaVersion: 1,
     profiles: [

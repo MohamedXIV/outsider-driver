@@ -65,6 +65,24 @@ describe('production content validation', () => {
               minuteOfDay: 120,
             },
           },
+          source: {
+            kind: 'underground',
+            minimumUndergroundAccess: 0,
+            riskFootprint: 10,
+          },
+          fare: {
+            baseCredits: 10,
+            perMinuteCredits: 1,
+            completionBonusCredits: 0,
+          },
+          expenses: {
+            dispatchFeeCredits: 1,
+            operatingCreditsPerMinute: 0,
+          },
+          completionEffects: {
+            officialStandingDelta: 0,
+            undergroundAccessDelta: 1,
+          },
         },
       ],
     };
