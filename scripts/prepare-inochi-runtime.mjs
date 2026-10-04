@@ -10,8 +10,6 @@ const RUNTIME_ARCHIVE_SHA256 =
 const OUTPUT_PATH = resolve(
   'public/vendor/inochi2d/inochi2d.wasm',
 );
-const PATCHED_INITIAL_MEMORY_PAGES = 1_024;
-const WASM_MEMORY_SECTION_ID = 5;
 
 function readAscii(buffer, start, length) {
   const bytes = buffer.subarray(start, start + length);
@@ -37,203 +35,6 @@ function readOctal(buffer, start, length) {
   }
 
   return value;
-}
-
-function readUnsignedLeb128(bytes, startOffset) {
-  let value = 0;
-  let shift = 0;
-  let offset = startOffset;
-
-  while (offset < bytes.length) {
-    const byte = bytes[offset];
-
-    if (byte === undefined) {
-      break;
-    }
-
-    value |= (byte & 0x7f) << shift;
-    offset += 1;
-
-    if ((byte & 0x80) === 0) {
-      return {
-        value,
-        nextOffset: offset,
-      };
-    }
-
-    shift += 7;
-
-    if (shift > 28) {
-      throw new Error('WASM unsigned LEB128 value is too large.');
-    }
-  }
-
-  throw new Error(
-    'Unexpected end of WASM while reading unsigned LEB128.',
-  );
-}
-
-function encodeUnsignedLeb128(value) {
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new RangeError(
-      `Cannot encode invalid unsigned LEB128 value: ${String(value)}`,
-    );
-  }
-
-  const result = [];
-  let remaining = value;
-
-  do {
-    let byte = remaining & 0x7f;
-    remaining = Math.floor(remaining / 128);
-
-    if (remaining !== 0) {
-      byte |= 0x80;
-    }
-
-    result.push(byte);
-  } while (remaining !== 0);
-
-  return Uint8Array.from(result);
-}
-
-function concatBytes(parts) {
-  const length = parts.reduce(
-    (total, part) => total + part.byteLength,
-    0,
-  );
-  const output = new Uint8Array(length);
-  let offset = 0;
-
-  for (const part of parts) {
-    output.set(part, offset);
-    offset += part.byteLength;
-  }
-
-  return output;
-}
-
-export function patchWasmInitialMemory(bytes, minimumPages) {
-  if (
-    bytes.byteLength < 8 ||
-    bytes[0] !== 0x00 ||
-    bytes[1] !== 0x61 ||
-    bytes[2] !== 0x73 ||
-    bytes[3] !== 0x6d
-  ) {
-    throw new Error('Invalid WebAssembly module header.');
-  }
-
-  let offset = 8;
-
-  while (offset < bytes.byteLength) {
-    const sectionStart = offset;
-    const sectionId = bytes[offset];
-
-    if (sectionId === undefined) {
-      break;
-    }
-
-    offset += 1;
-    const sectionSize = readUnsignedLeb128(bytes, offset);
-    const payloadStart = sectionSize.nextOffset;
-    const payloadEnd = payloadStart + sectionSize.value;
-
-    if (payloadEnd > bytes.byteLength) {
-      throw new Error(
-        'WASM section extends beyond module bytes.',
-      );
-    }
-
-    if (sectionId !== WASM_MEMORY_SECTION_ID) {
-      offset = payloadEnd;
-      continue;
-    }
-
-    const count = readUnsignedLeb128(bytes, payloadStart);
-
-    if (count.value !== 1) {
-      throw new Error(
-        `Expected exactly one WASM memory, found ${String(count.value)}.`,
-      );
-    }
-
-    const flagsOffset = count.nextOffset;
-    const flags = readUnsignedLeb128(bytes, flagsOffset);
-    const minimum = readUnsignedLeb128(
-      bytes,
-      flags.nextOffset,
-    );
-    let maximum = null;
-    let memoryTypeEnd = minimum.nextOffset;
-
-    if ((flags.value & 0x01) !== 0) {
-      const parsedMaximum = readUnsignedLeb128(
-        bytes,
-        minimum.nextOffset,
-      );
-      maximum = parsedMaximum.value;
-      memoryTypeEnd = parsedMaximum.nextOffset;
-    }
-
-    if (
-      maximum !== null &&
-      minimumPages > maximum
-    ) {
-      throw new Error(
-        `Requested initial WASM memory ${String(minimumPages)} pages exceeds module maximum ${String(maximum)} pages.`,
-      );
-    }
-
-    if (minimumPages <= minimum.value) {
-      return {
-        bytes,
-        originalMinimumPages: minimum.value,
-        maximumPages: maximum,
-        patchedMinimumPages: minimum.value,
-      };
-    }
-
-    const memoryPayloadParts = [
-      bytes.slice(payloadStart, flags.nextOffset),
-      encodeUnsignedLeb128(minimumPages),
-    ];
-
-    if (maximum !== null) {
-      memoryPayloadParts.push(
-        encodeUnsignedLeb128(maximum),
-      );
-    }
-
-    memoryPayloadParts.push(
-      bytes.slice(memoryTypeEnd, payloadEnd),
-    );
-
-    const memoryPayload = concatBytes(
-      memoryPayloadParts,
-    );
-    const replacementSection = concatBytes([
-      Uint8Array.of(WASM_MEMORY_SECTION_ID),
-      encodeUnsignedLeb128(memoryPayload.byteLength),
-      memoryPayload,
-    ]);
-    const patched = concatBytes([
-      bytes.slice(0, sectionStart),
-      replacementSection,
-      bytes.slice(payloadEnd),
-    ]);
-
-    return {
-      bytes: patched,
-      originalMinimumPages: minimum.value,
-      maximumPages: maximum,
-      patchedMinimumPages: minimumPages,
-    };
-  }
-
-  throw new Error(
-    'Inochi2D WASM does not contain a memory section.',
-  );
 }
 
 export function extractSingleWasmFromTar(bytes) {
@@ -305,18 +106,14 @@ async function main() {
   }
 
   const wasm = extractSingleWasmFromTar(archive);
-  const patched = patchWasmInitialMemory(
-    wasm.bytes,
-    PATCHED_INITIAL_MEMORY_PAGES,
-  );
 
   await mkdir(dirname(OUTPUT_PATH), {
     recursive: true,
   });
-  await writeFile(OUTPUT_PATH, patched.bytes);
+  await writeFile(OUTPUT_PATH, wasm.bytes);
 
   process.stdout.write(
-    `Prepared pinned Inochi2D debug runtime ${wasm.name} (${String(patched.bytes.byteLength)} bytes); initial memory ${String(patched.originalMinimumPages)} -> ${String(patched.patchedMinimumPages)} pages, max ${String(patched.maximumPages ?? 'unbounded')}. Debug is used because the current upstream nightly release WASM returns null from nu_malloc even for a 702-byte fixture.\n`,
+    `Prepared pinned official Inochi2D debug runtime ${wasm.name} (${String(wasm.bytes.byteLength)} bytes). The debug artifact is used because the current nightly release WASM returns null from nu_malloc even for a 702-byte fixture; large asset uploads use JS-owned WASM scratch instead of walloc.\n`,
   );
 }
 
