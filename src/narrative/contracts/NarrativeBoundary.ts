@@ -28,7 +28,7 @@ const reasonSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
 
-const adjustmentSchema = z.number().finite().min(-100).max(100);
+const adjustmentSchema = z.number().min(-100).max(100);
 
 const RevealFactEventSchema = z
   .object({

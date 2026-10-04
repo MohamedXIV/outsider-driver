@@ -11,7 +11,7 @@ import {
 } from './compileInkSource';
 import { entityIdSchema } from '../domain/ids/EntityId';
 
-const adjustmentSchema = z.number().finite().min(-100).max(100);
+const adjustmentSchema = z.number().min(-100).max(100);
 const reasonSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
@@ -90,7 +90,7 @@ export class InkNarrativeRuntime {
     return {
       lines,
       choices,
-      ended: !this.#story.canContinue && choices.length === 0,
+      ended: choices.length === 0,
     };
   }
 
@@ -101,7 +101,7 @@ export class InkNarrativeRuntime {
       choiceIndex >= this.#story.currentChoices.length
     ) {
       throw new RangeError(
-        `Narrative choice index is not currently available: ${choiceIndex}`,
+        'Narrative choice index is not currently available: ' + String(choiceIndex),
       );
     }
 
