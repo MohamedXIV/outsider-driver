@@ -25,14 +25,15 @@ The taxi is the game's primary social space. The player does **not** manually dr
 - Babylon.js for 3D/rendering
 - Inochi2D/WASM for important passenger puppets
 - Ink + inkjs for authored narrative
-- Data-driven content with versioned schemas
+- Zod-validated, versioned authored content contracts
+- Versioned save envelopes with explicit sequential migrations
 - Automated tests and browser verification suitable for cloud agents
 
 The technical baseline may evolve only through explicit architectural decisions; editor-only state must never become the sole source of truth.
 
 ## Development
 
-Use Node 24 when available (`.nvmrc` is provided). Node 22.13+ is also supported.
+Use Node 24 (`.nvmrc` is provided).
 
 ```bash
 npm install
@@ -40,7 +41,7 @@ npm run check
 npm run dev
 ```
 
-`npm run check` is the local quality gate: lint, deterministic tests, typecheck, and production build.
+`npm run check` is the local quality gate: lint, deterministic tests, typecheck, and production build. GitHub CI additionally runs Chromium browser smoke verification against the built output.
 
 The repository is intentionally code-first. Babylon.js is an adapter behind an application rendering port rather than the owner of game state.
 
@@ -49,6 +50,8 @@ See:
 - [Game Design](docs/GAME_DESIGN.md)
 - [Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)
 - [Engineering Rules](docs/ENGINEERING_RULES.md)
+- [Data Contracts](docs/DATA_CONTRACTS.md)
+- [Deployment](docs/DEPLOYMENT.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Scope](docs/SCOPE.md)
 - [Agent Instructions](AGENTS.md)

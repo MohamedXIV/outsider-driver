@@ -52,6 +52,10 @@ function assertVersion(version: number, label: string): void {
   }
 }
 
+function versionLabel(version: number): string {
+  return String(version);
+}
+
 export class VersionedSaveCodec<TCurrent> {
   readonly #currentVersion: number;
   readonly #currentSchema: RuntimeSchema<TCurrent>;
@@ -76,13 +80,13 @@ export class VersionedSaveCodec<TCurrent> {
 
       if (migration.toVersion !== migration.fromVersion + 1) {
         throw new SaveVersionError(
-          `Migrations must be sequential: ${migration.fromVersion} -> ${migration.toVersion}`,
+          `Migrations must be sequential: ${versionLabel(migration.fromVersion)} -> ${versionLabel(migration.toVersion)}`,
         );
       }
 
       if (this.#migrations.has(migration.fromVersion)) {
         throw new SaveVersionError(
-          `Duplicate migration from version ${migration.fromVersion}.`,
+          `Duplicate migration from version ${versionLabel(migration.fromVersion)}.`,
         );
       }
 
@@ -106,7 +110,7 @@ export class VersionedSaveCodec<TCurrent> {
 
     if (envelope.schemaVersion > this.#currentVersion) {
       throw new SaveVersionError(
-        `Save version ${envelope.schemaVersion} is newer than supported version ${this.#currentVersion}.`,
+        `Save version ${versionLabel(envelope.schemaVersion)} is newer than supported version ${versionLabel(this.#currentVersion)}.`,
       );
     }
 
@@ -118,7 +122,7 @@ export class VersionedSaveCodec<TCurrent> {
 
       if (migration === undefined) {
         throw new SaveVersionError(
-          `No migration registered from save version ${version}.`,
+          `No migration registered from save version ${versionLabel(version)}.`,
         );
       }
 
@@ -148,7 +152,7 @@ export class VersionedSaveCodec<TCurrent> {
 
     if (this.#schemas.has(version)) {
       throw new SaveVersionError(
-        `Duplicate save schema definition for version ${version}.`,
+        `Duplicate save schema definition for version ${versionLabel(version)}.`,
       );
     }
 
@@ -160,7 +164,7 @@ export class VersionedSaveCodec<TCurrent> {
 
     if (schema === undefined) {
       throw new SaveVersionError(
-        `No state schema registered for save version ${version}.`,
+        `No state schema registered for save version ${versionLabel(version)}.`,
       );
     }
 
