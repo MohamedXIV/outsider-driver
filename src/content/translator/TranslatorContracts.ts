@@ -7,7 +7,7 @@ export const TRANSLATOR_CATALOG_SCHEMA_VERSION = 1 as const;
 export const TRANSLATOR_RUNTIME_API_VERSION = 1 as const;
 
 const displayNameSchema = z.string().trim().min(1).max(120);
-const stableVocabularyKeySchema = z
+export const TranslationVocabularyKeySchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
 
@@ -48,7 +48,7 @@ export const TranslatorCapabilitySchema = z
   .object({
     languageId: entityIdSchema('language'),
     register: TranslationRegisterSchema,
-    vocabularyKey: stableVocabularyKeySchema.nullable(),
+    vocabularyKey: TranslationVocabularyKeySchema.nullable(),
     coverage: z.number().min(0).max(1),
     quality: z.number().min(0).max(1),
     uncertainty: z.number().min(0).max(1),

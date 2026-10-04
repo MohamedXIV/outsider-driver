@@ -2,6 +2,11 @@ import { Story } from 'inkjs';
 import * as z from 'zod';
 import { entityIdSchema } from '../domain/ids/EntityId';
 import {
+  TranslationRegisterSchema,
+  TranslationVocabularyKeySchema,
+} from '../content/translator/TranslatorContracts';
+import { TranslationRequirementSchema } from '../domain/translator/TranslatorRuntime';
+import {
   ClaimAudienceSchema,
   ClaimValueSchema,
   SocialKeySchema,
@@ -24,6 +29,14 @@ import {
 
 const adjustmentSchema = z.number().min(-100).max(100);
 const reasonSchema = SocialKeySchema;
+
+function parseTranslationVocabularyKey(input: unknown): string | null {
+  const token = z.string().parse(input);
+
+  return token.length === 0
+    ? null
+    : TranslationVocabularyKeySchema.parse(token);
+}
 
 function parseClaimAudience(input: unknown): ClaimAudience {
   const token = z.string().parse(input);
@@ -130,6 +143,33 @@ export class InkNarrativeRuntime {
   }
 
   #bindGameBoundary(): void {
+    this.#story.BindExternalFunction(
+      'GAME_TRANSLATION_LEVEL',
+      (
+        languageId: unknown,
+        register: unknown,
+        vocabularyKey: unknown,
+        difficulty: unknown,
+      ) => {
+        const translator = this.#queries.translator;
+
+        if (translator === undefined) {
+          throw new Error(
+            'Narrative requested translator capability, but no translator query adapter is configured.',
+          );
+        }
+
+        return translator.getTranslationLevel(
+          TranslationRequirementSchema.parse({
+            languageId,
+            register: TranslationRegisterSchema.parse(register),
+            vocabularyKey: parseTranslationVocabularyKey(vocabularyKey),
+            difficulty,
+          }),
+        );
+      },
+    );
+
     this.#story.BindExternalFunction('GAME_HAS_FACT', (factId: unknown) =>
       this.#queries.hasFact(entityIdSchema('fact').parse(factId)),
     );
