@@ -43,7 +43,7 @@ test('production build boots a Babylon game surface without browser errors', asy
   expect(browserErrors).toEqual([]);
 });
 
-test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }) => {
+test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }) => {
   let lastStage = 'not-started';
 
   page.on('console', (message) => {

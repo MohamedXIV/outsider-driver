@@ -93,8 +93,8 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
 
     reportStage('puppet-load-start');
     session = await InochiPuppetSession.load(runtime, {
-      id: 'inochi2d-upstream-ada-static',
-      load: () => loadFixture('/__fixtures__/ada-static.inx'),
+      id: 'outsider-driver-tiny-visual08',
+      load: () => loadFixture('/__fixtures__/tiny-visual08.inx'),
     });
 
     reportStage('puppet-loaded');
