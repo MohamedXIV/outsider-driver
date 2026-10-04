@@ -24,6 +24,10 @@ import {
   type TranslatorCatalog,
 } from '../translator/TranslatorContracts';
 import {
+  validateRadioCatalog,
+  type RadioCatalog,
+} from '../radio/RadioContracts';
+import {
   JobContractSchema,
   validateJobReferences,
   type JobContract,
@@ -56,6 +60,7 @@ export interface ProductionContentBundleInput {
   readonly routeMotion: unknown;
   readonly routeExperience: unknown;
   readonly translator: unknown;
+  readonly radio: unknown;
   readonly narrativeStories: readonly unknown[];
   readonly taxiScene: unknown;
 }
@@ -92,6 +97,7 @@ export interface ValidatedProductionContent {
   readonly routeMotion: RouteMotionCatalog;
   readonly routeExperience: RouteExperienceCatalog;
   readonly translator: TranslatorCatalog;
+  readonly radio: RadioCatalog;
   readonly narrativeStories: readonly ValidatedNarrativeStory[];
   readonly taxiScene: TaxiSceneDefinition;
 }
@@ -213,6 +219,7 @@ export function validateProductionContent(
   let routeMotion: RouteMotionCatalog | undefined;
   let routeExperience: RouteExperienceCatalog | undefined;
   let translator: TranslatorCatalog | undefined;
+  let radio: RadioCatalog | undefined;
   let narrativeStories: readonly ValidatedNarrativeStory[] | undefined;
   let taxiScene: TaxiSceneDefinition | undefined;
 
@@ -275,6 +282,25 @@ export function validateProductionContent(
     }
   }
 
+  if (
+    world !== undefined &&
+    passengers !== undefined &&
+    jobs !== undefined &&
+    translator !== undefined
+  ) {
+    try {
+      radio = validateRadioCatalog(
+        input.radio,
+        translator,
+        world,
+        jobs,
+        passengers,
+      );
+    } catch (error: unknown) {
+      addIssue(issues, 'radio', error);
+    }
+  }
+
   if (passengers !== undefined && narrativeStories !== undefined) {
     try {
       requirePassengerNarratives(passengers, narrativeStories);
@@ -305,6 +331,7 @@ export function validateProductionContent(
     routeMotion === undefined ||
     routeExperience === undefined ||
     translator === undefined ||
+    radio === undefined ||
     narrativeStories === undefined ||
     taxiScene === undefined
   ) {
@@ -320,6 +347,7 @@ export function validateProductionContent(
     routeMotion,
     routeExperience,
     translator,
+    radio,
     narrativeStories,
     taxiScene,
   };

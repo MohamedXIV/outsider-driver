@@ -19,6 +19,8 @@ describe('production content validation', () => {
     expect(validated.routeExperience.segmentScenery).toHaveLength(1);
     expect(validated.translator.languages).toHaveLength(1);
     expect(validated.translator.packs).toHaveLength(2);
+    expect(validated.radio.stations).toHaveLength(3);
+    expect(validated.radio.broadcasts).toHaveLength(3);
   });
 
   it('rejects a passenger that references a missing narrative story', () => {
@@ -116,6 +118,35 @@ describe('production content validation', () => {
 
     expect(() => validateProductionContent(broken)).toThrow(
       /translator-pack:civic-basic-v1 references missing content language:missing/,
+    );
+  });
+
+  it('rejects radio intel that references a missing production job', () => {
+    const broken = {
+      ...productionContent,
+      radio: {
+        ...productionContent.radio,
+        broadcasts: [
+          {
+            ...productionContent.radio.broadcasts[2],
+            data: {
+              ...productionContent.radio.broadcasts[2].data,
+              informationHooks: [
+                {
+                  type: 'job-intel',
+                  factId: 'fact:missing-job',
+                  jobId: 'job:missing-radio-target',
+                  minimumComprehension: 2,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+
+    expect(() => validateProductionContent(broken)).toThrow(
+      /references unknown job intel target job:missing-radio-target/,
     );
   });
 

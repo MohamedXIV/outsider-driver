@@ -321,6 +321,135 @@ export const productionContent = {
       },
     ],
   },
+  radio: {
+    schemaVersion: 1,
+    stations: [
+      {
+        schemaVersion: 1,
+        id: 'radio-station:civic-one',
+        data: {
+          displayName: 'Civic One',
+          frequencyLabel: '88.4 CIV',
+          defaultLanguageId: 'language:dock-common',
+          discoverability: 'public',
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'radio-station:dockwave',
+        data: {
+          displayName: 'Dockwave',
+          frequencyLabel: '94.7 DWV',
+          defaultLanguageId: 'language:dock-common',
+          discoverability: 'public',
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'radio-station:underchannel',
+        data: {
+          displayName: 'Underchannel',
+          frequencyLabel: '???.? U/C',
+          defaultLanguageId: 'language:dock-common',
+          discoverability: 'hidden',
+        },
+      },
+    ],
+    broadcasts: [
+      {
+        schemaVersion: 1,
+        id: 'broadcast:civic-evening-traffic',
+        data: {
+          stationId: 'radio-station:civic-one',
+          contentType: 'traffic',
+          contentKey: 'radio.civic.evening-traffic',
+          priority: 10,
+          schedule: {
+            type: 'daily',
+            startMinuteOfDay: 18 * 60,
+            endMinuteOfDay: 22 * 60,
+          },
+          languageId: 'language:dock-common',
+          register: 'general',
+          vocabularyKey: null,
+          translationDifficulty: 0.2,
+          informationHooks: [
+            {
+              type: 'route-intel',
+              factId: 'fact:docks-checkpoint-traffic',
+              routeId: 'route:docks-night',
+              minimumComprehension: 2,
+            },
+          ],
+          passengerReactions: [
+            {
+              passengerId: 'passenger:official-clinic-rider',
+              reactionKey: 'radio.civic.approved',
+            },
+          ],
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'broadcast:dockwave-night-music',
+        data: {
+          stationId: 'radio-station:dockwave',
+          contentType: 'music',
+          contentKey: 'radio.dockwave.night-music',
+          priority: 0,
+          schedule: {
+            type: 'daily',
+            startMinuteOfDay: 18 * 60,
+            endMinuteOfDay: 24 * 60,
+          },
+          languageId: 'language:dock-common',
+          register: 'general',
+          vocabularyKey: null,
+          translationDifficulty: 0,
+          informationHooks: [],
+          passengerReactions: [
+            {
+              passengerId: 'passenger:underground-clinic-rider',
+              reactionKey: 'radio.dockwave.likes-track',
+            },
+          ],
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'broadcast:underchannel-clinic-window',
+        data: {
+          stationId: 'radio-station:underchannel',
+          contentType: 'underground',
+          contentKey: 'radio.underchannel.clinic-window',
+          priority: 20,
+          schedule: {
+            type: 'daily',
+            startMinuteOfDay: 19 * 60,
+            endMinuteOfDay: 23 * 60,
+          },
+          languageId: 'language:dock-common',
+          register: 'slang',
+          vocabularyKey: 'dock-street',
+          translationDifficulty: 0.2,
+          informationHooks: [
+            {
+              type: 'job-intel',
+              factId: 'fact:underground-clinic-window',
+              jobId: 'job:docks-underground-clinic',
+              minimumComprehension: 2,
+            },
+          ],
+          passengerReactions: [
+            {
+              passengerId: 'passenger:underground-clinic-rider',
+              reactionKey: 'radio.underchannel.recognition',
+            },
+          ],
+        },
+      },
+    ],
+  },
   narrativeStories: [
     {
       id: 'foundation-passenger',
