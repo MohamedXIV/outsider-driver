@@ -9,6 +9,7 @@ import {
   ClaimRecordSchema,
   type ClaimProposal,
 } from '../../domain/social/SocialStealthState';
+import type { TranslationRequirement } from '../../domain/translator/TranslatorRuntime';
 
 export const NARRATIVE_EXTERNAL_FUNCTIONS = [
   'GAME_HAS_FACT',
@@ -17,6 +18,7 @@ export const NARRATIVE_EXTERNAL_FUNCTIONS = [
   'GAME_CLAIM_CONTRADICTS',
   'GAME_PASSENGER_SUSPICION',
   'GAME_CITY_ATTENTION',
+  'GAME_TRANSLATION_LEVEL',
   'GAME_REVEAL_FACT',
   'GAME_RECORD_CLAIM',
   'GAME_ADJUST_SUSPICION',
@@ -79,7 +81,12 @@ export type NarrativeDomainEvent = z.infer<
   typeof NarrativeDomainEventSchema
 >;
 
+export interface TranslatorNarrativeQueryPort {
+  getTranslationLevel(requirement: TranslationRequirement): number;
+}
+
 export interface NarrativeQueryPort {
+  readonly translator?: TranslatorNarrativeQueryPort;
   hasFact(factId: FactId): boolean;
   hasClaim(claimId: ClaimId): boolean;
   coverIdentityMatches(key: string, value: string): boolean;

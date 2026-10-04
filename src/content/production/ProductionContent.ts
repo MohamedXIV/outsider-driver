@@ -161,6 +161,71 @@ export const productionContent = {
       },
     ],
   },
+  translator: {
+    schemaVersion: 1,
+    languages: [
+      {
+        schemaVersion: 1,
+        id: 'language:dock-common',
+        data: {
+          displayName: 'Dock Common',
+          baseLanguageId: null,
+        },
+      },
+    ],
+    packs: [
+      {
+        schemaVersion: 1,
+        id: 'translator-pack:civic-basic-v1',
+        data: {
+          displayName: 'Civic Basic v1',
+          version: 1,
+          legality: 'licensed',
+          costCredits: 120,
+          riskFootprint: 2,
+          compatibility: {
+            minRuntimeApiVersion: 1,
+            maxRuntimeApiVersion: 1,
+          },
+          capabilities: [
+            {
+              languageId: 'language:dock-common',
+              register: 'general',
+              vocabularyKey: null,
+              coverage: 0.98,
+              quality: 0.96,
+              uncertainty: 0.03,
+            },
+          ],
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'translator-pack:docks-slang-v1',
+        data: {
+          displayName: 'Docks Street Lexicon v1',
+          version: 1,
+          legality: 'illegal',
+          costCredits: 180,
+          riskFootprint: 35,
+          compatibility: {
+            minRuntimeApiVersion: 1,
+            maxRuntimeApiVersion: 1,
+          },
+          capabilities: [
+            {
+              languageId: 'language:dock-common',
+              register: 'slang',
+              vocabularyKey: 'dock-street',
+              coverage: 0.86,
+              quality: 0.78,
+              uncertainty: 0.15,
+            },
+          ],
+        },
+      },
+    ],
+  },
   narrativeStories: [
     {
       id: 'foundation-passenger',

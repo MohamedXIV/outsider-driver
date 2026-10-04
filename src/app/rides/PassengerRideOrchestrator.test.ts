@@ -9,6 +9,7 @@ import {
   type PassengerId,
 } from '../../domain/ids/EntityId';
 import type { NarrativeDomainEvent } from '../../narrative/contracts/NarrativeBoundary';
+import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   gameSaveCodec,
   type GameState,
@@ -270,6 +271,7 @@ describe('PassengerRideOrchestrator', () => {
     const state: GameState = {
       rideSession: original.getSessionSave(),
       socialState: null,
+      translatorState: createInitialTranslatorState(),
     };
     const serialized = gameSaveCodec.serialize(
       state,

@@ -13,6 +13,7 @@ It currently registers:
 - route experience/scenery/visual profiles;
 - passenger catalog;
 - job catalog;
+- translator languages and packs;
 - narrative story sources;
 - taxi scene definition.
 
@@ -42,13 +43,13 @@ Current checks include:
 - duplicate stable IDs inside catalogs;
 - missing world cross-references;
 - route endpoint/segment/event references;
-- route segments that are not reachable from any route;
-- route events that are not used by any segment;
+- unreachable route segments/events;
 - exact route-motion coverage;
 - exact route-event/district/scenery experience coverage;
 - invalid diversion route references;
-- duplicate jobs;
-- job passenger/location/route references;
+- duplicate jobs and job passenger/location/route references;
+- translator language and pack IDs;
+- translator pack language references and compatibility ranges;
 - duplicate narrative story IDs;
 - passenger narrative-story references;
 - approved Ink external-function contract;
@@ -60,13 +61,13 @@ Current checks include:
 
 Validation is not maintained against a hand-copied validation fixture.
 
-The Babylon production runtime takes its taxi scene from `productionContent.taxiScene`. Other gameplay composition should consume the same canonical manifest as those systems are wired into the runtime.
+The Babylon production runtime takes its taxi scene from `productionContent.taxiScene`. Translator runtime tests and later composition use `productionContent.translator`. Other gameplay composition should consume the same canonical manifest as those systems are wired into the runtime.
 
 Tests may use fixtures to create malformed variants or focused domain scenarios. Fixtures are test inputs only and must not become alternate production truth.
 
 ## Adding a new content system
 
-When a production system such as translator packs, broadcasts, upgrades, or authored jobs lands:
+When a production system such as broadcasts, upgrades, or authored jobs lands:
 
 1. define its strict versioned content schema;
 2. use stable semantic IDs for persistent/cross-system identity;
@@ -85,6 +86,7 @@ Production validation fails loudly and reports scopes such as:
 ```text
 [world] ...
 [passengers] ...
+[translator] ...
 [narrative] ...
 [jobs] ...
 [route-motion] ...

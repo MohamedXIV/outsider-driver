@@ -30,32 +30,40 @@ Unknown or malformed fields should fail at authoring/build time unless a schema 
 
 Content references point to stable IDs. The content graph validator establishes shared invariants: IDs are unique, referenced content exists, references may declare the semantic kind they require, and invalid references fail loudly.
 
-Concrete systems should project their authored documents into this validation graph so cross-system mistakes are caught before runtime.
+Concrete systems project their authored documents into this validation graph so cross-system mistakes are caught before runtime.
 
 ## Save format
 
-Every save is wrapped in a strict envelope:
+Every save is wrapped in a strict envelope. The current state shape is:
 
 ```json
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "savedAt": "2026-10-04T07:00:00.000Z",
   "state": {
     "rideSession": null,
-    "socialState": null
+    "socialState": null,
+    "translatorState": {
+      "schemaVersion": 1,
+      "ownedPackIds": [],
+      "activePackIds": []
+    }
   }
 }
 ```
 
-`schemaVersion` is independent from content document versions.
+`schemaVersion` is independent from content document versions and from subsystem-local state versions.
 
 Production save evolution so far:
 
 - v1: foundation envelope with empty game state;
 - v2: resumable passenger `rideSession`;
-- v3: persistent `socialState` containing cover identity, claims, learned facts, passenger suspicion, and city attention.
+- v3: persistent `socialState` containing cover identity, claims, learned facts, passenger suspicion, and city attention;
+- v4: persistent translator ownership/activation state.
 
-The v3 social slot is nullable specifically so historical saves migrate without inventing a cover identity that the player never selected. When a game has social state, the complete structure round-trips through the same codec.
+The social slot remains nullable because historical saves must not fabricate a cover identity that the player never selected.
+
+The translator migration is different: an empty translator state is safe and deterministic. Migrating v3 -> v4 grants no packs and activates nothing.
 
 ## Migration rules
 
@@ -71,7 +79,7 @@ The v3 social slot is nullable specifically so historical saves migrate without 
 
 Defaults that become persistent truth must be deterministic.
 
-Good examples include an explicit starting credit amount, an empty known-facts set, or a fixed identity record when product rules explicitly define one.
+Good examples include an explicit starting credit amount, an empty known-facts set, or empty translator ownership.
 
 Bad examples include random IDs at load time, `Date.now()` inside a migration, or choosing a fallback route based on current catalog order.
 
