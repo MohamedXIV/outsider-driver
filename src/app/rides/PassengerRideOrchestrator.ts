@@ -85,6 +85,7 @@ export interface RidePresentation {
 export interface RideAdvanceResult {
   readonly presentation: RidePresentation;
   readonly events: readonly RouteGameplayEvent[];
+  readonly consumedSeconds: number;
 }
 
 function knownPassengerIds(catalog: PassengerCatalog): ReadonlySet<PassengerId> {
@@ -286,6 +287,7 @@ export class PassengerRideOrchestrator {
     return {
       presentation: this.getPresentation(),
       events: result.events,
+      consumedSeconds: result.consumedSeconds,
     };
   }
 
