@@ -68,7 +68,16 @@ interface InochiWasmExports extends WebAssembly.Exports {
   ): number;
 }
 
-function createWasiImports(): WebAssembly.Imports {
+export interface InochiWasmBindingsOptions {
+  readonly initialMemoryPages?: number;
+}
+
+const DEFAULT_INITIAL_MEMORY_PAGES = 2_048;
+const WASM_PAGE_BYTES = 65_536;
+
+function createWasiImports(
+  memory: WebAssembly.Memory,
+): WebAssembly.Imports {
   return {
     env: {
       STACKTOP: 0,
@@ -76,9 +85,7 @@ function createWasiImports(): WebAssembly.Imports {
       abortStackOverflow: () => {
         throw new Error('Inochi2D WASM stack overflow.');
       },
-      memory: new WebAssembly.Memory({
-        initial: 256,
-      }),
+      memory,
       table: new WebAssembly.Table({
         initial: 0,
         element: 'anyfunc',
@@ -138,7 +145,23 @@ export class InochiWasmBindings
 
   public static async create(
     runtimeUrl = '/vendor/inochi2d/inochi2d.wasm',
+    options: InochiWasmBindingsOptions = {},
   ): Promise<InochiWasmBindings> {
+    const initialMemoryPages =
+      options.initialMemoryPages ?? DEFAULT_INITIAL_MEMORY_PAGES;
+
+    if (
+      !Number.isInteger(initialMemoryPages) ||
+      initialMemoryPages < 256
+    ) {
+      throw new RangeError(
+        'Inochi2D initialMemoryPages must be an integer of at least 256 pages.',
+      );
+    }
+
+    const memory = new WebAssembly.Memory({
+      initial: initialMemoryPages,
+    });
     const response = requireHttpOk(
       await fetch(runtimeUrl),
       runtimeUrl,
@@ -146,7 +169,7 @@ export class InochiWasmBindings
     const bytes = await response.arrayBuffer();
     const instantiated = await WebAssembly.instantiate(
       bytes,
-      createWasiImports(),
+      createWasiImports(memory),
     );
     const exports = instantiated.instance
       .exports as unknown as InochiWasmExports;
@@ -161,6 +184,12 @@ export class InochiWasmBindings
       );
     }
 
+    if (exports.memory !== memory) {
+      throw new Error(
+        'Inochi2D WASM did not re-export the imported linear memory.',
+      );
+    }
+
     return new InochiWasmBindings(exports);
   }
 
@@ -169,8 +198,9 @@ export class InochiWasmBindings
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
 
     if (dataPointer === 0) {
+      const memoryBytes = this.#exports.memory.buffer.byteLength;
       throw new Error(
-        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset.`,
+        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset with ${String(memoryBytes)} bytes of linear memory (${String(Math.trunc(memoryBytes / WASM_PAGE_BYTES))} pages).`,
       );
     }
 
