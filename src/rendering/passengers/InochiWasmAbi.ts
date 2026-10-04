@@ -208,18 +208,22 @@ export function validateInochiDrawFrame(
   );
 
   for (const command of frame.commands) {
-    if (!allocationIds.has(command.allocationId)) {
-      throw new Error(
-        `Inochi draw command references unknown allocation ${String(command.allocationId)}.`,
-      );
-    }
-
     for (const textureId of command.sourceTextureIds) {
       if (textureId !== null && !textureIds.has(textureId)) {
         throw new Error(
           `Inochi draw command references unknown texture ${String(textureId)}.`,
         );
       }
+    }
+
+    if (command.elementCount === 0) {
+      continue;
+    }
+
+    if (!allocationIds.has(command.allocationId)) {
+      throw new Error(
+        `Inochi draw command references unknown allocation ${String(command.allocationId)}.`,
+      );
     }
 
     if (command.indexOffset + command.elementCount > frame.indices.length) {
