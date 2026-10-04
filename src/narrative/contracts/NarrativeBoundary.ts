@@ -5,13 +5,20 @@ import {
   type FactId,
   type PassengerId,
 } from '../../domain/ids/EntityId';
+import {
+  ClaimRecordSchema,
+  type ClaimProposal,
+} from '../../domain/social/SocialStealthState';
 
 export const NARRATIVE_EXTERNAL_FUNCTIONS = [
   'GAME_HAS_FACT',
   'GAME_HAS_CLAIM',
+  'GAME_COVER_MATCHES',
+  'GAME_CLAIM_CONTRADICTS',
   'GAME_PASSENGER_SUSPICION',
   'GAME_CITY_ATTENTION',
   'GAME_REVEAL_FACT',
+  'GAME_RECORD_CLAIM',
   'GAME_ADJUST_SUSPICION',
   'GAME_ADJUST_CITY_ATTENTION',
 ] as const;
@@ -37,6 +44,13 @@ const RevealFactEventSchema = z
   })
   .strict();
 
+const RecordClaimEventSchema = z
+  .object({
+    type: z.literal('claim.record'),
+    claim: ClaimRecordSchema,
+  })
+  .strict();
+
 const AdjustSuspicionEventSchema = z
   .object({
     type: z.literal('suspicion.adjust'),
@@ -56,6 +70,7 @@ const AdjustCityAttentionEventSchema = z
 
 export const NarrativeDomainEventSchema = z.discriminatedUnion('type', [
   RevealFactEventSchema,
+  RecordClaimEventSchema,
   AdjustSuspicionEventSchema,
   AdjustCityAttentionEventSchema,
 ]);
@@ -67,6 +82,8 @@ export type NarrativeDomainEvent = z.infer<
 export interface NarrativeQueryPort {
   hasFact(factId: FactId): boolean;
   hasClaim(claimId: ClaimId): boolean;
+  coverIdentityMatches(key: string, value: string): boolean;
+  wouldContradictClaim(proposal: ClaimProposal): boolean;
   getPassengerSuspicion(passengerId: PassengerId): number;
   getCityAttention(): number;
 }
