@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { deflateSync } from 'node:zlib';
 
 const EMPTY_FIXTURE = {
   url: 'https://raw.githubusercontent.com/Inochi2D/inochi2d/4975d247f9b946a74d18e0ba9b3e9475eb636efb/examples/empty08.inx',
@@ -49,63 +48,24 @@ function uint32be(value) {
   return bytes;
 }
 
-function crc32(bytes) {
-  let crc = 0xffffffff;
+function createTinyTga() {
+  const header = new Uint8Array(18);
+  const view = new DataView(header.buffer);
 
-  for (const byte of bytes) {
-    crc ^= byte;
+  header[2] = 2;
+  view.setUint16(12, 2, true);
+  view.setUint16(14, 2, true);
+  header[16] = 32;
+  header[17] = 0x28;
 
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc =
-        (crc >>> 1) ^
-        ((crc & 1) !== 0 ? 0xedb88320 : 0);
-    }
-  }
-
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function pngChunk(type, data) {
-  const typeBytes = new TextEncoder().encode(type);
-  const body = concatBytes(typeBytes, data);
-
-  return concatBytes(
-    uint32be(data.byteLength),
-    body,
-    uint32be(crc32(body)),
-  );
-}
-
-function createTinyPng() {
-  const signature = Uint8Array.from([
-    0x89, 0x50, 0x4e, 0x47,
-    0x0d, 0x0a, 0x1a, 0x0a,
-  ]);
-  const ihdr = new Uint8Array(13);
-  const ihdrView = new DataView(ihdr.buffer);
-  ihdrView.setUint32(0, 2, false);
-  ihdrView.setUint32(4, 2, false);
-  ihdr[8] = 8;
-  ihdr[9] = 6;
-
-  const rows = Uint8Array.from([
-    0,
-    255, 96, 64, 255,
-    64, 192, 255, 255,
-    0,
-    255, 208, 96, 255,
-    176, 96, 255, 255,
+  const bgraPixels = Uint8Array.from([
+    64, 96, 255, 255,
+    255, 192, 64, 255,
+    96, 208, 255, 255,
+    255, 96, 176, 255,
   ]);
 
-  return concatBytes(
-    signature,
-    pngChunk('IHDR', ihdr),
-    pngChunk(
-      'IDAT',
-      new Uint8Array(deflateSync(rows)),
-    ),
-    pngChunk('IEND', new Uint8Array()),
-  );
+  return concatBytes(header, bgraPixels);
 }
 
 function parseEmptyPayload(bytes) {
@@ -125,13 +85,12 @@ function parseEmptyPayload(bytes) {
   ).getUint32(0, false);
   const payloadStart = 12;
   const payloadEnd = payloadStart + payloadLength;
-  const payload = JSON.parse(
+
+  return JSON.parse(
     new TextDecoder().decode(
       bytes.subarray(payloadStart, payloadEnd),
     ),
   );
-
-  return payload;
 }
 
 function createVisualPayload(emptyBytes, includeTexture) {
@@ -211,16 +170,16 @@ function createInp1VisualFixture(emptyBytes, includeTexture) {
     );
   }
 
-  const png = createTinyPng();
+  const tga = createTinyTga();
 
   return concatBytes(
     new TextEncoder().encode('TRNSRTS\0'),
     uint32be(payloadBytes.byteLength),
     payloadBytes,
     sectionHeader,
-    uint32be(png.byteLength),
-    Uint8Array.of(0),
-    png,
+    uint32be(tga.byteLength),
+    Uint8Array.of(1),
+    tga,
   );
 }
 
@@ -274,7 +233,7 @@ async function main() {
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
-      `and textured visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
+      `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
   );
 }
