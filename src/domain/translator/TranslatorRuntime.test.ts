@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
+import { createInitialEconomyState } from '../economy/EconomyState';
 import { entityId } from '../ids/EntityId';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
 import {
@@ -92,6 +93,7 @@ describe('TranslatorRuntime', () => {
         rideSession: null,
         socialState: null,
         translatorState: state.exportState(),
+        economyState: createInitialEconomyState(),
       },
       '2026-10-04T11:30:00.000Z',
     );
