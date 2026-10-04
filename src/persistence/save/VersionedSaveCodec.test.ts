@@ -103,7 +103,6 @@ describe('gameSaveCodec', () => {
           rideSession: null,
           socialState: null,
           translatorState: createInitialTranslatorState(),
-          economyState: createInitialEconomyState(),
         },
       }),
     ).toEqual({
