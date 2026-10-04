@@ -14,6 +14,7 @@ It currently registers:
 - passenger catalog;
 - official and underground jobs;
 - translator languages and packs;
+- radio stations, schedules, broadcasts, information hooks, and passenger reactions;
 - narrative story sources;
 - taxi scene definition.
 
@@ -43,6 +44,8 @@ Current checks include:
 - job passenger/location/route references;
 - official/underground job source terms, fare, expenses, and completion hooks;
 - translator language/pack references and compatibility;
+- radio station/language references;
+- radio route/job intel targets and reacting passengers;
 - passenger narrative references;
 - approved Ink externals + real Ink compilation;
 - taxi scene schema;
@@ -71,7 +74,7 @@ Underground jobs can require underground access and carry a risk footprint.
 
 Validation is not maintained against a hand-copied validation fixture.
 
-Babylon consumes `productionContent.taxiScene`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`.
+Babylon consumes `productionContent.taxiScene`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`.
 
 Tests may mutate production-shaped data for negative/focused scenarios, but fixtures never become alternate production truth.
 

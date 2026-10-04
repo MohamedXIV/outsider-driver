@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { describe, expect, it } from 'vitest';
 import { createInitialEconomyState } from '../../domain/economy/EconomyState';
+import { createInitialRadioState } from '../../domain/radio/RadioState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   SaveVersionError,
@@ -14,6 +15,16 @@ import {
 
 const timestamp = '2026-10-04T07:00:00.000Z';
 
+function currentEmptyState() {
+  return {
+    rideSession: null,
+    socialState: null,
+    translatorState: createInitialTranslatorState(),
+    economyState: createInitialEconomyState(),
+    radioState: createInitialRadioState(),
+  };
+}
+
 describe('gameSaveCodec', () => {
   it('round-trips the current production save envelope', () => {
     const initialState = createInitialGameState();
@@ -23,16 +34,11 @@ describe('gameSaveCodec', () => {
     expect(decoded).toEqual({
       schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       savedAt: timestamp,
-      state: {
-        rideSession: null,
-        socialState: null,
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
-      },
+      state: currentEmptyState(),
     });
   });
 
-  it('migrates the v1 empty production state through every version into v5', () => {
+  it('migrates the v1 empty production state through every version into v6', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -42,16 +48,11 @@ describe('gameSaveCodec', () => {
     ).toEqual({
       schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       savedAt: timestamp,
-      state: {
-        rideSession: null,
-        socialState: null,
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
-      },
+      state: currentEmptyState(),
     });
   });
 
-  it('migrates a v2 ride-session state through social, translator, and economy state', () => {
+  it('migrates a v2 ride-session state through later persistent systems', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 2,
@@ -63,16 +64,11 @@ describe('gameSaveCodec', () => {
     ).toEqual({
       schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       savedAt: timestamp,
-      state: {
-        rideSession: null,
-        socialState: null,
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
-      },
+      state: currentEmptyState(),
     });
   });
 
-  it('migrates v3 by adding deterministic empty translator ownership', () => {
+  it('migrates v3 by adding deterministic translator, economy, and radio state', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 3,
@@ -85,16 +81,11 @@ describe('gameSaveCodec', () => {
     ).toEqual({
       schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       savedAt: timestamp,
-      state: {
-        rideSession: null,
-        socialState: null,
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
-      },
+      state: currentEmptyState(),
     });
   });
 
-  it('migrates v4 by adding deterministic empty economy state', () => {
+  it('migrates v4 by adding deterministic economy and radio state', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 4,
@@ -108,25 +99,35 @@ describe('gameSaveCodec', () => {
     ).toEqual({
       schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       savedAt: timestamp,
-      state: {
-        rideSession: null,
-        socialState: null,
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
-      },
+      state: currentEmptyState(),
+    });
+  });
+
+  it('migrates v5 by adding deterministic radio state', () => {
+    expect(
+      gameSaveCodec.decode({
+        schemaVersion: 5,
+        savedAt: timestamp,
+        state: {
+          rideSession: null,
+          socialState: null,
+          translatorState: createInitialTranslatorState(),
+          economyState: createInitialEconomyState(),
+        },
+      }),
+    ).toEqual({
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+      savedAt: timestamp,
+      state: currentEmptyState(),
     });
   });
 
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 6,
+        schemaVersion: 7,
         savedAt: timestamp,
-        state: {
-          rideSession: null,
-          socialState: null,
-          translatorState: createInitialTranslatorState(),
-        },
+        state: currentEmptyState(),
       }),
     ).toThrow(/newer than supported version/);
   });
