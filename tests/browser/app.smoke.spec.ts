@@ -83,8 +83,13 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
   }
 
   if (rawState.status === 'failure') {
+    const probeError =
+      typeof rawState.error === 'string'
+        ? rawState.error
+        : 'unknown error';
+
     throw new Error(
-      `Inochi browser probe failed: ${String(rawState.error ?? 'unknown error')}`,
+      `Inochi browser probe failed: ${probeError}`,
     );
   }
 
