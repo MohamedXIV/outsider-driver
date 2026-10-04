@@ -174,7 +174,7 @@ export class BabylonInochiPassengerRenderer {
 
       const sourceTextureId = command.sourceTextureIds[0];
 
-      if (sourceTextureId === null) {
+      if (sourceTextureId === null || sourceTextureId === undefined) {
         throw new Error(
           `Inochi drawable command ${String(commandIndex)} has no albedo texture in source slot 0.`,
         );
