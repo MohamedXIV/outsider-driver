@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createWorldFixture } from '../../content/world/fixtures/worldFixture';
 import { entityId } from '../ids/EntityId';
 import {
   JobContractSchema,
@@ -6,7 +7,6 @@ import {
   validateJobReferences,
   validateRideReferences,
 } from './JobRideContracts';
-import { worldFixture } from '../../content/world/WorldContracts.test';
 
 const passengerId = entityId('passenger', 'fixture-rider');
 const passengers = new Set([passengerId]);
@@ -31,7 +31,11 @@ const jobFixture = {
 
 describe('JobContract', () => {
   it('uses stable world and passenger references and remains serializable', () => {
-    const job = validateJobReferences(jobFixture, worldFixture, passengers);
+    const job = validateJobReferences(
+      jobFixture,
+      createWorldFixture(),
+      passengers,
+    );
     const roundTripped = JobContractSchema.parse(
       JSON.parse(JSON.stringify(job)) as unknown,
     );
@@ -47,13 +51,13 @@ describe('JobContract', () => {
     };
 
     expect(() =>
-      validateJobReferences(broken, worldFixture, passengers),
+      validateJobReferences(broken, createWorldFixture(), passengers),
     ).toThrow(/endpoints do not match/);
   });
 
   it('rejects an unknown passenger reference', () => {
     expect(() =>
-      validateJobReferences(jobFixture, worldFixture, new Set()),
+      validateJobReferences(jobFixture, createWorldFixture(), new Set()),
     ).toThrow(/Unknown passenger reference/);
   });
 });
@@ -74,7 +78,7 @@ describe('RideContract', () => {
         currentSegmentId: 'route-segment:docks-night-01',
         segmentProgress: 0.4,
       },
-      worldFixture,
+      createWorldFixture(),
       passengers,
     );
 
@@ -101,7 +105,7 @@ describe('RideContract', () => {
           currentSegmentId: 'route-segment:not-on-route',
           segmentProgress: 0.4,
         },
-        worldFixture,
+        createWorldFixture(),
         passengers,
       ),
     ).toThrow(/does not belong to route/);
