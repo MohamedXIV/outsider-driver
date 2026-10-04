@@ -3,9 +3,9 @@ import type {
   FactId,
   PassengerId,
 } from '../../domain/ids/EntityId';
-import {
+import type {
+  ClaimProposal,
   SocialStealthStateStore,
-  type ClaimProposal,
 } from '../../domain/social/SocialStealthState';
 import type {
   NarrativeDomainEvent,
