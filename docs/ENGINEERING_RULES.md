@@ -62,6 +62,8 @@ Prioritize deterministic tests for:
 
 Rendering behavior that cannot be proven in unit tests should receive focused browser/visual verification rather than fake assertions.
 
+Inochi2D integration is a strict adapter boundary: official WASM/ABI details stay inside the Inochi runtime adapter, normalized draw frames stay pointer-free, and the Babylon renderer must fail loudly for draw states/blend/material attachments it cannot represent faithfully. Do not silently approximate unsupported puppet rendering features.
+
 Every production PR must keep the automated quality gate green. Rendering/bootstrap changes must preserve the browser smoke contract unless the contract itself is deliberately revised.
 
 ## 6. Content is data, behavior is code
