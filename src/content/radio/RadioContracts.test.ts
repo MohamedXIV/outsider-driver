@@ -54,13 +54,19 @@ describe('RadioContracts', () => {
 
   it('fails closed on an unknown reacting passenger', () => {
     const content = validateProductionContent(productionContent);
+    const sourceBroadcast = content.radio.broadcasts[0];
+
+    if (sourceBroadcast === undefined) {
+      throw new Error('Expected production radio broadcast.');
+    }
+
     const broken = {
       ...content.radio,
       broadcasts: [
         {
-          ...content.radio.broadcasts[0],
+          ...sourceBroadcast,
           data: {
-            ...content.radio.broadcasts[0].data,
+            ...sourceBroadcast.data,
             passengerReactions: [
               {
                 passengerId: 'passenger:missing-radio-listener',
