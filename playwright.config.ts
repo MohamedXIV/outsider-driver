@@ -2,14 +2,15 @@ import { defineConfig, devices } from '@playwright/test';
 
 const port = 4173;
 const baseURL = `http://127.0.0.1:${port}`;
+const isCi = Boolean(process.env.CI);
 
 export default defineConfig({
   testDir: './tests/browser',
   fullyParallel: false,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? 'line' : 'html',
+  forbidOnly: isCi,
+  retries: isCi ? 1 : 0,
+  ...(isCi ? { workers: 1 } : {}),
+  reporter: isCi ? 'line' : 'html',
   use: {
     baseURL,
     trace: 'retain-on-failure',
@@ -26,7 +27,7 @@ export default defineConfig({
   webServer: {
     command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !isCi,
     timeout: 30_000,
   },
 });
