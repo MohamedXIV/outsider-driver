@@ -31,6 +31,15 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function reportStage(stage: string): void {
+  console.info(`INOCHI_STAGE:${stage}`);
+  Reflect.set(
+    window,
+    '__outsiderDriverInochiProbeStage',
+    stage,
+  );
+}
+
 async function loadFixture(url: string): Promise<ArrayBuffer> {
   const response = await fetch(url);
 
@@ -76,15 +85,22 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
   let renderer: BabylonInochiPassengerRenderer | null = null;
 
   try {
+    reportStage('wasm-create-start');
     bindings = await InochiWasmBindings.create();
+    reportStage('wasm-created');
+
     const runtime = new OfficialInochiRuntimeAdapter(bindings);
 
+    reportStage('puppet-load-start');
     session = await InochiPuppetSession.load(runtime, {
       id: 'inochi2d-upstream-ada-static',
       load: () => loadFixture('/__fixtures__/ada-static.inx'),
     });
 
+    reportStage('puppet-loaded');
+    reportStage('parameters-start');
     const parameters = session.listParameters();
+    reportStage('parameters-loaded');
     const firstParameter = parameters[0];
     let parameterExercised: string | null = null;
 
@@ -96,8 +112,12 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       parameterExercised = firstParameter.name;
     }
 
+    reportStage('frame-start');
     const frame = session.frame(1 / 60);
+    reportStage('frame-built');
+
     const program = compileInochiRenderProgram(frame);
+    reportStage('render-program-built');
     let taxiRenderSucceeded = false;
     let taxiRenderError: string | null = null;
 
@@ -105,11 +125,14 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxi.scene,
       taxi.anchors.passengerSeat,
     );
+    reportStage('renderer-created');
 
     try {
+      reportStage('babylon-render-start');
       renderer.render(frame);
       taxi.scene.render();
       taxiRenderSucceeded = true;
+      reportStage('babylon-render-complete');
     } catch (error) {
       taxiRenderError = errorMessage(error);
     }

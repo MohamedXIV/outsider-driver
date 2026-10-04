@@ -44,31 +44,67 @@ test('production build boots a Babylon game surface without browser errors', asy
 });
 
 test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }) => {
+  let lastStage = 'not-started';
+  let pageCrashed = false;
+
+  page.on('console', (message) => {
+    const text = message.text();
+    const prefix = 'INOCHI_STAGE:';
+
+    if (text.startsWith(prefix)) {
+      lastStage = text.slice(prefix.length);
+    }
+  });
+
+  page.on('crash', () => {
+    pageCrashed = true;
+  });
+
   const response = await page.goto('/?inochiProbe=1', {
     waitUntil: 'networkidle',
   });
 
   expect(response?.ok()).toBe(true);
 
-  await expect
-    .poll(async () =>
-      page.evaluate(() => {
-        const state: unknown = Reflect.get(
-          window,
-          '__outsiderDriverInochiProbe',
-        );
+  const terminalStatus = await expect
+    .poll(async () => {
+      if (pageCrashed) {
+        return 'crashed';
+      }
 
-        if (typeof state !== 'object' || state === null) {
-          return 'pending';
+      try {
+        return await page.evaluate(() => {
+          const state: unknown = Reflect.get(
+            window,
+            '__outsiderDriverInochiProbe',
+          );
+
+          if (typeof state !== 'object' || state === null) {
+            return 'pending';
+          }
+
+          const status: unknown = Reflect.get(state, 'status');
+          return status === 'success' || status === 'failure'
+            ? status
+            : 'pending';
+        });
+      } catch (error) {
+        if (pageCrashed) {
+          return 'crashed';
         }
 
-        const status: unknown = Reflect.get(state, 'status');
-        return status === 'success' || status === 'failure'
-          ? status
-          : 'pending';
-      }),
-    )
-    .toMatch(/^(success|failure)$/);
+        throw error;
+      }
+    })
+    .toMatch(/^(success|failure|crashed)$/);
+
+  void terminalStatus;
+
+  if (pageCrashed) {
+    throw new Error(
+      `Inochi browser target crashed; last reported stage: ${lastStage}`,
+    );
+  }
 
   const rawState: unknown = await page.evaluate(() => {
     const value: unknown = Reflect.get(
@@ -89,7 +125,7 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
         : 'unknown error';
 
     throw new Error(
-      `Inochi browser probe failed: ${probeError}`,
+      `Inochi browser probe failed after ${lastStage}: ${probeError}`,
     );
   }
 
