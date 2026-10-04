@@ -3,7 +3,7 @@ import type {
   TranslatorNarrativeQueryPort,
 } from '../../narrative/contracts/NarrativeBoundary';
 import type { TranslationRequirement } from '../../domain/translator/TranslatorRuntime';
-import { TranslatorRuntime } from '../../domain/translator/TranslatorRuntime';
+import type { TranslatorRuntime } from '../../domain/translator/TranslatorRuntime';
 
 export class TranslatorNarrativeAdapter
   implements TranslatorNarrativeQueryPort
