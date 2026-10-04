@@ -21,22 +21,44 @@ describe('gameSaveCodec', () => {
     expect(decoded).toEqual({
       schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
       savedAt: timestamp,
-      state: {},
+      state: {
+        rideSession: null,
+      },
+    });
+  });
+
+  it('migrates the v1 empty production state into the v2 ride-session slot', () => {
+    expect(
+      gameSaveCodec.decode({
+        schemaVersion: 1,
+        savedAt: timestamp,
+        state: {},
+      }),
+    ).toEqual({
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+      savedAt: timestamp,
+      state: {
+        rideSession: null,
+      },
     });
   });
 
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 2,
+        schemaVersion: 3,
         savedAt: timestamp,
-        state: {},
+        state: {
+          rideSession: null,
+        },
       }),
     ).toThrow(/newer than supported version/);
   });
 
   it('rejects malformed timestamps', () => {
-    expect(() => gameSaveCodec.encode({}, 'today')).toThrow();
+    expect(() =>
+      gameSaveCodec.encode(createInitialGameState(), 'today'),
+    ).toThrow();
   });
 });
 
