@@ -386,10 +386,7 @@ export function rasterizeInochiSoftMasks(
       case 'define-mask': {
         const current = layers.at(-1);
 
-        if (
-          current === undefined ||
-          current.id !== operation.layerId
-        ) {
+        if (current?.id !== operation.layerId) {
           throw new Error(
             'Inochi define-mask operation does not match the active mask layer.',
           );
@@ -439,10 +436,7 @@ export function rasterizeInochiSoftMasks(
       case 'pop-mask': {
         const current = layers.pop();
 
-        if (
-          current === undefined ||
-          current.id !== operation.layerId
-        ) {
+        if (current?.id !== operation.layerId) {
           throw new Error(
             'Inochi pop-mask operation does not match the active layer.',
           );
