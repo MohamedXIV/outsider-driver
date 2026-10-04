@@ -140,7 +140,7 @@ function requireRouteSegment(
 ): void {
   const route = catalog.routes.find((candidate) => candidate.id === routeId);
 
-  if (route === undefined || !route.data.segmentIds.includes(segmentId)) {
+  if (!route?.data.segmentIds.includes(segmentId)) {
     throw new WorkReferenceError(
       `Route segment ${segmentId} does not belong to route ${routeId}.`,
     );
