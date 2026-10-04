@@ -167,7 +167,6 @@ export function advanceRouteProgress(
 
     if (remainingDelta < remainingSegmentMinutes) {
       segmentElapsedMinutes += remainingDelta;
-      remainingDelta = 0;
       break;
     }
 
