@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
 import { PassengerDocumentSchema } from '../../content/passengers/PassengerContracts';
 import { EconomyStateStore } from '../../domain/economy/EconomyState';
+import { entityId } from '../../domain/ids/EntityId';
 import { EconomyRideCompletionAdapter } from './EconomyRideCompletionAdapter';
 import { WorkNetwork } from './WorkNetwork';
 
@@ -23,12 +24,12 @@ describe('EconomyRideCompletionAdapter', () => {
 
     adapter.commit({
       ride: {
-        id: 'ride:adapter-underground',
-        jobId: 'job:docks-underground-clinic',
-        passengerId: 'passenger:underground-clinic-rider',
-        pickupLocationId: 'location:docks-taxi-rank',
-        destinationLocationId: 'location:docks-clinic',
-        routeId: 'route:docks-night',
+        id: entityId('ride', 'adapter-underground'),
+        jobId: entityId('job', 'docks-underground-clinic'),
+        passengerId: entityId('passenger', 'underground-clinic-rider'),
+        pickupLocationId: entityId('location', 'docks-taxi-rank'),
+        destinationLocationId: entityId('location', 'docks-clinic'),
+        routeId: entityId('route', 'docks-night'),
         acceptedAt: {
           day: 1,
           minuteOfDay: 20 * 60,
