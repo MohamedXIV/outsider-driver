@@ -30,10 +30,25 @@ The taxi is the game's primary social space. The player does **not** manually dr
 
 The technical baseline may evolve only through explicit architectural decisions; editor-only state must never become the sole source of truth.
 
+## Development
+
+Use Node 24 when available (`.nvmrc` is provided). Node 22.13+ is also supported.
+
+```bash
+npm install
+npm run check
+npm run dev
+```
+
+`npm run check` is the local quality gate: lint, deterministic tests, typecheck, and production build.
+
+The repository is intentionally code-first. Babylon.js is an adapter behind an application rendering port rather than the owner of game state.
+
 See:
 
 - [Game Design](docs/GAME_DESIGN.md)
 - [Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)
+- [Engineering Rules](docs/ENGINEERING_RULES.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Scope](docs/SCOPE.md)
 - [Agent Instructions](AGENTS.md)

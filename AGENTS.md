@@ -40,10 +40,19 @@ Early development reduces **content quantity**, not the scope or correctness of 
 - Use stable IDs for passengers, routes, districts, locations, language packs, upgrades, jobs, facts, lies, broadcasts, and narrative entries.
 - Save data is versioned and migration-capable from the beginning.
 - No system may assume a fixed maximum number of days, passengers, routes, packs, or upgrades unless documented as an intentional product limit.
+- Follow `docs/ENGINEERING_RULES.md`; do not weaken strict compiler/lint settings to make a change pass.
+- Domain code must remain renderer/UI/narrative-runtime independent.
+- External runtime resources require explicit lifecycle ownership and disposal.
 
 ## Agent-friendly delivery
 
 Every executable issue should aim to leave the repository in a buildable state.
+
+Before claiming completion, run the strongest available form of:
+
+```bash
+npm run check
+```
 
 Prefer:
 
@@ -55,6 +64,14 @@ Prefer:
 - exact acceptance criteria and evidence.
 
 A fixture is acceptable. A parallel demo architecture is not.
+
+## GitHub execution discipline
+
+- Read the current issue, roadmap, `AGENTS.md`, and relevant architecture docs before implementation.
+- Respect `Depends on: #...` declarations even when the Project board cannot express them as native blocked-by relationships.
+- Continue an existing canonical branch/PR for an issue instead of creating competing work.
+- Do not mark an issue complete based on stale or different-head verification.
+- Keep acceptance evidence on the PR/issue when practical.
 
 ## Scope discipline
 
