@@ -145,10 +145,6 @@ describe('production content validation', () => {
   it('rejects duplicate narrative story IDs', () => {
     const first = productionContent.narrativeStories[0];
 
-    if (first === undefined) {
-      throw new Error('Expected canonical narrative story content.');
-    }
-
     const broken = {
       ...productionContent,
       narrativeStories: [
