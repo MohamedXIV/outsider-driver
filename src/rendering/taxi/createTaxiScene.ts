@@ -26,6 +26,7 @@ export interface TaxiSceneHandle {
   readonly scene: Scene;
   readonly worldRoot: TransformNode;
   readonly taxiMotionRoot: TransformNode;
+  readonly cameraMotionRoot: TransformNode;
   readonly interiorRoot: TransformNode;
   readonly camera: FreeCamera;
   readonly anchors: TaxiSceneAnchors;
@@ -63,11 +64,17 @@ export function createTaxiScene(
 
   const worldRoot = new TransformNode('taxi-world-root', scene);
   const taxiMotionRoot = new TransformNode('taxi-motion-root', scene);
+  const cameraMotionRoot = new TransformNode(
+    'taxi-camera-motion-root',
+    scene,
+  );
+  cameraMotionRoot.parent = taxiMotionRoot;
+
   const interiorRoot = new TransformNode('taxi-interior-root', scene);
   interiorRoot.parent = taxiMotionRoot;
 
   const camera = new FreeCamera('taxi-driver-camera', Vector3.Zero(), scene);
-  camera.parent = taxiMotionRoot;
+  camera.parent = cameraMotionRoot;
   applyLocalTransform(camera, definition.camera.transform);
   camera.fov = definition.camera.fovRadians;
   camera.minZ = definition.camera.minZ;
@@ -153,6 +160,7 @@ export function createTaxiScene(
     scene,
     worldRoot,
     taxiMotionRoot,
+    cameraMotionRoot,
     interiorRoot,
     camera,
     anchors,
