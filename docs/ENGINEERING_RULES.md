@@ -80,6 +80,8 @@ Save formats are versioned. Schema changes that affect persisted state require m
 
 Prefer build/validation failures for invalid content, impossible cross-references, malformed narrative contracts, and unsupported states.
 
+Canonical production content is registered through `src/content/production/ProductionContent.ts`. `npm run content:check` must pass for every production PR and is part of `npm run check` / CI. New production catalogs must join this validation path rather than creating their own unverified loader.
+
 Do not silently repair authored data at runtime unless the behavior is an explicitly documented migration/recovery strategy.
 
 ## 9. No hidden editor truth
