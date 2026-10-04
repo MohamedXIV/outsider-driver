@@ -1,13 +1,13 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
-import type { Scene } from '@babylonjs/core/scene';
 import type { RenderingRuntimePort } from '../app/ports/RenderingRuntimePort';
-import { createBootScene } from './scenes/createBootScene';
+import { defaultTaxiSceneDefinition } from '../content/presentation/defaultTaxiScene';
+import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
 
 export class BabylonRenderingRuntime implements RenderingRuntimePort {
   readonly #engine: Engine;
-  readonly #scene: Scene;
+  readonly #scenes: BabylonSceneOrchestrator;
   readonly #renderFrame = (): void => {
-    this.#scene.render();
+    this.#scenes.render();
   };
   readonly #resize = (): void => {
     this.#engine.resize();
@@ -17,7 +17,8 @@ export class BabylonRenderingRuntime implements RenderingRuntimePort {
 
   public constructor(canvas: HTMLCanvasElement) {
     this.#engine = new Engine(canvas, true, { stencil: true }, true);
-    this.#scene = createBootScene(this.#engine);
+    this.#scenes = new BabylonSceneOrchestrator(this.#engine);
+    this.#scenes.showTaxi(defaultTaxiSceneDefinition);
   }
 
   public start(): void {
@@ -41,7 +42,7 @@ export class BabylonRenderingRuntime implements RenderingRuntimePort {
 
     window.removeEventListener('resize', this.#resize);
     this.#engine.stopRenderLoop(this.#renderFrame);
-    this.#scene.dispose();
+    this.#scenes.dispose();
     this.#engine.dispose();
     this.#started = false;
     this.#disposed = true;
