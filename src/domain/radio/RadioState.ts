@@ -20,9 +20,19 @@ export const RadioStateSchema = z
     schemaVersion: z.literal(RADIO_STATE_SCHEMA_VERSION),
     tunedStationId: entityIdSchema('radio-station').nullable(),
     listening: z.boolean(),
+    discoveredStationIds: z.array(entityIdSchema('radio-station')),
     heardBroadcastIds: z.array(entityIdSchema('broadcast')),
   })
   .strict()
+  .refine(
+    (state) =>
+      new Set(state.discoveredStationIds).size ===
+      state.discoveredStationIds.length,
+    {
+      message: 'Discovered radio station IDs must be unique.',
+      path: ['discoveredStationIds'],
+    },
+  )
   .refine(
     (state) =>
       new Set(state.heardBroadcastIds).size ===
@@ -40,6 +50,7 @@ export function createInitialRadioState(): RadioState {
     schemaVersion: RADIO_STATE_SCHEMA_VERSION,
     tunedStationId: null,
     listening: false,
+    discoveredStationIds: [],
     heardBroadcastIds: [],
   });
 }
@@ -73,6 +84,10 @@ export class RadioStateStore {
       this.#requireStation(this.#state.tunedStationId);
     }
 
+    for (const stationId of this.#state.discoveredStationIds) {
+      this.#requireStation(stationId);
+    }
+
     for (const broadcastId of this.#state.heardBroadcastIds) {
       this.#requireBroadcast(broadcastId);
     }
@@ -87,11 +102,37 @@ export class RadioStateStore {
   }
 
   public tune(stationId: RadioStationId): RadioState {
-    this.#requireStation(stationId);
+    const station = this.#requireStation(stationId);
+
+    if (
+      station.data.discoverability === 'hidden' &&
+      !this.#state.discoveredStationIds.includes(stationId)
+    ) {
+      throw new Error(
+        `Hidden radio station has not been discovered: ${stationId}`,
+      );
+    }
+
     this.#state = RadioStateSchema.parse({
       ...this.#state,
       tunedStationId: stationId,
     });
+    return this.exportState();
+  }
+
+  public discoverStation(stationId: RadioStationId): RadioState {
+    this.#requireStation(stationId);
+
+    if (!this.#state.discoveredStationIds.includes(stationId)) {
+      this.#state = RadioStateSchema.parse({
+        ...this.#state,
+        discoveredStationIds: [
+          ...this.#state.discoveredStationIds,
+          stationId,
+        ],
+      });
+    }
+
     return this.exportState();
   }
 
@@ -131,10 +172,16 @@ export class RadioStateStore {
     return this.exportState();
   }
 
-  #requireStation(stationId: RadioStationId): void {
-    if (!this.#catalog.stations.some((station) => station.id === stationId)) {
+  #requireStation(stationId: RadioStationId) {
+    const station = this.#catalog.stations.find(
+      (candidate) => candidate.id === stationId,
+    );
+
+    if (station === undefined) {
       throw new Error(`Unknown radio station: ${stationId}`);
     }
+
+    return station;
   }
 
   #requireBroadcast(broadcastId: BroadcastId): void {
