@@ -23,10 +23,8 @@ import {
   type RouteDocument,
   type WorldContentCatalog,
 } from '../../content/world/WorldContracts';
-import {
-  InkNarrativeRuntime,
-  type NarrativeTurn,
-} from '../../narrative/InkNarrativeRuntime';
+import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import type { NarrativeTurn } from '../../narrative/contracts/NarrativePresentation';
 import type {
   NarrativeEventSink,
   NarrativeQueryPort,

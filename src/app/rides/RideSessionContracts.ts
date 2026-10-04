@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { entityIdSchema } from '../../domain/ids/EntityId';
 import { GameTimeSchema } from '../../domain/time/GameTime';
-import { NarrativeTurnSchema } from '../../narrative/InkNarrativeRuntime';
+import { NarrativeTurnSchema } from '../../narrative/contracts/NarrativePresentation';
 import { RouteFlowStateSchema } from '../travel/RouteFlowController';
 
 const narrativeStoryIdSchema = z

@@ -1,5 +1,4 @@
 import { Story } from 'inkjs';
-import * as z from 'zod';
 import {
   NarrativeDomainEventSchema,
   type NarrativeEventSink,
@@ -10,38 +9,18 @@ import {
   type CompiledInkStory,
 } from './compileInkSource';
 import { entityIdSchema } from '../domain/ids/EntityId';
+import {
+  NarrativeTurnSchema,
+  type NarrativeLine,
+  type NarrativeTurn,
+} from './contracts/NarrativePresentation';
+
+import * as z from 'zod';
 
 const adjustmentSchema = z.number().min(-100).max(100);
 const reasonSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
-
-export const NarrativeChoiceSchema = z
-  .object({
-    index: z.number().int().nonnegative(),
-    text: z.string(),
-    tags: z.array(z.string()),
-  })
-  .strict();
-
-export const NarrativeLineSchema = z
-  .object({
-    text: z.string(),
-    tags: z.array(z.string()),
-  })
-  .strict();
-
-export const NarrativeTurnSchema = z
-  .object({
-    lines: z.array(NarrativeLineSchema),
-    choices: z.array(NarrativeChoiceSchema),
-    ended: z.boolean(),
-  })
-  .strict();
-
-export type NarrativeChoice = z.infer<typeof NarrativeChoiceSchema>;
-export type NarrativeLine = z.infer<typeof NarrativeLineSchema>;
-export type NarrativeTurn = z.infer<typeof NarrativeTurnSchema>;
 
 export class InkNarrativeRuntime {
   readonly #story: Story;
