@@ -6,45 +6,23 @@ Translator packs are first-class progression content. The game does not store a 
 
 The canonical translator catalog contains stable `language:<slug>` and `translator-pack:<slug>` documents.
 
-A pack can author:
-
-- one or more language capabilities;
-- register: general, dialect, slang, or professional;
-- optional vocabulary key for a specific slang/professional corpus;
-- coverage;
-- quality;
-- uncertainty;
-- legality: licensed, restricted, or illegal;
-- credit cost metadata;
-- risk footprint;
-- pack version;
-- compatible translator runtime API range.
+A pack can author language/register/vocabulary capabilities, coverage, quality, uncertainty, legality, credit cost, risk footprint, pack version, and translator runtime compatibility.
 
 Adding a new pack is content. It does not require a new runtime class or special-case pack ID.
 
 ## Runtime state
 
-`TranslatorState` persists:
+`TranslatorState` persists owned and active pack IDs. A pack must be owned before activation, and active packs must be compatible with the current translator runtime API.
 
-- owned pack IDs;
-- active pack IDs.
+Translator state owns capability and activation. It does not own money.
 
-A pack must be owned before activation. Active packs must be compatible with the current translator runtime API.
-
-The translator subsystem does not deduct credits when a pack is granted. Cost is authored here, while actual purchase/payment belongs to the economy owner in #23.
+`TranslatorMarketplace` is the application boundary that connects authored `costCredits` to `EconomyStateStore`: a successful purchase spends credits then grants pack ownership; insufficient funds or duplicate ownership cannot silently grant/charge twice.
 
 ## Comprehension assessment
 
-Narrative/content requests translation through a typed requirement:
+Narrative/content requests translation through language ID, register, optional vocabulary key, and authored difficulty.
 
-- language ID;
-- register;
-- optional vocabulary key;
-- authored difficulty from 0 to 1.
-
-For an exact matching active capability, the runtime derives a deterministic score from authored coverage, quality, uncertainty, and difficulty.
-
-The score maps to four stable levels:
+The runtime deterministically derives comprehension from pack-authored coverage, quality, uncertainty, and difficulty. It exposes:
 
 ```text
 0 none
@@ -53,13 +31,11 @@ The score maps to four stable levels:
 3 full
 ```
 
-Narrative consumes the level rather than pack IDs, which keeps dialogue reusable across different upgrade paths.
-
-The current combination rule chooses the strongest exact matching active capability. Adding more content does not automatically inflate understanding merely because several overlapping packs are installed.
+Narrative consumes the level rather than pack IDs. The current combination rule chooses the strongest exact matching active capability rather than stacking overlapping packs into artificial understanding.
 
 ## Partial comprehension
 
-Partial understanding is an authored narrative outcome, not automatic word scrambling.
+Partial understanding is authored narrative, not automatic word scrambling.
 
 Ink can call:
 
@@ -67,18 +43,14 @@ Ink can call:
 GAME_TRANSLATION_LEVEL(language_id, register, vocabulary_key, difficulty)
 ```
 
-and choose full, partial, gist, or unintelligible prose appropriate to that line.
-
-This keeps writing intentional while making comprehension depend on real persistent translator state.
+and branch into full, partial, gist, or unintelligible prose.
 
 ## Risk integration
 
-`TranslatorRuntime.getActiveRiskSignals()` exposes pack ID, legality, and risk footprint for every active pack.
+`TranslatorRuntime.getActiveRiskSignals()` exposes pack ID, legality, and risk footprint.
 
-The translator subsystem does not itself decide police/customs consequences. Later risk/security systems can consume these generic signals without hard-coded checks for a specific illegal pack.
+The translator subsystem does not itself decide customs/police consequences. Later risk systems consume those generic signals without hard-coded checks for a particular illegal pack.
 
 ## Persistence
 
-Production save v4 adds `translatorState`.
-
-Migration from v3 creates an empty state: no packs are granted and none are active. Ownership and activation round-trip through the same versioned save codec as the rest of the game.
+Translator ownership/activation entered the production save at v4 and remains part of later versions. Migration from v3 grants no packs and activates nothing.

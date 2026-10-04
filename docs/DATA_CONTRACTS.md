@@ -30,40 +30,32 @@ Unknown or malformed fields should fail at authoring/build time unless a schema 
 
 Content references point to stable IDs. The content graph validator establishes shared invariants: IDs are unique, referenced content exists, references may declare the semantic kind they require, and invalid references fail loudly.
 
-Concrete systems project their authored documents into this validation graph so cross-system mistakes are caught before runtime.
+Concrete systems project authored documents into this validation graph so cross-system mistakes are caught before runtime.
 
 ## Save format
 
-Every save is wrapped in a strict envelope. The current state shape is:
+Every save is wrapped in a strict envelope. Current game state is schema v5 and contains:
 
-```json
-{
-  "schemaVersion": 4,
-  "savedAt": "2026-10-04T07:00:00.000Z",
-  "state": {
-    "rideSession": null,
-    "socialState": null,
-    "translatorState": {
-      "schemaVersion": 1,
-      "ownedPackIds": [],
-      "activePackIds": []
-    }
-  }
-}
-```
+- resumable `rideSession`;
+- nullable `socialState`;
+- persistent `translatorState`;
+- persistent `economyState`.
 
-`schemaVersion` is independent from content document versions and from subsystem-local state versions.
+`economyState` stores credits, lifetime earnings/expenses, official standing, underground access, and settled ride IDs so a retry cannot pay the same ride twice.
 
-Production save evolution so far:
+`schemaVersion` is independent from content document versions and subsystem-local state versions.
 
-- v1: foundation envelope with empty game state;
+Production save evolution:
+
+- v1: foundation envelope;
 - v2: resumable passenger `rideSession`;
-- v3: persistent `socialState` containing cover identity, claims, learned facts, passenger suspicion, and city attention;
-- v4: persistent translator ownership/activation state.
+- v3: persistent social-stealth state;
+- v4: translator ownership/activation;
+- v5: economy/work progression state.
 
 The social slot remains nullable because historical saves must not fabricate a cover identity that the player never selected.
 
-The translator migration is different: an empty translator state is safe and deterministic. Migrating v3 -> v4 grants no packs and activates nothing.
+v3 -> v4 creates empty translator ownership. v4 -> v5 creates a deterministic empty economy state: zero credits, zero official standing, zero underground access, and no settled rides.
 
 ## Migration rules
 
@@ -79,7 +71,7 @@ The translator migration is different: an empty translator state is safe and det
 
 Defaults that become persistent truth must be deterministic.
 
-Good examples include an explicit starting credit amount, an empty known-facts set, or empty translator ownership.
+Good examples include empty translator ownership, zero economy progression, or a fixed starting amount when product rules explicitly define one.
 
 Bad examples include random IDs at load time, `Date.now()` inside a migration, or choosing a fallback route based on current catalog order.
 

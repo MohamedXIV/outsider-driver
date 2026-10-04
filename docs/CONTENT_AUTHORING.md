@@ -4,7 +4,7 @@ Outsider Driver is authored from repository-visible files. A proprietary editor 
 
 ## Canonical production manifest
 
-`src/content/production/ProductionContent.ts` is the composition point for authored content that belongs to the production game.
+`src/content/production/ProductionContent.ts` is the composition point for authored production content.
 
 It currently registers:
 
@@ -12,90 +12,79 @@ It currently registers:
 - route motion profiles;
 - route experience/scenery/visual profiles;
 - passenger catalog;
-- job catalog;
+- official and underground jobs;
 - translator languages and packs;
 - narrative story sources;
 - taxi scene definition.
 
-The catalog is intentionally allowed to be small while systems are being built. Small content quantity is not a separate demo architecture: the same manifest, schemas, validators, and runtime boundaries are meant to grow into the complete game.
+Small content quantity is not a separate demo architecture. The same manifest, schemas, validators, and runtime boundaries grow into the complete game.
 
-Do not create a second “prototype”, “sample game”, “vertical slice”, or editor-only content database.
+Do not create a second prototype/sample/editor-only content database.
 
 ## Validation command
-
-Run:
 
 ```bash
 npm run content:check
 ```
 
-The command runs production-content contract tests through the same Vite/Vitest environment that understands repository Ink imports. It is also part of `npm run check`, which is the GitHub CI gate.
-
-A PR with structurally invalid canonical content must fail CI before merge.
+This is part of `npm run check` and GitHub CI. Structurally invalid canonical content must fail before merge.
 
 ## What is validated now
 
-`validateProductionContent` aggregates authoring failures across independent scopes instead of stopping at the first unrelated error.
+`validateProductionContent` aggregates independent authoring failures.
 
 Current checks include:
 
-- strict schema and enum validation;
-- duplicate stable IDs inside catalogs;
-- missing world cross-references;
-- route endpoint/segment/event references;
+- strict schema/enum validation;
+- duplicate/missing stable IDs;
+- world and route cross-references;
 - unreachable route segments/events;
-- exact route-motion coverage;
-- exact route-event/district/scenery experience coverage;
-- invalid diversion route references;
-- duplicate jobs and job passenger/location/route references;
-- translator language and pack IDs;
-- translator pack language references and compatibility ranges;
-- duplicate narrative story IDs;
-- passenger narrative-story references;
-- approved Ink external-function contract;
-- real Ink compilation through `inkjs`;
-- taxi scene definition validation;
+- exact route motion/experience coverage;
+- job passenger/location/route references;
+- official/underground job source terms, fare, expenses, and completion hooks;
+- translator language/pack references and compatibility;
+- passenger narrative references;
+- approved Ink externals + real Ink compilation;
+- taxi scene schema;
 - current save defaults and codec round-trip.
+
+## Job authoring
+
+A job is data, not a hard-coded button.
+
+Every job authors:
+
+- source channel: `official` or `underground`;
+- availability;
+- passenger + route endpoints;
+- fare terms;
+- expense terms;
+- completion progression effects.
+
+Official jobs can require minimum official standing plus arbitrary cover-identity key/value requirements.
+
+Underground jobs can require underground access and carry a risk footprint.
+
+`WorkNetwork` applies those rules to the same production jobs. `PassengerRideOrchestrator.acceptJob` rechecks eligibility so bypassing presentation/UI cannot bypass the work gate.
 
 ## Same content as runtime
 
 Validation is not maintained against a hand-copied validation fixture.
 
-The Babylon production runtime takes its taxi scene from `productionContent.taxiScene`. Translator runtime tests and later composition use `productionContent.translator`. Other gameplay composition should consume the same canonical manifest as those systems are wired into the runtime.
+Babylon consumes `productionContent.taxiScene`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`.
 
-Tests may use fixtures to create malformed variants or focused domain scenarios. Fixtures are test inputs only and must not become alternate production truth.
+Tests may mutate production-shaped data for negative/focused scenarios, but fixtures never become alternate production truth.
 
 ## Adding a new content system
 
-When a production system such as broadcasts, upgrades, or authored jobs lands:
+When broadcasts, upgrades, or other authored systems land:
 
-1. define its strict versioned content schema;
-2. use stable semantic IDs for persistent/cross-system identity;
-3. add its production catalog to `ProductionContent.ts`;
-4. add cross-reference validation to `ProductionContentValidator.ts`;
-5. add negative tests proving bad references/options fail;
-6. expose it to runtime through the production manifest or an adapter derived from it;
+1. define a strict versioned schema;
+2. use stable semantic IDs;
+3. register production content in `ProductionContent.ts`;
+4. add cross-reference validation;
+5. add negative tests;
+6. expose it through the production manifest/application adapter;
 7. keep `npm run content:check` green.
 
-If a new content type cannot be validated from repository-visible files, its authoring architecture is incomplete.
-
-## Error behavior
-
-Production validation fails loudly and reports scopes such as:
-
-```text
-[world] ...
-[passengers] ...
-[translator] ...
-[narrative] ...
-[jobs] ...
-[route-motion] ...
-[route-experience] ...
-[passenger-narrative] ...
-[taxi-scene] ...
-[save-contract] ...
-```
-
-Independent errors are accumulated where possible so agents and humans can fix several authoring mistakes in one pass.
-
-The validator never silently invents missing content or repairs broken references at runtime.
+If a content type cannot be validated from repository-visible files, its authoring architecture is incomplete.
