@@ -4,6 +4,10 @@ import {
   EconomyStateSchema,
   createInitialEconomyState,
 } from '../../domain/economy/EconomyState';
+import {
+  RadioStateSchema,
+  createInitialRadioState,
+} from '../../domain/radio/RadioState';
 import { SocialStealthStateSchema } from '../../domain/social/SocialStealthState';
 import {
   TranslatorStateSchema,
@@ -11,7 +15,7 @@ import {
 } from '../../domain/translator/TranslatorState';
 import { VersionedSaveCodec } from './VersionedSaveCodec';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 5 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 6 as const;
 
 export const GameStateV1Schema = z.object({}).strict();
 
@@ -45,11 +49,21 @@ export const GameStateV5Schema = z
   })
   .strict();
 
-export type GameState = z.infer<typeof GameStateV5Schema>;
+export const GameStateV6Schema = z
+  .object({
+    rideSession: RideSessionSaveSchema.nullable(),
+    socialState: SocialStealthStateSchema.nullable(),
+    translatorState: TranslatorStateSchema,
+    economyState: EconomyStateSchema,
+    radioState: RadioStateSchema,
+  })
+  .strict();
+
+export type GameState = z.infer<typeof GameStateV6Schema>;
 
 export const gameSaveCodec = new VersionedSaveCodec({
   currentVersion: CURRENT_SAVE_SCHEMA_VERSION,
-  currentSchema: GameStateV5Schema,
+  currentSchema: GameStateV6Schema,
   historicalVersions: [
     {
       version: 1,
@@ -66,6 +80,10 @@ export const gameSaveCodec = new VersionedSaveCodec({
     {
       version: 4,
       schema: GameStateV4Schema,
+    },
+    {
+      version: 5,
+      schema: GameStateV5Schema,
     },
   ],
   migrations: [
@@ -116,14 +134,27 @@ export const gameSaveCodec = new VersionedSaveCodec({
         };
       },
     },
+    {
+      fromVersion: 5,
+      toVersion: 6,
+      migrate: (state) => {
+        const v5 = GameStateV5Schema.parse(state);
+
+        return {
+          ...v5,
+          radioState: createInitialRadioState(),
+        };
+      },
+    },
   ],
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV5Schema.parse({
+  return GameStateV6Schema.parse({
     rideSession: null,
     socialState: null,
     translatorState: createInitialTranslatorState(),
     economyState: createInitialEconomyState(),
+    radioState: createInitialRadioState(),
   });
 }
