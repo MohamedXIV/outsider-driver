@@ -77,9 +77,7 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
   let renderer: BabylonInochiPassengerRenderer | null = null;
 
   try {
-    bindings = await InochiWasmBindings.create(
-      '/__fixtures__/inochi2d-debug.wasm',
-    );
+    bindings = await InochiWasmBindings.create();
     const runtime = new OfficialInochiRuntimeAdapter(bindings);
 
     const emptySession = await InochiPuppetSession.load(runtime, {
