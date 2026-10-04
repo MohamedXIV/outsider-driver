@@ -68,11 +68,6 @@ interface InochiWasmExports extends WebAssembly.Exports {
   ): number;
 }
 
-export interface InochiWasmBindingsOptions {
-  readonly initialMemoryPages?: number;
-}
-
-const DEFAULT_INITIAL_MEMORY_PAGES = 2_048;
 const WASM_PAGE_BYTES = 65_536;
 
 function createWasiImports(): WebAssembly.Imports {
@@ -145,20 +140,7 @@ export class InochiWasmBindings
 
   public static async create(
     runtimeUrl = '/vendor/inochi2d/inochi2d.wasm',
-    options: InochiWasmBindingsOptions = {},
   ): Promise<InochiWasmBindings> {
-    const initialMemoryPages =
-      options.initialMemoryPages ?? DEFAULT_INITIAL_MEMORY_PAGES;
-
-    if (
-      !Number.isInteger(initialMemoryPages) ||
-      initialMemoryPages < 256
-    ) {
-      throw new RangeError(
-        'Inochi2D initialMemoryPages must be an integer of at least 256 pages.',
-      );
-    }
-
     const response = requireHttpOk(
       await fetch(runtimeUrl),
       runtimeUrl,
@@ -181,28 +163,9 @@ export class InochiWasmBindings
       );
     }
 
-    const currentMemoryPages =
-      exports.memory.buffer.byteLength / WASM_PAGE_BYTES;
-
-    if (currentMemoryPages < initialMemoryPages) {
-      const pagesToGrow =
-        initialMemoryPages - currentMemoryPages;
-
-      try {
-        exports.memory.grow(pagesToGrow);
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'unknown WebAssembly memory growth error';
-
-        throw new Error(
-          `Failed to grow Inochi2D linear memory from ${String(currentMemoryPages)} to ${String(initialMemoryPages)} pages: ${message}`,
-          { cause: error },
-        );
-      }
-    }
-
+    // Do not pre-grow linear memory here. The official WASM build uses
+    // Numem's walloc hookset, which owns heap growth through
+    // llvm.wasm.memory.grow when an allocation needs more pages.
     return new InochiWasmBindings(exports);
   }
 
