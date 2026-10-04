@@ -23,11 +23,12 @@ describe('gameSaveCodec', () => {
       savedAt: timestamp,
       state: {
         rideSession: null,
+        socialState: null,
       },
     });
   });
 
-  it('migrates the v1 empty production state into the v2 ride-session slot', () => {
+  it('migrates the v1 empty production state through v2 into v3', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -39,6 +40,26 @@ describe('gameSaveCodec', () => {
       savedAt: timestamp,
       state: {
         rideSession: null,
+        socialState: null,
+      },
+    });
+  });
+
+  it('migrates a v2 ride-session state by adding only the social-state slot', () => {
+    expect(
+      gameSaveCodec.decode({
+        schemaVersion: 2,
+        savedAt: timestamp,
+        state: {
+          rideSession: null,
+        },
+      }),
+    ).toEqual({
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+      savedAt: timestamp,
+      state: {
+        rideSession: null,
+        socialState: null,
       },
     });
   });
@@ -46,10 +67,11 @@ describe('gameSaveCodec', () => {
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 3,
+        schemaVersion: 4,
         savedAt: timestamp,
         state: {
           rideSession: null,
+          socialState: null,
         },
       }),
     ).toThrow(/newer than supported version/);
