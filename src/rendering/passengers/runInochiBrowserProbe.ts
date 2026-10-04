@@ -8,6 +8,7 @@ import { InochiWasmBindings } from './InochiWasmBindings';
 import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
 
 export interface InochiBrowserProbeSummary {
+  readonly emptyFixtureLoaded: boolean;
   readonly puppetName: string;
   readonly puppetAuthor: string;
   readonly parameterCount: number;
@@ -31,12 +32,12 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function loadVisualFixture(): Promise<ArrayBuffer> {
-  const response = await fetch('/__fixtures__/ada-static.inx');
+async function loadFixture(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(
-      `Failed to load Inochi visual fixture: HTTP ${String(response.status)}.`,
+      `Failed to load Inochi fixture ${url}: HTTP ${String(response.status)}.`,
     );
   }
 
@@ -78,9 +79,16 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
   try {
     bindings = await InochiWasmBindings.create();
     const runtime = new OfficialInochiRuntimeAdapter(bindings);
+
+    const emptySession = await InochiPuppetSession.load(runtime, {
+      id: 'inochi2d-upstream-empty08',
+      load: () => loadFixture('/__fixtures__/empty08.inx'),
+    });
+    emptySession.dispose();
+
     session = await InochiPuppetSession.load(runtime, {
       id: 'inochi2d-upstream-ada-static',
-      load: loadVisualFixture,
+      load: () => loadFixture('/__fixtures__/ada-static.inx'),
     });
 
     const parameters = session.listParameters();
@@ -114,6 +122,7 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
     }
 
     return {
+      emptyFixtureLoaded: true,
       puppetName: session.name,
       puppetAuthor: session.author,
       parameterCount: parameters.length,
