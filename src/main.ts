@@ -21,3 +21,50 @@ if (import.meta.hot !== undefined) {
     surface.dispose();
   });
 }
+
+
+type InochiProbeState =
+  | { readonly status: 'pending' }
+  | {
+      readonly status: 'success';
+      readonly summary: unknown;
+    }
+  | {
+      readonly status: 'failure';
+      readonly error: string;
+    };
+
+function publishInochiProbeState(state: InochiProbeState): void {
+  Reflect.set(window, '__outsiderDriverInochiProbe', state);
+}
+
+async function runRequestedInochiProbe(): Promise<void> {
+  const requested = new URLSearchParams(window.location.search)
+    .get('inochiProbe');
+
+  if (requested !== '1') {
+    return;
+  }
+
+  publishInochiProbeState({ status: 'pending' });
+
+  try {
+    const { runInochiBrowserProbe } = await import(
+      './rendering/passengers/runInochiBrowserProbe'
+    );
+    const summary = await runInochiBrowserProbe();
+    publishInochiProbeState({
+      status: 'success',
+      summary,
+    });
+  } catch (error) {
+    publishInochiProbeState({
+      status: 'failure',
+      error: error instanceof Error
+        ? error.message
+        : String(error),
+    });
+  }
+}
+
+void runRequestedInochiProbe();

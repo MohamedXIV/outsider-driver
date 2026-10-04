@@ -7,16 +7,18 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run runtime:prepare && vite",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "content:check": "vitest run src/content/validation/ProductionContentValidator.test.ts --reporter=verbose",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:browser": "playwright test",
-    "build": "npm run typecheck && vite build",
-    "check": "npm run lint && npm run content:check && npm run test && npm run build"
+    "test:browser": "npm run fixture:inochi && playwright test",
+    "build": "npm run runtime:prepare && npm run typecheck && vite build",
+    "check": "npm run lint && npm run content:check && npm run test && npm run build",
+    "runtime:prepare": "node scripts/prepare-inochi-runtime.mjs",
+    "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",
