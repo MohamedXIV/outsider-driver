@@ -16,22 +16,32 @@ const reasonSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
 
-export interface NarrativeChoice {
-  readonly index: number;
-  readonly text: string;
-  readonly tags: readonly string[];
-}
+export const NarrativeChoiceSchema = z
+  .object({
+    index: z.number().int().nonnegative(),
+    text: z.string(),
+    tags: z.array(z.string()),
+  })
+  .strict();
 
-export interface NarrativeLine {
-  readonly text: string;
-  readonly tags: readonly string[];
-}
+export const NarrativeLineSchema = z
+  .object({
+    text: z.string(),
+    tags: z.array(z.string()),
+  })
+  .strict();
 
-export interface NarrativeTurn {
-  readonly lines: readonly NarrativeLine[];
-  readonly choices: readonly NarrativeChoice[];
-  readonly ended: boolean;
-}
+export const NarrativeTurnSchema = z
+  .object({
+    lines: z.array(NarrativeLineSchema),
+    choices: z.array(NarrativeChoiceSchema),
+    ended: z.boolean(),
+  })
+  .strict();
+
+export type NarrativeChoice = z.infer<typeof NarrativeChoiceSchema>;
+export type NarrativeLine = z.infer<typeof NarrativeLineSchema>;
+export type NarrativeTurn = z.infer<typeof NarrativeTurnSchema>;
 
 export class InkNarrativeRuntime {
   readonly #story: Story;
@@ -87,11 +97,11 @@ export class InkNarrativeRuntime {
       tags: [...(choice.tags ?? [])],
     }));
 
-    return {
+    return NarrativeTurnSchema.parse({
       lines,
       choices,
       ended: choices.length === 0,
-    };
+    });
   }
 
   public choose(choiceIndex: number): NarrativeTurn {
@@ -101,12 +111,25 @@ export class InkNarrativeRuntime {
       choiceIndex >= this.#story.currentChoices.length
     ) {
       throw new RangeError(
-        'Narrative choice index is not currently available: ' + String(choiceIndex),
+        'Narrative choice index is not currently available: ' +
+          String(choiceIndex),
       );
     }
 
     this.#story.ChooseChoiceIndex(choiceIndex);
     return this.continueUntilChoiceOrEnd();
+  }
+
+  public serializeState(): string {
+    return this.#story.state.ToJson();
+  }
+
+  public restoreState(serializedState: string): void {
+    if (serializedState.length === 0) {
+      throw new Error('Narrative state JSON cannot be empty.');
+    }
+
+    this.#story.state.LoadJson(serializedState);
   }
 
   #bindGameBoundary(): void {
