@@ -47,16 +47,34 @@ export type PassengerLightingContext = z.infer<
   typeof PassengerLightingContextSchema
 >;
 
-export interface PassengerLightingState {
-  readonly ambientColor: readonly [number, number, number];
-  readonly ambientIntensity: number;
-  readonly keyColor: readonly [number, number, number];
-  readonly keyIntensity: number;
-  readonly keyDirection: readonly [number, number, number];
-  readonly accentColor: readonly [number, number, number];
-  readonly accentIntensity: number;
-  readonly accentDirection: readonly [number, number, number];
-}
+export const PassengerLightingStateSchema = z
+  .object({
+    ambientColor: colorSchema,
+    ambientIntensity: z.number().min(0),
+    keyColor: colorSchema,
+    keyIntensity: z.number().min(0),
+    keyDirection: directionSchema,
+    accentColor: colorSchema,
+    accentIntensity: z.number().min(0),
+    accentDirection: directionSchema,
+  })
+  .strict();
+
+export type PassengerLightingState = z.infer<
+  typeof PassengerLightingStateSchema
+>;
+
+export const NEUTRAL_PASSENGER_LIGHTING: PassengerLightingState =
+  PassengerLightingStateSchema.parse({
+    ambientColor: [1, 1, 1],
+    ambientIntensity: 1,
+    keyColor: [0, 0, 0],
+    keyIntensity: 0,
+    keyDirection: [0, 0, 1],
+    accentColor: [0, 0, 0],
+    accentIntensity: 0,
+    accentDirection: [0, 0, 1],
+  });
 
 export interface PassengerLightingSink {
   setLighting(state: PassengerLightingState): void;
@@ -171,7 +189,7 @@ export function resolvePassengerLighting(
   const visibility = 1 - context.darkness;
   const accents = aggregateAccents(context.accents);
 
-  return {
+  return PassengerLightingStateSchema.parse({
     ambientColor: colorTuple(
       taxi.ambientLight.diffuse.r,
       taxi.ambientLight.diffuse.g,
@@ -189,7 +207,7 @@ export function resolvePassengerLighting(
     keyDirection:
       passengerLocalCabinDirection(taxi),
     ...accents,
-  };
+  });
 }
 
 export class PassengerLightingBridge {
