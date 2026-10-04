@@ -88,6 +88,10 @@ export const productionContent = {
       },
     ],
   },
+  passengerPerformance: {
+    schemaVersion: 1,
+    profiles: [],
+  },
   jobs: [
     {
       id: 'job:docks-official-clinic',
