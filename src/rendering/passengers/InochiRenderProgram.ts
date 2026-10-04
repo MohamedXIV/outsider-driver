@@ -80,7 +80,7 @@ export function compileInochiRenderProgram(
   let maximumMaskDepth = 0;
   let maximumCompositeDepth = 0;
 
-  frame.commands.forEach((command, commandIndex) => {
+  for (const [commandIndex, command] of frame.commands.entries()) {
     switch (command.state) {
       case 'normal':
         operations.push({
@@ -90,14 +90,11 @@ export function compileInochiRenderProgram(
           activeMaskLayerIds: [...activeMasks],
           compositeDepth,
         });
-        return;
+        continue;
 
       case 'define-mask': {
-        if (awaitingCompositeBlit) {
-          // Current Inochi docs explicitly allow masks to be prepared
-          // between compositeEnd and compositeBlit.
-        }
-
+        // Inochi explicitly permits mask definitions between a
+        // composite-end and its following composite-blit.
         if (pendingMaskLayerId === null) {
           pendingMaskLayerId = nextMaskLayerId;
           nextMaskLayerId += 1;
@@ -111,7 +108,7 @@ export function compileInochiRenderProgram(
           parentMaskLayerIds: [...activeMasks],
           compositeDepth,
         });
-        return;
+        continue;
       }
 
       case 'push-mask':
@@ -135,7 +132,7 @@ export function compileInochiRenderProgram(
           activeMasks.length,
         );
         pendingMaskLayerId = null;
-        return;
+        continue;
 
       case 'pop-mask': {
         requireStateOnlyCommand(command, command.state);
@@ -152,7 +149,7 @@ export function compileInochiRenderProgram(
           layerId,
           compositeDepth,
         });
-        return;
+        continue;
       }
 
       case 'composite-begin':
@@ -173,7 +170,7 @@ export function compileInochiRenderProgram(
           kind: 'composite-begin',
           depth: compositeDepth,
         });
-        return;
+        continue;
 
       case 'composite-end':
         requireStateOnlyCommand(command, command.state);
@@ -190,7 +187,7 @@ export function compileInochiRenderProgram(
         });
         compositeDepth -= 1;
         awaitingCompositeBlit = true;
-        return;
+        continue;
 
       case 'composite-blit':
         if (!awaitingCompositeBlit) {
@@ -207,9 +204,9 @@ export function compileInochiRenderProgram(
           targetCompositeDepth: compositeDepth,
         });
         awaitingCompositeBlit = false;
-        return;
+        continue;
     }
-  });
+  }
 
   if (pendingMaskLayerId !== null) {
     throw new Error(

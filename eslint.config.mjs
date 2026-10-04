@@ -38,5 +38,15 @@ export default tseslint.config(
   {
     files: ['**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      globals: {
+        process: 'readonly',
+        fetch: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        URL: 'readonly',
+      },
+    },
   },
 );
