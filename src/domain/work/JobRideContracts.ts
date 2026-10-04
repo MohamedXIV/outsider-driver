@@ -6,6 +6,10 @@ import type {
 } from '../ids/EntityId';
 import { entityIdSchema } from '../ids/EntityId';
 import {
+  ClaimValueSchema,
+  SocialKeySchema,
+} from '../social/SocialStealthState';
+import {
   GameTimeSchema,
   GameTimeWindowSchema,
   compareGameTime,
@@ -17,6 +21,69 @@ import {
 
 export const PassengerReferenceSchema = entityIdSchema('passenger');
 
+const boundedProgressSchema = z.number().int().min(0).max(100);
+const creditAmountSchema = z.number().int().nonnegative();
+
+export const WorkIdentityRequirementSchema = z
+  .object({
+    key: SocialKeySchema,
+    value: ClaimValueSchema,
+  })
+  .strict();
+
+const OfficialJobSourceSchema = z
+  .object({
+    kind: z.literal('official'),
+    minimumOfficialStanding: boundedProgressSchema,
+    requiredCoverAttributes: z.array(WorkIdentityRequirementSchema),
+  })
+  .strict()
+  .refine(
+    (source) =>
+      new Set(
+        source.requiredCoverAttributes.map((requirement) => requirement.key),
+      ).size === source.requiredCoverAttributes.length,
+    {
+      message: 'Official identity requirement keys must be unique.',
+      path: ['requiredCoverAttributes'],
+    },
+  );
+
+const UndergroundJobSourceSchema = z
+  .object({
+    kind: z.literal('underground'),
+    minimumUndergroundAccess: boundedProgressSchema,
+    riskFootprint: z.number().min(0).max(100),
+  })
+  .strict();
+
+export const JobSourceSchema = z.discriminatedUnion('kind', [
+  OfficialJobSourceSchema,
+  UndergroundJobSourceSchema,
+]);
+
+export const FareTermsSchema = z
+  .object({
+    baseCredits: creditAmountSchema,
+    perMinuteCredits: creditAmountSchema,
+    completionBonusCredits: creditAmountSchema,
+  })
+  .strict();
+
+export const ExpenseTermsSchema = z
+  .object({
+    dispatchFeeCredits: creditAmountSchema,
+    operatingCreditsPerMinute: creditAmountSchema,
+  })
+  .strict();
+
+export const WorkCompletionEffectsSchema = z
+  .object({
+    officialStandingDelta: z.number().int().min(-100).max(100),
+    undergroundAccessDelta: z.number().int().min(-100).max(100),
+  })
+  .strict();
+
 export const JobContractSchema = z
   .object({
     id: entityIdSchema('job'),
@@ -25,10 +92,104 @@ export const JobContractSchema = z
     destinationLocationId: entityIdSchema('location'),
     routeId: entityIdSchema('route'),
     availability: GameTimeWindowSchema,
+    source: JobSourceSchema,
+    fare: FareTermsSchema,
+    expenses: ExpenseTermsSchema,
+    completionEffects: WorkCompletionEffectsSchema,
   })
   .strict();
 
 export type JobContract = z.infer<typeof JobContractSchema>;
+export type WorkIdentityRequirement = z.infer<
+  typeof WorkIdentityRequirementSchema
+>;
+
+export interface WorkEligibilityContext {
+  readonly officialStanding: number;
+  readonly undergroundAccess: number;
+  coverIdentityMatches(key: string, value: string): boolean;
+}
+
+export interface WorkEligibilityResult {
+  readonly eligible: boolean;
+  readonly reasons: readonly string[];
+}
+
+export interface UndergroundJobRiskSignal {
+  readonly jobId: JobContract['id'];
+  readonly source: 'underground';
+  readonly riskFootprint: number;
+}
+
+export function evaluateJobEligibility(
+  jobInput: unknown,
+  context: WorkEligibilityContext,
+): WorkEligibilityResult {
+  const job = JobContractSchema.parse(jobInput);
+  const reasons: string[] = [];
+
+  if (job.source.kind === 'official') {
+    if (
+      context.officialStanding <
+      job.source.minimumOfficialStanding
+    ) {
+      reasons.push('official-standing');
+    }
+
+    for (const requirement of job.source.requiredCoverAttributes) {
+      if (
+        !context.coverIdentityMatches(
+          requirement.key,
+          requirement.value,
+        )
+      ) {
+        reasons.push(`cover:${requirement.key}`);
+      }
+    }
+  } else if (
+    context.undergroundAccess <
+    job.source.minimumUndergroundAccess
+  ) {
+    reasons.push('underground-access');
+  }
+
+  return {
+    eligible: reasons.length === 0,
+    reasons,
+  };
+}
+
+export function requireJobEligibility(
+  jobInput: unknown,
+  context: WorkEligibilityContext,
+): JobContract {
+  const job = JobContractSchema.parse(jobInput);
+  const eligibility = evaluateJobEligibility(job, context);
+
+  if (!eligibility.eligible) {
+    throw new Error(
+      `Job ${job.id} is not eligible: ${eligibility.reasons.join(', ')}`,
+    );
+  }
+
+  return job;
+}
+
+export function getUndergroundJobRiskSignal(
+  jobInput: unknown,
+): UndergroundJobRiskSignal | null {
+  const job = JobContractSchema.parse(jobInput);
+
+  if (job.source.kind !== 'underground') {
+    return null;
+  }
+
+  return {
+    jobId: job.id,
+    source: 'underground',
+    riskFootprint: job.source.riskFootprint,
+  };
+}
 
 const RideBaseSchema = z
   .object({
