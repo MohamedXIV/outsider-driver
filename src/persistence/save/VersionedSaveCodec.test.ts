@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { describe, expect, it } from 'vitest';
+import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   SaveVersionError,
   VersionedSaveCodec,
@@ -24,11 +25,12 @@ describe('gameSaveCodec', () => {
       state: {
         rideSession: null,
         socialState: null,
+        translatorState: createInitialTranslatorState(),
       },
     });
   });
 
-  it('migrates the v1 empty production state through v2 into v3', () => {
+  it('migrates the v1 empty production state through every version into v4', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -41,11 +43,12 @@ describe('gameSaveCodec', () => {
       state: {
         rideSession: null,
         socialState: null,
+        translatorState: createInitialTranslatorState(),
       },
     });
   });
 
-  it('migrates a v2 ride-session state by adding only the social-state slot', () => {
+  it('migrates a v2 ride-session state through social state into translator state', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 2,
@@ -60,6 +63,28 @@ describe('gameSaveCodec', () => {
       state: {
         rideSession: null,
         socialState: null,
+        translatorState: createInitialTranslatorState(),
+      },
+    });
+  });
+
+  it('migrates v3 by adding deterministic empty translator ownership', () => {
+    expect(
+      gameSaveCodec.decode({
+        schemaVersion: 3,
+        savedAt: timestamp,
+        state: {
+          rideSession: null,
+          socialState: null,
+        },
+      }),
+    ).toEqual({
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+      savedAt: timestamp,
+      state: {
+        rideSession: null,
+        socialState: null,
+        translatorState: createInitialTranslatorState(),
       },
     });
   });
@@ -67,11 +92,12 @@ describe('gameSaveCodec', () => {
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 4,
+        schemaVersion: 5,
         savedAt: timestamp,
         state: {
           rideSession: null,
           socialState: null,
+          translatorState: createInitialTranslatorState(),
         },
       }),
     ).toThrow(/newer than supported version/);
