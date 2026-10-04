@@ -207,12 +207,24 @@ function rasterizeTriangle(
   bInput: InochiVertex,
   cInput: InochiVertex,
 ): void {
-  let a = aInput;
+  const a = aInput;
   let b = bInput;
   let c = cInput;
-  let [ax, ay] = maskPixelCoordinate(a, bounds, resolution);
-  let [bx, by] = maskPixelCoordinate(b, bounds, resolution);
-  let [cx, cy] = maskPixelCoordinate(c, bounds, resolution);
+  const [ax, ay] = maskPixelCoordinate(
+    a,
+    bounds,
+    resolution,
+  );
+  let [bx, by] = maskPixelCoordinate(
+    b,
+    bounds,
+    resolution,
+  );
+  let [cx, cy] = maskPixelCoordinate(
+    c,
+    bounds,
+    resolution,
+  );
   let area = edgeValue(ax, ay, bx, by, cx, cy);
 
   if (Math.abs(area) <= EPSILON) {
