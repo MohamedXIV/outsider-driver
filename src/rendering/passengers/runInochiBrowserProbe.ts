@@ -8,7 +8,6 @@ import { InochiWasmBindings } from './InochiWasmBindings';
 import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
 
 export interface InochiBrowserProbeSummary {
-  readonly emptyFixtureLoaded: boolean;
   readonly puppetName: string;
   readonly puppetAuthor: string;
   readonly parameterCount: number;
@@ -80,12 +79,6 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
     bindings = await InochiWasmBindings.create();
     const runtime = new OfficialInochiRuntimeAdapter(bindings);
 
-    const emptySession = await InochiPuppetSession.load(runtime, {
-      id: 'inochi2d-upstream-empty08',
-      load: () => loadFixture('/__fixtures__/empty08.inx'),
-    });
-    emptySession.dispose();
-
     session = await InochiPuppetSession.load(runtime, {
       id: 'inochi2d-upstream-ada-static',
       load: () => loadFixture('/__fixtures__/ada-static.inx'),
@@ -122,7 +115,6 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
     }
 
     return {
-      emptyFixtureLoaded: true,
       puppetName: session.name,
       puppetAuthor: session.author,
       parameterCount: parameters.length,
