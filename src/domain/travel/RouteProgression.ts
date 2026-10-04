@@ -17,7 +17,6 @@ const TravellingRouteProgressSchema = z
     routeId: entityIdSchema('route'),
     currentSegmentId: entityIdSchema('route-segment'),
     segmentElapsedMinutes: z.number().min(0),
-    routeElapsedMinutes: z.number().min(0),
   })
   .strict();
 
@@ -25,7 +24,6 @@ const ArrivedRouteProgressSchema = z
   .object({
     status: z.literal('arrived'),
     routeId: entityIdSchema('route'),
-    routeElapsedMinutes: z.number().min(0),
   })
   .strict();
 
@@ -40,6 +38,8 @@ export interface RouteProgressSnapshot {
   readonly state: RouteProgressState;
   readonly segmentProgress: number;
   readonly routeProgress: number;
+  readonly routeElapsedMinutes: number;
+  readonly routeDurationMinutes: number;
 }
 
 function requireRoute(
@@ -81,6 +81,35 @@ function routeDurationMinutes(
   );
 }
 
+function requireSegmentIndex(
+  route: RouteDocument,
+  segmentId: RouteSegmentId,
+): number {
+  const index = route.data.segmentIds.indexOf(segmentId);
+
+  if (index < 0) {
+    throw new Error(
+      `Route segment ${segmentId} does not belong to route ${route.id}.`,
+    );
+  }
+
+  return index;
+}
+
+function elapsedBeforeSegment(
+  route: RouteDocument,
+  segmentIndex: number,
+  catalog: WorldContentCatalog,
+): number {
+  return route.data.segmentIds
+    .slice(0, segmentIndex)
+    .reduce(
+      (total, segmentId) =>
+        total + requireSegment(segmentId, catalog).data.durationMinutes,
+      0,
+    );
+}
+
 export function createRouteProgress(
   routeId: RouteId,
   worldInput: unknown,
@@ -98,7 +127,6 @@ export function createRouteProgress(
     routeId,
     currentSegmentId: firstSegmentId,
     segmentElapsedMinutes: 0,
-    routeElapsedMinutes: 0,
   };
 }
 
@@ -120,9 +148,17 @@ export function advanceRouteProgress(
   const catalog = validateWorldContentCatalog(worldInput);
   const route = requireRoute(state.routeId, catalog);
   let currentSegmentId = state.currentSegmentId;
+  let currentIndex = requireSegmentIndex(route, currentSegmentId);
   let segmentElapsedMinutes = state.segmentElapsedMinutes;
-  let routeElapsedMinutes = state.routeElapsedMinutes;
   let remainingDelta = deltaGameMinutes;
+
+  const initialSegment = requireSegment(currentSegmentId, catalog);
+
+  if (segmentElapsedMinutes > initialSegment.data.durationMinutes) {
+    throw new Error(
+      'Route progress cannot exceed the authored segment duration.',
+    );
+  }
 
   while (remainingDelta > 0) {
     const segment = requireSegment(currentSegmentId, catalog);
@@ -131,25 +167,21 @@ export function advanceRouteProgress(
 
     if (remainingDelta < remainingSegmentMinutes) {
       segmentElapsedMinutes += remainingDelta;
-      routeElapsedMinutes += remainingDelta;
       remainingDelta = 0;
       break;
     }
 
-    routeElapsedMinutes += remainingSegmentMinutes;
     remainingDelta -= remainingSegmentMinutes;
-
-    const currentIndex = route.data.segmentIds.indexOf(currentSegmentId);
     const nextSegmentId = route.data.segmentIds[currentIndex + 1];
 
-    if (currentIndex < 0 || nextSegmentId === undefined) {
+    if (nextSegmentId === undefined) {
       return {
         status: 'arrived',
         routeId: state.routeId,
-        routeElapsedMinutes,
       };
     }
 
+    currentIndex += 1;
     currentSegmentId = nextSegmentId;
     segmentElapsedMinutes = 0;
   }
@@ -159,7 +191,6 @@ export function advanceRouteProgress(
     routeId: state.routeId,
     currentSegmentId,
     segmentElapsedMinutes,
-    routeElapsedMinutes,
   };
 }
 
@@ -177,16 +208,34 @@ export function getRouteProgressSnapshot(
       state,
       segmentProgress: 1,
       routeProgress: 1,
+      routeElapsedMinutes: totalDuration,
+      routeDurationMinutes: totalDuration,
     };
   }
 
+  const segmentIndex = requireSegmentIndex(
+    route,
+    state.currentSegmentId,
+  );
   const segment = requireSegment(state.currentSegmentId, catalog);
+
+  if (state.segmentElapsedMinutes > segment.data.durationMinutes) {
+    throw new Error(
+      'Route progress cannot exceed the authored segment duration.',
+    );
+  }
+
+  const routeElapsedMinutes =
+    elapsedBeforeSegment(route, segmentIndex, catalog) +
+    state.segmentElapsedMinutes;
 
   return {
     state,
     segmentProgress:
       state.segmentElapsedMinutes / segment.data.durationMinutes,
     routeProgress:
-      totalDuration === 0 ? 1 : state.routeElapsedMinutes / totalDuration,
+      totalDuration === 0 ? 1 : routeElapsedMinutes / totalDuration,
+    routeElapsedMinutes,
+    routeDurationMinutes: totalDuration,
   };
 }

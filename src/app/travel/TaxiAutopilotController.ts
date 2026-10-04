@@ -1,6 +1,6 @@
 import type { RouteId, RouteSegmentId } from '../../domain/ids/EntityId';
 import {
-  RouteMotionCatalogSchema,
+  RouteMotionSampleSchema,
   sampleRouteMotion,
   validateRouteMotionCatalog,
   type RouteMotionCatalog,
@@ -127,7 +127,7 @@ export class TaxiAutopilotController {
 
   #sampleMotion(route: RouteProgressSnapshot): RouteMotionSample {
     if (route.state.status === 'arrived') {
-      return RouteMotionCatalogSchema.shape.profiles.element.shape.samples.element.parse({
+      return RouteMotionSampleSchema.parse({
         progress: 1,
         targetSpeedMps: 0,
         curvature: 0,
