@@ -578,6 +578,23 @@ export class InochiWasmBindings
     return dimensions;
   }
 
+  #getCountPointer(): number {
+    if (this.#countPointer !== 0) {
+      return this.#countPointer;
+    }
+
+    const pointer = this.#exports.nu_realloc(0, 128);
+
+    if (pointer === 0) {
+      throw new Error(
+        'Inochi2D WASM failed to allocate the 128-byte query scratchpad.',
+      );
+    }
+
+    this.#countPointer = pointer;
+    return pointer;
+  }
+
   #readCount(): number {
     return new DataView(
       this.#exports.memory.buffer,
