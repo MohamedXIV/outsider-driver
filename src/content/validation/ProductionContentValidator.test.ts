@@ -17,6 +17,8 @@ describe('production content validation', () => {
     ]);
     expect(validated.routeMotion.profiles).toHaveLength(1);
     expect(validated.routeExperience.segmentScenery).toHaveLength(1);
+    expect(validated.translator.languages).toHaveLength(1);
+    expect(validated.translator.packs).toHaveLength(2);
   });
 
   it('rejects a passenger that references a missing narrative story', () => {
@@ -69,6 +71,33 @@ describe('production content validation', () => {
 
     expect(() => validateProductionContent(broken)).toThrow(
       /Unknown passenger reference: passenger:nobody/,
+    );
+  });
+
+  it('rejects translator packs that reference missing languages', () => {
+    const broken = {
+      ...productionContent,
+      translator: {
+        ...productionContent.translator,
+        packs: [
+          {
+            ...productionContent.translator.packs[0],
+            data: {
+              ...productionContent.translator.packs[0].data,
+              capabilities: [
+                {
+                  ...productionContent.translator.packs[0].data.capabilities[0],
+                  languageId: 'language:missing',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+
+    expect(() => validateProductionContent(broken)).toThrow(
+      /translator-pack:civic-basic-v1 references missing content language:missing/,
     );
   });
 

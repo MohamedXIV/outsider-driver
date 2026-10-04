@@ -20,6 +20,10 @@ import {
   type WorldContentCatalog,
 } from '../world/WorldContracts';
 import {
+  validateTranslatorCatalog,
+  type TranslatorCatalog,
+} from '../translator/TranslatorContracts';
+import {
   JobContractSchema,
   validateJobReferences,
   type JobContract,
@@ -51,6 +55,7 @@ export interface ProductionContentBundleInput {
   readonly jobs: readonly unknown[];
   readonly routeMotion: unknown;
   readonly routeExperience: unknown;
+  readonly translator: unknown;
   readonly narrativeStories: readonly unknown[];
   readonly taxiScene: unknown;
 }
@@ -86,6 +91,7 @@ export interface ValidatedProductionContent {
   readonly jobs: readonly JobContract[];
   readonly routeMotion: RouteMotionCatalog;
   readonly routeExperience: RouteExperienceCatalog;
+  readonly translator: TranslatorCatalog;
   readonly narrativeStories: readonly ValidatedNarrativeStory[];
   readonly taxiScene: TaxiSceneDefinition;
 }
@@ -206,6 +212,7 @@ export function validateProductionContent(
   let jobs: readonly JobContract[] | undefined;
   let routeMotion: RouteMotionCatalog | undefined;
   let routeExperience: RouteExperienceCatalog | undefined;
+  let translator: TranslatorCatalog | undefined;
   let narrativeStories: readonly ValidatedNarrativeStory[] | undefined;
   let taxiScene: TaxiSceneDefinition | undefined;
 
@@ -220,6 +227,12 @@ export function validateProductionContent(
     passengers = validatePassengerCatalog(input.passengers);
   } catch (error: unknown) {
     addIssue(issues, 'passengers', error);
+  }
+
+  try {
+    translator = validateTranslatorCatalog(input.translator);
+  } catch (error: unknown) {
+    addIssue(issues, 'translator', error);
   }
 
   try {
@@ -291,6 +304,7 @@ export function validateProductionContent(
     jobs === undefined ||
     routeMotion === undefined ||
     routeExperience === undefined ||
+    translator === undefined ||
     narrativeStories === undefined ||
     taxiScene === undefined
   ) {
@@ -305,6 +319,7 @@ export function validateProductionContent(
     jobs,
     routeMotion,
     routeExperience,
+    translator,
     narrativeStories,
     taxiScene,
   };
