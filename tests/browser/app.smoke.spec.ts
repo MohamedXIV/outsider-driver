@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 test('production build boots a Babylon game surface without browser errors', async ({ page }) => {
   const browserErrors: string[] = [];
 
@@ -39,32 +43,6 @@ test('production build boots a Babylon game surface without browser errors', asy
   expect(browserErrors).toEqual([]);
 });
 
-
-interface InochiProbeSummary {
-  readonly puppetName: string;
-  readonly parameterCount: number;
-  readonly parameterExercised: string | null;
-  readonly vertexCount: number;
-  readonly indexCount: number;
-  readonly textureCount: number;
-  readonly commandCount: number;
-  readonly drawStates: readonly string[];
-  readonly blendModes: readonly string[];
-  readonly maskLayerCount: number;
-  readonly maximumMaskDepth: number;
-  readonly maximumCompositeDepth: number;
-  readonly taxiPassengerSeatAnchor: string;
-  readonly taxiRenderAttempted: boolean;
-  readonly taxiRenderSucceeded: boolean;
-  readonly taxiRenderError: string | null;
-}
-
-interface InochiProbeState {
-  readonly status: 'pending' | 'success' | 'failure';
-  readonly summary?: InochiProbeSummary;
-  readonly error?: string;
-}
-
 test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }) => {
   const response = await page.goto('/?inochiProbe=1', {
     waitUntil: 'networkidle',
@@ -75,7 +53,7 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
   await expect
     .poll(async () =>
       page.evaluate(() => {
-        const state = Reflect.get(
+        const state: unknown = Reflect.get(
           window,
           '__outsiderDriverInochiProbe',
         );
@@ -84,7 +62,7 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
           return 'missing';
         }
 
-        const status = Reflect.get(state, 'status');
+        const status: unknown = Reflect.get(state, 'status');
         return typeof status === 'string'
           ? status
           : 'invalid';
@@ -92,16 +70,24 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
     )
     .toBe('success');
 
-  const state = await page.evaluate(() =>
-    Reflect.get(window, '__outsiderDriverInochiProbe'),
-  ) as InochiProbeState;
+  const rawState: unknown = await page.evaluate(() => {
+    const value: unknown = Reflect.get(
+      window,
+      '__outsiderDriverInochiProbe',
+    );
+    return value;
+  });
 
-  expect(state.status).toBe('success');
-  expect(state.error).toBeUndefined();
+  if (!isRecord(rawState)) {
+    throw new Error('Inochi browser probe did not publish an object state.');
+  }
 
-  const summary = state.summary;
+  expect(rawState.status).toBe('success');
+  expect(rawState.error).toBeUndefined();
 
-  if (summary === undefined) {
+  const summary = rawState.summary;
+
+  if (!isRecord(summary)) {
     throw new Error('Inochi browser probe completed without a summary.');
   }
 
@@ -109,11 +95,11 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
     `Inochi real-puppet probe: ${JSON.stringify(summary)}`,
   );
 
-  expect(summary.puppetName.length).toBeGreaterThan(0);
-  expect(summary.vertexCount).toBeGreaterThan(0);
-  expect(summary.indexCount).toBeGreaterThan(0);
-  expect(summary.textureCount).toBeGreaterThan(0);
-  expect(summary.commandCount).toBeGreaterThan(0);
-  expect(summary.taxiPassengerSeatAnchor.length).toBeGreaterThan(0);
+  expect(typeof summary.puppetName).toBe('string');
+  expect(Number(summary.vertexCount)).toBeGreaterThan(0);
+  expect(Number(summary.indexCount)).toBeGreaterThan(0);
+  expect(Number(summary.textureCount)).toBeGreaterThan(0);
+  expect(Number(summary.commandCount)).toBeGreaterThan(0);
+  expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
 });
