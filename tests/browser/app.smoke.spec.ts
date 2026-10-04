@@ -59,16 +59,16 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
         );
 
         if (typeof state !== 'object' || state === null) {
-          return 'missing';
+          return 'pending';
         }
 
         const status: unknown = Reflect.get(state, 'status');
-        return typeof status === 'string'
+        return status === 'success' || status === 'failure'
           ? status
-          : 'invalid';
+          : 'pending';
       }),
     )
-    .toBe('success');
+    .toMatch(/^(success|failure)$/);
 
   const rawState: unknown = await page.evaluate(() => {
     const value: unknown = Reflect.get(
@@ -80,6 +80,12 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
 
   if (!isRecord(rawState)) {
     throw new Error('Inochi browser probe did not publish an object state.');
+  }
+
+  if (rawState.status === 'failure') {
+    throw new Error(
+      `Inochi browser probe failed: ${String(rawState.error ?? 'unknown error')}`,
+    );
   }
 
   expect(rawState.status).toBe('success');
