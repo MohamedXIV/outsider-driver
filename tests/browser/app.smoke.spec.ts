@@ -45,7 +45,6 @@ test('production build boots a Babylon game surface without browser errors', asy
 
 test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }) => {
   let lastStage = 'not-started';
-  let pageCrashed = false;
 
   page.on('console', (message) => {
     const text = message.text();
@@ -56,22 +55,14 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
     }
   });
 
-  page.on('crash', () => {
-    pageCrashed = true;
-  });
-
   const response = await page.goto('/?inochiProbe=1', {
     waitUntil: 'networkidle',
   });
 
   expect(response?.ok()).toBe(true);
 
-  const terminalStatus = await expect
+  await expect
     .poll(async () => {
-      if (pageCrashed) {
-        return 'crashed';
-      }
-
       try {
         return await page.evaluate(() => {
           const state: unknown = Reflect.get(
@@ -88,23 +79,11 @@ test('real Inochi2D puppet loads through verified WASM and reaches TaxiScene ren
             ? status
             : 'pending';
         });
-      } catch (error) {
-        if (pageCrashed) {
-          return 'crashed';
-        }
-
-        throw error;
+      } catch {
+        return `crashed-after:${lastStage}`;
       }
     })
-    .toMatch(/^(success|failure|crashed)$/);
-
-  void terminalStatus;
-
-  if (pageCrashed) {
-    throw new Error(
-      `Inochi browser target crashed; last reported stage: ${lastStage}`,
-    );
-  }
+    .toMatch(/^(success|failure)$/);
 
   const rawState: unknown = await page.evaluate(() => {
     const value: unknown = Reflect.get(
