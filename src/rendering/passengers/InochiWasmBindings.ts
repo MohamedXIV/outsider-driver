@@ -69,6 +69,86 @@ interface InochiWasmExports extends WebAssembly.Exports {
 }
 
 const WASM_PAGE_BYTES = 65_536;
+const WASM_START_SECTION_ID = 8;
+
+function readUnsignedLeb128(
+  bytes: Uint8Array,
+  startOffset: number,
+): { readonly value: number; readonly nextOffset: number } {
+  let value = 0;
+  let shift = 0;
+  let offset = startOffset;
+
+  while (offset < bytes.length) {
+    const byte = bytes[offset];
+
+    if (byte === undefined) {
+      break;
+    }
+
+    value |= (byte & 0x7f) << shift;
+    offset += 1;
+
+    if ((byte & 0x80) === 0) {
+      return {
+        value,
+        nextOffset: offset,
+      };
+    }
+
+    shift += 7;
+
+    if (shift > 28) {
+      throw new Error('WASM section size LEB128 is too large.');
+    }
+  }
+
+  throw new Error('Unexpected end of WASM while reading section size.');
+}
+
+export function hasWasmStartSection(buffer: ArrayBuffer): boolean {
+  const bytes = new Uint8Array(buffer);
+
+  if (
+    bytes.length < 8 ||
+    bytes[0] !== 0x00 ||
+    bytes[1] !== 0x61 ||
+    bytes[2] !== 0x73 ||
+    bytes[3] !== 0x6d ||
+    bytes[4] !== 0x01 ||
+    bytes[5] !== 0x00 ||
+    bytes[6] !== 0x00 ||
+    bytes[7] !== 0x00
+  ) {
+    throw new Error('Invalid WebAssembly module header.');
+  }
+
+  let offset = 8;
+
+  while (offset < bytes.length) {
+    const sectionId = bytes[offset];
+
+    if (sectionId === undefined) {
+      break;
+    }
+
+    offset += 1;
+    const size = readUnsignedLeb128(bytes, offset);
+    offset = size.nextOffset;
+
+    if (sectionId === WASM_START_SECTION_ID) {
+      return true;
+    }
+
+    offset += size.value;
+
+    if (offset > bytes.length) {
+      throw new Error('WASM section extends beyond module bytes.');
+    }
+  }
+
+  return false;
+}
 
 function createWasiImports(): WebAssembly.Imports {
   return {
@@ -128,7 +208,6 @@ export class InochiWasmBindings
 
   private constructor(exports: InochiWasmExports) {
     this.#exports = exports;
-    this.#exports.in_init();
     this.#countPointer = this.#exports.nu_malloc(4);
 
     if (this.#countPointer === 0) {
@@ -146,6 +225,7 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
+    const startRunsAutomatically = hasWasmStartSection(bytes);
     const instantiated = await WebAssembly.instantiate(
       bytes,
       createWasiImports(),
@@ -161,6 +241,15 @@ export class InochiWasmBindings
       throw new Error(
         'Loaded WASM does not expose the expected Inochi2D C API.',
       );
+    }
+
+    // The pinned Inochi WASM build links in_init as the entry point.
+    // A WASM start function runs automatically during instantiation.
+    // Calling in_init again would rerun __wasm_call_ctors and corrupt
+    // allocator/global state. Keep an explicit fallback only for a
+    // future build that ships without a Start section.
+    if (!startRunsAutomatically) {
+      exports.in_init();
     }
 
     // Do not pre-grow linear memory here. The official WASM build uses
