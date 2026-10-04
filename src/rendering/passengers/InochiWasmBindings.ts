@@ -75,9 +75,7 @@ export interface InochiWasmBindingsOptions {
 const DEFAULT_INITIAL_MEMORY_PAGES = 2_048;
 const WASM_PAGE_BYTES = 65_536;
 
-function createWasiImports(
-  memory: WebAssembly.Memory,
-): WebAssembly.Imports {
+function createWasiImports(): WebAssembly.Imports {
   return {
     env: {
       STACKTOP: 0,
@@ -85,7 +83,9 @@ function createWasiImports(
       abortStackOverflow: () => {
         throw new Error('Inochi2D WASM stack overflow.');
       },
-      memory,
+      memory: new WebAssembly.Memory({
+        initial: 256,
+      }),
       table: new WebAssembly.Table({
         initial: 0,
         element: 'anyfunc',
@@ -159,9 +159,6 @@ export class InochiWasmBindings
       );
     }
 
-    const memory = new WebAssembly.Memory({
-      initial: initialMemoryPages,
-    });
     const response = requireHttpOk(
       await fetch(runtimeUrl),
       runtimeUrl,
@@ -169,7 +166,7 @@ export class InochiWasmBindings
     const bytes = await response.arrayBuffer();
     const instantiated = await WebAssembly.instantiate(
       bytes,
-      createWasiImports(memory),
+      createWasiImports(),
     );
     const exports = instantiated.instance
       .exports as unknown as InochiWasmExports;
@@ -184,10 +181,25 @@ export class InochiWasmBindings
       );
     }
 
-    if (exports.memory !== memory) {
-      throw new Error(
-        'Inochi2D WASM did not re-export the imported linear memory.',
-      );
+    const currentMemoryPages =
+      exports.memory.buffer.byteLength / WASM_PAGE_BYTES;
+
+    if (currentMemoryPages < initialMemoryPages) {
+      const pagesToGrow =
+        initialMemoryPages - currentMemoryPages;
+
+      try {
+        exports.memory.grow(pagesToGrow);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'unknown WebAssembly memory growth error';
+
+        throw new Error(
+          `Failed to grow Inochi2D linear memory from ${String(currentMemoryPages)} to ${String(initialMemoryPages)} pages: ${message}`,
+        );
+      }
     }
 
     return new InochiWasmBindings(exports);
