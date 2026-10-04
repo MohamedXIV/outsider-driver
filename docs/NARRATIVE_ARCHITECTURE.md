@@ -17,54 +17,44 @@ Domain state
 Application/domain event handlers
 ```
 
-Ink may:
+Ink may author dialogue/choices and narrative-local temporary state, query approved game state through typed external functions, and request approved consequences through typed events.
 
-- author dialogue, knots, stitches, choices, and narrative-local temporary state;
-- query approved game facts through narrow typed external functions;
-- request approved consequences by emitting typed domain events.
-
-Ink may not:
-
-- write relationship state directly;
-- write economy/balance state directly;
-- own identity or persistent claims/lies;
-- own knowledge/fact truth;
-- own passenger suspicion;
-- own city attention;
-- mutate route/world truth.
-
-Those systems remain in the domain/application layers and will consume narrative events as their implementations arrive.
+Ink may not own authoritative relationships, economy, cover identity, persistent claims/lies, knowledge, suspicion, city attention, route truth, or permanent world state.
 
 ## Approved query boundary
 
-The first production query port exposes only:
+The production query port currently exposes:
 
 - `GAME_HAS_FACT(fact_id)`;
 - `GAME_HAS_CLAIM(claim_id)`;
+- `GAME_COVER_MATCHES(key, value)`;
+- `GAME_CLAIM_CONTRADICTS(subject, value, context, audience)`;
 - `GAME_PASSENGER_SUSPICION(passenger_id)`;
 - `GAME_CITY_ATTENTION()`.
 
-Arguments cross a strict stable-ID boundary. For example, `GAME_HAS_FACT` accepts only a `fact:<slug>` ID.
+Stable IDs and social keys are validated before the application query port is invoked. Ink never receives a reference to the underlying domain store.
 
-The runtime adapter calls `NarrativeQueryPort`; Ink never receives a reference to a game-state object or repository.
+`GAME_CLAIM_CONTRADICTS` is audience-aware. A private claim heard by one passenger is not treated as known by every other passenger; public claims overlap every audience.
 
 ## Approved event boundary
 
-The first typed narrative event set is:
+The typed social/narrative event set currently includes:
 
 - `knowledge.reveal`;
+- `claim.record`;
 - `suspicion.adjust`;
 - `city-attention.adjust`.
 
-Ink invokes explicit external functions rather than an unrestricted generic mutation function:
+Ink invokes explicit external functions rather than a generic mutation API:
 
 - `GAME_REVEAL_FACT(fact_id)`;
+- `GAME_RECORD_CLAIM(claim_id, subject, value, context, audience, source_id)`;
 - `GAME_ADJUST_SUSPICION(passenger_id, delta, reason)`;
 - `GAME_ADJUST_CITY_ATTENTION(delta, reason)`.
 
-The runtime validates stable IDs, bounded adjustments, and stable reason tokens before emitting a domain event.
+The runtime validates IDs, keys, claim values, audience tokens, bounded adjustments, and reason tokens before emitting a domain event. The narrative runtime never applies those events itself.
 
-The narrative runtime does not apply the event itself.
+`SocialStealthNarrativeAdapter` is the application-side bridge that answers queries from `SocialStealthStateStore` and applies typed social events to that store.
 
 ## Compile and contract verification
 
@@ -73,15 +63,9 @@ The narrative runtime does not apply the event itself.
 1. `validateInkSourceContract` rejects unsupported or duplicate game external declarations;
 2. the source is compiled through the real `inkjs` compiler.
 
-Runtime tests then load the compiled JSON through the real `inkjs Story`, bind the typed game boundary, advance authored conversation, choose a response, and assert emitted consequences.
+Runtime tests load compiled JSON through the real `inkjs Story`, bind the typed game boundary, advance authored conversation, and assert queries/events.
 
-This catches several classes of mistakes early:
-
-- invalid Ink syntax;
-- unsupported game capabilities;
-- invalid stable IDs passed by narrative;
-- invalid event payloads;
-- mismatches between authored external calls and the game adapter.
+Cross-ride tests additionally prove that a later Ink runtime can use knowledge learned earlier and detect a contradiction in a prior audience-visible claim.
 
 ## Source layout
 
@@ -93,6 +77,6 @@ Future passenger content should add or include `.ink` files while preserving the
 
 ## Persistence rule
 
-Ink story state may eventually be serialized to resume the position inside an active conversation. That serialization is narrative runtime state only.
+Ink story state is serialized only to resume the position inside an active conversation.
 
-Persistent game facts, relationships, lies/claims, economy, identity, suspicion, and world state must be persisted by their owning domain systems, never reconstructed from Ink variables.
+Persistent facts, cover identity, claims/lies, passenger suspicion, and city attention are stored in `SocialStealthState`, which is part of the versioned production save. They are never reconstructed from Ink variables.

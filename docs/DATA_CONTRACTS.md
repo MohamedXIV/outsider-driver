@@ -4,13 +4,7 @@ Outsider Driver treats authored content and persistent game state as long-lived 
 
 ## Stable IDs
 
-Persistent/content identity never comes from:
-
-- array position;
-- display name;
-- file order;
-- object insertion order;
-- a temporary runtime index.
+Persistent/content identity never comes from array position, display name, file order, object insertion order, or a temporary runtime index.
 
 IDs use an explicit semantic kind and lowercase stable slug:
 
@@ -28,24 +22,15 @@ Core kinds are defined in `src/domain/ids/EntityId.ts`. New persistent entity ca
 
 ## Authored document schemas
 
-Authored documents use strict runtime schemas. The production helper in `src/content/schema/ContentDocument.ts` standardizes:
-
-- a document schema version;
-- a typed stable ID;
-- validated content data.
+Authored documents use strict runtime schemas. The production helper in `src/content/schema/ContentDocument.ts` standardizes document schema version, typed stable ID, and validated content data.
 
 Unknown or malformed fields should fail at authoring/build time unless a schema intentionally permits them.
 
 ## Cross-references
 
-Content references point to stable IDs. The content graph validator establishes shared invariants:
+Content references point to stable IDs. The content graph validator establishes shared invariants: IDs are unique, referenced content exists, references may declare the semantic kind they require, and invalid references fail loudly.
 
-- IDs are unique;
-- referenced content exists;
-- references may declare the semantic kind they require;
-- invalid references fail loudly.
-
-Concrete systems added later should project their authored documents into this validation graph so cross-system mistakes are caught before runtime.
+Concrete systems should project their authored documents into this validation graph so cross-system mistakes are caught before runtime.
 
 ## Save format
 
@@ -53,15 +38,24 @@ Every save is wrapped in a strict envelope:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "savedAt": "2026-10-04T07:00:00.000Z",
-  "state": {}
+  "state": {
+    "rideSession": null,
+    "socialState": null
+  }
 }
 ```
 
 `schemaVersion` is independent from content document versions.
 
-The initial production state is intentionally empty because persistent gameplay modules have not landed yet. It is **not** a demo save. When the first persistent modules are added, the save version must advance and the previous production version must remain readable through a registered migration.
+Production save evolution so far:
+
+- v1: foundation envelope with empty game state;
+- v2: resumable passenger `rideSession`;
+- v3: persistent `socialState` containing cover identity, claims, learned facts, passenger suspicion, and city attention.
+
+The v3 social slot is nullable specifically so historical saves migrate without inventing a cover identity that the player never selected. When a game has social state, the complete structure round-trips through the same codec.
 
 ## Migration rules
 
@@ -77,26 +71,14 @@ The initial production state is intentionally empty because persistent gameplay 
 
 Defaults that become persistent truth must be deterministic.
 
-Good:
-- an explicit starting credit amount from a versioned schema;
-- an empty set of known facts;
-- a fixed initial identity record.
+Good examples include an explicit starting credit amount, an empty known-facts set, or a fixed identity record when product rules explicitly define one.
 
-Bad:
-- random IDs at load time;
-- `Date.now()` inside a migration;
-- choosing a fallback route based on current catalog order.
+Bad examples include random IDs at load time, `Date.now()` inside a migration, or choosing a fallback route based on current catalog order.
 
 The caller supplies save timestamps explicitly so serialization remains testable and deterministic.
 
 ## Long-running games
 
-No data contract may assume:
+No data contract may assume a seven-day campaign, fixed passenger count, fixed route count, maximum translator-pack catalog, or fixed upgrade catalog.
 
-- a seven-day campaign;
-- a fixed passenger count;
-- a fixed route count;
-- a maximum translator-pack catalog;
-- a fixed upgrade catalog.
-
-Limits are allowed only when they are intentional product rules and are documented as such.
+Limits are allowed only when they are intentional product rules and documented as such.
