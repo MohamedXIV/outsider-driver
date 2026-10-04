@@ -15,7 +15,8 @@ Scene
 ├─ worldRoot
 │  └─ authored route/world presentation
 └─ taxiMotionRoot
-   ├─ driver camera
+   ├─ cameraMotionRoot
+   │  └─ driver camera
    └─ interiorRoot
       ├─ cockpit/interior presentation assets
       ├─ passengerSeat anchor
@@ -27,10 +28,13 @@ Scene
 
 This hierarchy is intentional:
 
-- future vehicle dynamics manipulate `taxiMotionRoot` for pitch, roll, suspension, braking response, and road vibration;
+- `taxiMotionRoot` receives body response such as pitch, roll, suspension movement, braking response, and road vibration;
+- `cameraMotionRoot` receives an authored/parameterized camera response on top of body motion, allowing camera motion to be attenuated independently;
 - authored world/route presentation remains under `worldRoot`;
-- camera, cockpit, passenger, and dashboard attachments inherit the same taxi motion;
+- cockpit, passenger, and dashboard attachments inherit taxi body motion;
 - nothing in this hierarchy implies free driving or a road-navigation simulation.
+
+Yaw/steering is deliberately not owned by the light-dynamics presenter. Future route presentation may orient or move authored world scenery, but route truth remains in the route-progression domain system.
 
 ## Passenger contract
 
@@ -57,3 +61,5 @@ A future scene-schema version may add glTF/GLB asset sources without changing ga
 The driver camera transform, field of view, and clip planes are authored in the scene definition.
 
 The camera is not attached to Babylon free-camera controls. There are no WASD/free-driving controls in the taxi foundation.
+
+See `docs/AUTOPILOT_DYNAMICS.md` for the deterministic route/dynamics boundary.
