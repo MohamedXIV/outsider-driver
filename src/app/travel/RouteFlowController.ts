@@ -156,7 +156,6 @@ export class RouteFlowController {
       if (snapshot.route.state.status === 'arrived') {
         snapshot = this.#autopilot.step(remainingSeconds);
         consumedSeconds += remainingSeconds;
-        remainingSeconds = 0;
         break;
       }
 
@@ -169,7 +168,6 @@ export class RouteFlowController {
       if (nextEvent === undefined) {
         snapshot = this.#autopilot.step(remainingSeconds);
         consumedSeconds += remainingSeconds;
-        remainingSeconds = 0;
         break;
       }
 

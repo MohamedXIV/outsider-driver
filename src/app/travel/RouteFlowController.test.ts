@@ -45,9 +45,9 @@ describe('RouteFlowController', () => {
 
   it('lets annotation events pass without pausing ride flow', () => {
     const experience = createRouteExperienceFixture() as {
-      events: Array<{
+      events: {
         behavior: unknown;
-      }>;
+      }[];
     };
 
     experience.events[0] = {
