@@ -6,7 +6,7 @@ import type {
   EconomyStateStore,
   RideEconomySettlement,
 } from '../../domain/economy/EconomyState';
-import { WorkNetwork } from './WorkNetwork';
+import type { WorkNetwork } from './WorkNetwork';
 
 export type RideSettlementSink = (
   settlement: RideEconomySettlement,
