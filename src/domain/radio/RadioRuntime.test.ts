@@ -141,7 +141,12 @@ describe('RadioRuntime', () => {
     translatorState.grantPack(slangPack);
     translatorState.activatePack(slangPack);
 
-    radioState.tune(entityId('radio-station', 'underchannel'));
+    const underchannel = entityId(
+      'radio-station',
+      'underchannel',
+    );
+    radioState.discoverStation(underchannel);
+    radioState.tune(underchannel);
     radioState.setListening(true);
 
     const runtime = new RadioRuntime(

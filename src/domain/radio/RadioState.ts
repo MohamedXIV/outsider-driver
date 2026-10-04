@@ -81,7 +81,18 @@ export class RadioStateStore {
     this.#state = RadioStateSchema.parse(stateInput);
 
     if (this.#state.tunedStationId !== null) {
-      this.#requireStation(this.#state.tunedStationId);
+      const tunedStation = this.#requireStation(
+        this.#state.tunedStationId,
+      );
+
+      if (
+        tunedStation.data.discoverability === 'hidden' &&
+        !this.#state.discoveredStationIds.includes(tunedStation.id)
+      ) {
+        throw new Error(
+          `Persisted hidden radio station must be discovered before it can be tuned: ${tunedStation.id}`,
+        );
+      }
     }
 
     for (const stationId of this.#state.discoveredStationIds) {
