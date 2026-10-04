@@ -89,6 +89,25 @@ describe('RideContract', () => {
     expect(roundTripped).toEqual(ride);
   });
 
+
+  it('rejects impossible ride timestamps', () => {
+    expect(
+      RideContractSchema.safeParse({
+        id: 'ride:impossible-time',
+        jobId: jobFixture.id,
+        passengerId: jobFixture.passengerId,
+        pickupLocationId: jobFixture.pickupLocationId,
+        destinationLocationId: jobFixture.destinationLocationId,
+        routeId: jobFixture.routeId,
+        acceptedAt: { day: 18, minuteOfDay: 500 },
+        status: 'active',
+        startedAt: { day: 18, minuteOfDay: 499 },
+        currentSegmentId: 'route-segment:docks-night-01',
+        segmentProgress: 0,
+      }).success,
+    ).toBe(false);
+  });
+
   it('rejects active progress on a segment outside the selected route', () => {
     expect(() =>
       validateRideReferences(

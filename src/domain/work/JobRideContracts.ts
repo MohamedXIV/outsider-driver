@@ -51,24 +51,44 @@ const ActiveRideSchema = RideBaseSchema.extend({
   startedAt: GameTimeSchema,
   currentSegmentId: entityIdSchema('route-segment'),
   segmentProgress: z.number().min(0).max(1),
-});
+}).refine(
+  (ride) => compareGameTime(ride.acceptedAt, ride.startedAt) <= 0,
+  {
+    message: 'A ride cannot start before it is accepted.',
+    path: ['startedAt'],
+  },
+);
 
 const CompletedRideSchema = RideBaseSchema.extend({
   status: z.literal('completed'),
   startedAt: GameTimeSchema,
   completedAt: GameTimeSchema,
-}).refine(
-  (ride) => compareGameTime(ride.startedAt, ride.completedAt) <= 0,
-  {
-    message: 'A ride cannot complete before it starts.',
-    path: ['completedAt'],
-  },
-);
+})
+  .refine(
+    (ride) => compareGameTime(ride.acceptedAt, ride.startedAt) <= 0,
+    {
+      message: 'A ride cannot start before it is accepted.',
+      path: ['startedAt'],
+    },
+  )
+  .refine(
+    (ride) => compareGameTime(ride.startedAt, ride.completedAt) <= 0,
+    {
+      message: 'A ride cannot complete before it starts.',
+      path: ['completedAt'],
+    },
+  );
 
 const CancelledRideSchema = RideBaseSchema.extend({
   status: z.literal('cancelled'),
   cancelledAt: GameTimeSchema,
-});
+}).refine(
+  (ride) => compareGameTime(ride.acceptedAt, ride.cancelledAt) <= 0,
+  {
+    message: 'A ride cannot be cancelled before it is accepted.',
+    path: ['cancelledAt'],
+  },
+);
 
 export const RideContractSchema = z.discriminatedUnion('status', [
   AcceptedRideSchema,
