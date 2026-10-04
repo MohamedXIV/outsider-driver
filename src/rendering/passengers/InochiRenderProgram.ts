@@ -25,6 +25,7 @@ export type InochiRenderOperation =
       readonly kind: 'push-mask';
       readonly layerId: number;
       readonly mode: InochiMaskMode;
+      readonly parentMaskLayerIds: readonly number[];
       readonly compositeDepth: number;
     }
   | {
@@ -73,7 +74,6 @@ export function compileInochiRenderProgram(
   const frame = validateInochiDrawFrame(frameInput);
   const operations: InochiRenderOperation[] = [];
   const activeMasks: number[] = [];
-  let pendingMaskLayerId: number | null = null;
   let nextMaskLayerId = 0;
   let compositeDepth = 0;
   let awaitingCompositeBlit = false;
@@ -92,47 +92,45 @@ export function compileInochiRenderProgram(
         });
         continue;
 
-      case 'define-mask': {
-        // Inochi explicitly permits mask definitions between a
-        // composite-end and its following composite-blit.
-        if (pendingMaskLayerId === null) {
-          pendingMaskLayerId = nextMaskLayerId;
-          nextMaskLayerId += 1;
-        }
-
-        operations.push({
-          kind: 'define-mask',
-          layerId: pendingMaskLayerId,
-          commandIndex,
-          command,
-          parentMaskLayerIds: [...activeMasks],
-          compositeDepth,
-        });
-        continue;
-      }
-
-      case 'push-mask':
+      case 'push-mask': {
         requireStateOnlyCommand(command, command.state);
-
-        if (pendingMaskLayerId === null) {
-          throw new Error(
-            'Inochi push-mask command has no preceding mask definition.',
-          );
-        }
+        const layerId = nextMaskLayerId;
+        nextMaskLayerId += 1;
 
         operations.push({
           kind: 'push-mask',
-          layerId: pendingMaskLayerId,
+          layerId,
           mode: command.maskMode,
+          parentMaskLayerIds: [...activeMasks],
           compositeDepth,
         });
-        activeMasks.push(pendingMaskLayerId);
+        activeMasks.push(layerId);
         maximumMaskDepth = Math.max(
           maximumMaskDepth,
           activeMasks.length,
         );
-        pendingMaskLayerId = null;
         continue;
+      }
+
+      case 'define-mask': {
+        const layerId = activeMasks.at(-1);
+
+        if (layerId === undefined) {
+          throw new Error(
+            'Inochi define-mask command has no active mask layer.',
+          );
+        }
+
+        operations.push({
+          kind: 'define-mask',
+          layerId,
+          commandIndex,
+          command,
+          parentMaskLayerIds: activeMasks.slice(0, -1),
+          compositeDepth,
+        });
+        continue;
+      }
 
       case 'pop-mask': {
         requireStateOnlyCommand(command, command.state);
@@ -206,12 +204,6 @@ export function compileInochiRenderProgram(
         awaitingCompositeBlit = false;
         continue;
     }
-  }
-
-  if (pendingMaskLayerId !== null) {
-    throw new Error(
-      'Inochi render program ended with an unpushed mask definition.',
-    );
   }
 
   if (activeMasks.length > 0) {

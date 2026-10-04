@@ -66,44 +66,94 @@ function frame(commands: readonly InochiDrawCommand[]): InochiDrawFrame {
 }
 
 describe('compileInochiRenderProgram', () => {
-  it('tracks nested soft-mask scope without flattening dodge semantics', () => {
+  it('tracks the current runtime push -> define -> draw -> pop mask sequence', () => {
     const program = compileInochiRenderProgram(
       frame([
+        command('push-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
         command('define-mask'),
-        command('push-mask', { maskMode: 'mask' }),
         command('normal'),
-        command('define-mask', { maskMode: 'dodge' }),
-        command('push-mask', { maskMode: 'dodge' }),
-        command('normal'),
-        command('pop-mask'),
-        command('pop-mask'),
+        command('pop-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
       ]),
     );
 
-    expect(program.maskLayerCount).toBe(2);
-    expect(program.maximumMaskDepth).toBe(2);
+    expect(program.maskLayerCount).toBe(1);
+    expect(program.maximumMaskDepth).toBe(1);
     expect(program.operations).toMatchObject([
+      { kind: 'push-mask', layerId: 0, parentMaskLayerIds: [] },
       { kind: 'define-mask', layerId: 0, parentMaskLayerIds: [] },
-      { kind: 'push-mask', layerId: 0, mode: 'mask' },
       { kind: 'draw', activeMaskLayerIds: [0] },
-      { kind: 'define-mask', layerId: 1, parentMaskLayerIds: [0] },
-      { kind: 'push-mask', layerId: 1, mode: 'dodge' },
-      { kind: 'draw', activeMaskLayerIds: [0, 1] },
-      { kind: 'pop-mask', layerId: 1 },
       { kind: 'pop-mask', layerId: 0 },
     ]);
   });
 
-  it('supports compositeEnd then mask definition before compositeBlit', () => {
+  it('tracks nested mask scopes and source-level dodge modes', () => {
     const program = compileInochiRenderProgram(
       frame([
-        command('composite-begin'),
-        command('normal'),
-        command('composite-end'),
+        command('push-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
         command('define-mask'),
-        command('push-mask'),
+        command('push-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+          maskMode: 'dodge',
+        }),
+        command('define-mask', { maskMode: 'dodge' }),
+        command('normal'),
+        command('pop-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
+        command('normal'),
+        command('pop-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
+      ]),
+    );
+
+    expect(program.maximumMaskDepth).toBe(2);
+    expect(program.operations).toMatchObject([
+      { kind: 'push-mask', layerId: 0 },
+      { kind: 'define-mask', layerId: 0 },
+      { kind: 'push-mask', layerId: 1, parentMaskLayerIds: [0] },
+      { kind: 'define-mask', layerId: 1, parentMaskLayerIds: [0] },
+      { kind: 'draw', activeMaskLayerIds: [0, 1] },
+      { kind: 'pop-mask', layerId: 1 },
+      { kind: 'draw', activeMaskLayerIds: [0] },
+      { kind: 'pop-mask', layerId: 0 },
+    ]);
+  });
+
+  it('supports compositeEnd then mask work before compositeBlit', () => {
+    const program = compileInochiRenderProgram(
+      frame([
+        command('composite-begin', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
+        command('normal'),
+        command('composite-end', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
+        command('push-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
+        command('define-mask'),
         command('composite-blit'),
-        command('pop-mask'),
+        command('pop-mask', {
+          elementCount: 0,
+          sourceTextureIds: [null, null, null, null, null, null, null, null],
+        }),
       ]),
     );
 
@@ -112,33 +162,44 @@ describe('compileInochiRenderProgram', () => {
       'composite-begin',
       'draw',
       'composite-end',
-      'define-mask',
       'push-mask',
+      'define-mask',
       'composite-blit',
       'pop-mask',
     ]);
   });
 
-  it('rejects unbalanced state instead of producing a visually plausible wrong frame', () => {
+  it('rejects unbalanced state instead of producing a plausible wrong frame', () => {
     expect(() => {
       compileInochiRenderProgram(
-        frame([command('pop-mask')]),
+        frame([
+          command('define-mask'),
+        ]),
       );
     }).toThrow(/no active mask layer/);
 
     expect(() => {
       compileInochiRenderProgram(
         frame([
-          command('composite-begin'),
+          command('push-mask', {
+            elementCount: 0,
+            sourceTextureIds: [null, null, null, null, null, null, null, null],
+          }),
+          command('define-mask'),
+        ]),
+      );
+    }).toThrow(/active mask layers/);
+
+    expect(() => {
+      compileInochiRenderProgram(
+        frame([
+          command('composite-begin', {
+            elementCount: 0,
+            sourceTextureIds: [null, null, null, null, null, null, null, null],
+          }),
           command('normal'),
         ]),
       );
     }).toThrow(/incomplete composite/);
-
-    expect(() => {
-      compileInochiRenderProgram(
-        frame([command('define-mask')]),
-      );
-    }).toThrow(/unpushed mask definition/);
   });
 });
