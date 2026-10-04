@@ -43,6 +43,8 @@ describe('GameApplication', () => {
 
     application.dispose();
 
-    expect(() => application.start()).toThrow(/disposed/i);
+    expect(() => {
+      application.start();
+    }).toThrow(/disposed/i);
   });
 });
