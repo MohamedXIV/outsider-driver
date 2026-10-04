@@ -9,6 +9,9 @@ const EMPTY_FIXTURE = {
   outputPath: resolve('dist/__fixtures__/empty08.inx'),
 };
 
+const MESH_FIXTURE_PATH = resolve(
+  'dist/__fixtures__/tiny-mesh08.inx',
+);
 const VISUAL_FIXTURE_PATH = resolve(
   'dist/__fixtures__/tiny-visual08.inx',
 );
@@ -131,7 +134,7 @@ function parseEmptyPayload(bytes) {
   return payload;
 }
 
-function createVisualPayload(emptyBytes) {
+function createVisualPayload(emptyBytes, includeTexture) {
   const payload = parseEmptyPayload(emptyBytes);
   const root = payload.nodes;
 
@@ -176,7 +179,7 @@ function createVisualPayload(emptyBytes) {
         ],
         indices: [0, 1, 2, 0, 2, 3],
       },
-      textures: [0],
+      textures: includeTexture ? [0] : [],
       blend_mode: 0,
       tint: [1, 1, 1],
       screenTint: [0, 0, 0],
@@ -188,18 +191,33 @@ function createVisualPayload(emptyBytes) {
   return payload;
 }
 
-function createInp1VisualFixture(emptyBytes) {
+function createInp1VisualFixture(emptyBytes, includeTexture) {
   const payloadBytes = new TextEncoder().encode(
-    JSON.stringify(createVisualPayload(emptyBytes)),
+    JSON.stringify(
+      createVisualPayload(emptyBytes, includeTexture),
+    ),
   );
+  const sectionHeader = concatBytes(
+    new TextEncoder().encode('TEX_SECT'),
+    uint32be(includeTexture ? 1 : 0),
+  );
+
+  if (!includeTexture) {
+    return concatBytes(
+      new TextEncoder().encode('TRNSRTS\0'),
+      uint32be(payloadBytes.byteLength),
+      payloadBytes,
+      sectionHeader,
+    );
+  }
+
   const png = createTinyPng();
 
   return concatBytes(
     new TextEncoder().encode('TRNSRTS\0'),
     uint32be(payloadBytes.byteLength),
     payloadBytes,
-    new TextEncoder().encode('TEX_SECT'),
-    uint32be(1),
+    sectionHeader,
     uint32be(png.byteLength),
     Uint8Array.of(0),
     png,
@@ -236,16 +254,28 @@ async function fetchPinnedEmptyFixture() {
 
 async function main() {
   const emptyBytes = await fetchPinnedEmptyFixture();
-  const visualBytes = createInp1VisualFixture(emptyBytes);
+  const meshBytes = createInp1VisualFixture(
+    emptyBytes,
+    false,
+  );
+  const visualBytes = createInp1VisualFixture(
+    emptyBytes,
+    true,
+  );
 
   await mkdir(dirname(EMPTY_FIXTURE.outputPath), {
     recursive: true,
   });
   await writeFile(EMPTY_FIXTURE.outputPath, emptyBytes);
+  await writeFile(MESH_FIXTURE_PATH, meshBytes);
   await writeFile(VISUAL_FIXTURE_PATH, visualBytes);
 
   process.stdout.write(
-    `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes) and generated tiny visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
+    [
+      `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
+      `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
+      `and textured visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
+    ].join(', '),
   );
 }
 

@@ -91,6 +91,28 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
 
     const runtime = new OfficialInochiRuntimeAdapter(bindings);
 
+    reportStage('empty-load-start');
+    const emptySession = await InochiPuppetSession.load(
+      runtime,
+      {
+        id: 'inochi2d-upstream-empty08',
+        load: () => loadFixture('/__fixtures__/empty08.inx'),
+      },
+    );
+    emptySession.dispose();
+    reportStage('empty-loaded');
+
+    reportStage('mesh-load-start');
+    const meshSession = await InochiPuppetSession.load(
+      runtime,
+      {
+        id: 'outsider-driver-tiny-mesh08',
+        load: () => loadFixture('/__fixtures__/tiny-mesh08.inx'),
+      },
+    );
+    meshSession.dispose();
+    reportStage('mesh-loaded');
+
     reportStage('puppet-load-start');
     session = await InochiPuppetSession.load(runtime, {
       id: 'outsider-driver-tiny-visual08',
