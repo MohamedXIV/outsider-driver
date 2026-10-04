@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
 import { entityId } from '../ids/EntityId';
+import { gameSaveCodec } from '../../persistence/save/gameSave';
 import {
   TranslatorRuntime,
   TRANSLATION_LEVEL_CODE,
@@ -73,6 +74,43 @@ describe('TranslatorRuntime', () => {
     expect(slang.levelCode).toBe(2);
     expect(slang.score).toBeCloseTo(0.513, 3);
     expect(slang.matchedPackIds).toEqual([slangPack]);
+  });
+
+  it('round-trips pack ownership and activation through the production save', () => {
+    const state = new TranslatorStateStore(
+      productionContent.translator,
+    );
+    const packId = entityId(
+      'translator-pack',
+      'docks-slang-v1',
+    );
+    state.grantPack(packId);
+    state.activatePack(packId);
+
+    const serialized = gameSaveCodec.serialize(
+      {
+        rideSession: null,
+        socialState: null,
+        translatorState: state.exportState(),
+      },
+      '2026-10-04T11:30:00.000Z',
+    );
+    const decoded = gameSaveCodec.deserialize(serialized);
+    const restored = new TranslatorStateStore(
+      productionContent.translator,
+      decoded.state.translatorState,
+    );
+
+    expect(restored.ownsPack(packId)).toBe(true);
+    expect(restored.isPackActive(packId)).toBe(true);
+    expect(
+      new TranslatorRuntime(restored).assess({
+        languageId: 'language:dock-common',
+        register: 'slang',
+        vocabularyKey: 'dock-street',
+        difficulty: 0.2,
+      }).level,
+    ).toBe('partial');
   });
 
   it('requires ownership before activation', () => {
