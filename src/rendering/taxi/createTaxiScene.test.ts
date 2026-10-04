@@ -4,12 +4,13 @@ import { defaultTaxiSceneDefinition } from '../../content/presentation/defaultTa
 import { createTaxiScene } from './createTaxiScene';
 
 describe('createTaxiScene', () => {
-  it('creates explicit reusable taxi, world, passenger, and dashboard anchors', () => {
+  it('creates explicit reusable taxi, camera, world, passenger, and dashboard anchors', () => {
     const engine = new NullEngine();
     const taxi = createTaxiScene(engine, defaultTaxiSceneDefinition);
 
     expect(taxi.scene.activeCamera).toBe(taxi.camera);
-    expect(taxi.camera.parent).toBe(taxi.taxiMotionRoot);
+    expect(taxi.camera.parent).toBe(taxi.cameraMotionRoot);
+    expect(taxi.cameraMotionRoot.parent).toBe(taxi.taxiMotionRoot);
     expect(taxi.interiorRoot.parent).toBe(taxi.taxiMotionRoot);
     expect(taxi.worldRoot.parent).toBeNull();
 
