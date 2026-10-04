@@ -194,11 +194,24 @@ export function patchWasmInitialMemory(bytes, minimumPages) {
       };
     }
 
-    const memoryPayload = concatBytes([
-      bytes.slice(payloadStart, minimum.nextOffset),
+    const memoryPayloadParts = [
+      bytes.slice(payloadStart, flags.nextOffset),
       encodeUnsignedLeb128(minimumPages),
+    ];
+
+    if (maximum !== null) {
+      memoryPayloadParts.push(
+        encodeUnsignedLeb128(maximum),
+      );
+    }
+
+    memoryPayloadParts.push(
       bytes.slice(memoryTypeEnd, payloadEnd),
-    ]);
+    );
+
+    const memoryPayload = concatBytes(
+      memoryPayloadParts,
+    );
     const replacementSection = concatBytes([
       Uint8Array.of(WASM_MEMORY_SECTION_ID),
       encodeUnsignedLeb128(memoryPayload.byteLength),
