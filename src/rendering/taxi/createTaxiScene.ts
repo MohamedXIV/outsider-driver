@@ -59,7 +59,6 @@ export function createTaxiScene(
 ): TaxiSceneHandle {
   const definition = TaxiSceneDefinitionSchema.parse(input);
   const scene = new Scene(engine);
-  scene.name = 'taxi-scene';
   scene.clearColor = new Color4(...definition.environment.clearColor);
 
   const worldRoot = new TransformNode('taxi-world-root', scene);

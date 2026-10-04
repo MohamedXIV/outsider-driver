@@ -9,11 +9,12 @@ describe('BabylonSceneOrchestrator', () => {
     const scenes = new BabylonSceneOrchestrator(engine);
 
     expect(scenes.getTaxiScene()).toBeNull();
+    expect(scenes.getActiveSceneKind()).toBe('boot');
 
     const taxi = scenes.showTaxi(defaultTaxiSceneDefinition);
 
     expect(scenes.getTaxiScene()).toBe(taxi);
-    expect(taxi.scene.name).toBe('taxi-scene');
+    expect(scenes.getActiveSceneKind()).toBe('taxi');
 
     scenes.render();
     scenes.dispose();

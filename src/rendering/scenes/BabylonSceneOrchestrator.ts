@@ -10,6 +10,7 @@ import { createBootScene } from './createBootScene';
 export class BabylonSceneOrchestrator {
   readonly #engine: AbstractEngine;
   #activeScene: Scene;
+  #activeKind: 'boot' | 'taxi' = 'boot';
   #taxiScene: TaxiSceneHandle | null = null;
   #disposed = false;
 
@@ -25,6 +26,7 @@ export class BabylonSceneOrchestrator {
     const previousScene = this.#activeScene;
 
     this.#activeScene = nextTaxiScene.scene;
+    this.#activeKind = 'taxi';
     this.#taxiScene = nextTaxiScene;
     previousScene.dispose();
 
@@ -33,6 +35,10 @@ export class BabylonSceneOrchestrator {
 
   public getTaxiScene(): TaxiSceneHandle | null {
     return this.#taxiScene;
+  }
+
+  public getActiveSceneKind(): 'boot' | 'taxi' {
+    return this.#activeKind;
   }
 
   public render(): void {
