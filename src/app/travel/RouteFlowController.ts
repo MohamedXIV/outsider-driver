@@ -1,4 +1,9 @@
-import type { RouteEventId, RouteId } from '../../domain/ids/EntityId';
+import * as z from 'zod';
+import {
+  entityIdSchema,
+  type RouteEventId,
+  type RouteId,
+} from '../../domain/ids/EntityId';
 import type {
   RouteDecisionChoice,
   RouteExperienceCatalog,
@@ -12,6 +17,7 @@ import {
   buildRouteEventTimeline,
   type RouteTimelineEvent,
 } from '../../domain/travel/RouteEventTimeline';
+import { RouteProgressStateSchema } from '../../domain/travel/RouteProgression';
 import {
   TaxiAutopilotController,
   type TaxiAutopilotConfig,
@@ -49,6 +55,33 @@ export type RouteFlowResolution =
       readonly type: 'choose';
       readonly choiceId: string;
     };
+
+export const RouteFlowStateSchema = z
+  .object({
+    routeState: RouteProgressStateSchema,
+    emittedEventIds: z.array(entityIdSchema('route-event')),
+    pausedEventId: entityIdSchema('route-event').nullable(),
+  })
+  .strict()
+  .refine(
+    (state) =>
+      new Set(state.emittedEventIds).size === state.emittedEventIds.length,
+    {
+      message: 'Route flow emitted event IDs must be unique.',
+      path: ['emittedEventIds'],
+    },
+  )
+  .refine(
+    (state) =>
+      state.pausedEventId === null ||
+      state.emittedEventIds.includes(state.pausedEventId),
+    {
+      message: 'A paused route event must already be emitted.',
+      path: ['pausedEventId'],
+    },
+  );
+
+export type RouteFlowState = z.infer<typeof RouteFlowStateSchema>;
 
 export interface RouteFlowStepResult {
   readonly snapshot: TaxiAutopilotSnapshot;
@@ -95,6 +128,25 @@ export class RouteFlowController {
   #timeline: readonly RouteTimelineEvent[];
   #pausedEvent: RouteTimelineEvent | null = null;
 
+  public static fromState(
+    stateInput: unknown,
+    worldInput: unknown,
+    motionCatalogInput: unknown,
+    experienceInput: unknown,
+    config: TaxiAutopilotConfig,
+  ): RouteFlowController {
+    const state = RouteFlowStateSchema.parse(stateInput);
+    const controller = new RouteFlowController(
+      state.routeState.routeId,
+      worldInput,
+      motionCatalogInput,
+      experienceInput,
+      config,
+    );
+    controller.restoreState(state);
+    return controller;
+  }
+
   public constructor(
     routeId: RouteId,
     worldInput: unknown,
@@ -129,6 +181,63 @@ export class RouteFlowController {
     return this.#pausedEvent === null
       ? null
       : toGameplayEvent(this.#pausedEvent);
+  }
+
+  public exportState(): RouteFlowState {
+    return RouteFlowStateSchema.parse({
+      routeState: this.#autopilot.getRouteState(),
+      emittedEventIds: [...this.#emittedEventIds],
+      pausedEventId: this.#pausedEvent?.eventId ?? null,
+    });
+  }
+
+  public restoreState(input: unknown): TaxiAutopilotSnapshot {
+    const state = RouteFlowStateSchema.parse(input);
+    const knownEventIds = new Set(
+      this.#world.routeEvents.map((event) => event.id),
+    );
+
+    for (const eventId of state.emittedEventIds) {
+      if (!knownEventIds.has(eventId)) {
+        throw new Error(
+          `Route flow state references unknown event: ${eventId}`,
+        );
+      }
+    }
+
+    this.#autopilot.restoreRouteState(state.routeState);
+    this.#timeline = buildRouteEventTimeline(
+      state.routeState.routeId,
+      this.#world,
+      this.#experience,
+    );
+    this.#emittedEventIds.clear();
+
+    for (const eventId of state.emittedEventIds) {
+      this.#emittedEventIds.add(eventId);
+    }
+
+    if (state.pausedEventId === null) {
+      this.#pausedEvent = null;
+      return this.#autopilot.getSnapshot();
+    }
+
+    const pausedEvent = this.#timeline.find(
+      (event) => event.eventId === state.pausedEventId,
+    );
+
+    if (pausedEvent === undefined) {
+      throw new Error(
+        `Paused route event is not on the current route: ${state.pausedEventId}`,
+      );
+    }
+
+    if (pausedEvent.behavior.type === 'annotation') {
+      throw new Error('Annotation route events cannot be restored as paused.');
+    }
+
+    this.#pausedEvent = pausedEvent;
+    return this.#autopilot.getSnapshot();
   }
 
   public step(deltaSeconds: number): RouteFlowStepResult {

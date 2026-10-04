@@ -11,6 +11,7 @@ import {
   type WorldContentCatalog,
 } from '../../content/world/WorldContracts';
 import {
+  RouteProgressStateSchema,
   advanceRouteProgress,
   createRouteProgress,
   getRouteProgressSnapshot,
@@ -98,6 +99,20 @@ export class TaxiAutopilotController {
       route: getRouteProgressSnapshot(this.#routeState, this.#world),
       dynamics: this.#dynamicsState,
     };
+  }
+
+  public getRouteState(): RouteProgressState {
+    return RouteProgressStateSchema.parse(this.#routeState);
+  }
+
+  public restoreRouteState(input: unknown): TaxiAutopilotSnapshot {
+    const state = RouteProgressStateSchema.parse(input);
+
+    getRouteProgressSnapshot(state, this.#world);
+    this.#routeState = state;
+    this.#dynamicsState = createVehicleDynamicsState();
+
+    return this.getSnapshot();
   }
 
   public step(deltaSeconds: number): TaxiAutopilotSnapshot {

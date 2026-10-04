@@ -1,5 +1,4 @@
 import { Story } from 'inkjs';
-import * as z from 'zod';
 import {
   NarrativeDomainEventSchema,
   type NarrativeEventSink,
@@ -10,28 +9,18 @@ import {
   type CompiledInkStory,
 } from './compileInkSource';
 import { entityIdSchema } from '../domain/ids/EntityId';
+import {
+  NarrativeTurnSchema,
+  type NarrativeLine,
+  type NarrativeTurn,
+} from './contracts/NarrativePresentation';
+
+import * as z from 'zod';
 
 const adjustmentSchema = z.number().min(-100).max(100);
 const reasonSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
-
-export interface NarrativeChoice {
-  readonly index: number;
-  readonly text: string;
-  readonly tags: readonly string[];
-}
-
-export interface NarrativeLine {
-  readonly text: string;
-  readonly tags: readonly string[];
-}
-
-export interface NarrativeTurn {
-  readonly lines: readonly NarrativeLine[];
-  readonly choices: readonly NarrativeChoice[];
-  readonly ended: boolean;
-}
 
 export class InkNarrativeRuntime {
   readonly #story: Story;
@@ -87,11 +76,11 @@ export class InkNarrativeRuntime {
       tags: [...(choice.tags ?? [])],
     }));
 
-    return {
+    return NarrativeTurnSchema.parse({
       lines,
       choices,
       ended: choices.length === 0,
-    };
+    });
   }
 
   public choose(choiceIndex: number): NarrativeTurn {
@@ -101,12 +90,25 @@ export class InkNarrativeRuntime {
       choiceIndex >= this.#story.currentChoices.length
     ) {
       throw new RangeError(
-        'Narrative choice index is not currently available: ' + String(choiceIndex),
+        'Narrative choice index is not currently available: ' +
+          String(choiceIndex),
       );
     }
 
     this.#story.ChooseChoiceIndex(choiceIndex);
     return this.continueUntilChoiceOrEnd();
+  }
+
+  public serializeState(): string {
+    return this.#story.state.ToJson();
+  }
+
+  public restoreState(serializedState: string): void {
+    if (serializedState.length === 0) {
+      throw new Error('Narrative state JSON cannot be empty.');
+    }
+
+    this.#story.state.LoadJson(serializedState);
   }
 
   #bindGameBoundary(): void {
