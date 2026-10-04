@@ -198,6 +198,7 @@ export class InochiWasmBindings
 
         throw new Error(
           `Failed to grow Inochi2D linear memory from ${String(currentMemoryPages)} to ${String(initialMemoryPages)} pages: ${message}`,
+          { cause: error },
         );
       }
     }
