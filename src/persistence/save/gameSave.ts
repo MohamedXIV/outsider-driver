@@ -214,7 +214,7 @@ export const gameSaveCodec = new VersionedSaveCodec({
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV7Schema.parse({
+  return GameStateV8Schema.parse({
     rideSession: null,
     socialState: null,
     translatorState: createInitialTranslatorState(),
