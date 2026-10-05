@@ -84,13 +84,13 @@ function colorTuple(
   red: number,
   green: number,
   blue: number,
-): readonly [number, number, number] {
+): [number, number, number] {
   return [red, green, blue];
 }
 
 function normalizedDirection(
   input: readonly [number, number, number],
-): readonly [number, number, number] {
+): [number, number, number] {
   const vector = new Vector3(input[0], input[1], input[2]);
 
   if (vector.lengthSquared() <= 1e-8) {
@@ -103,7 +103,7 @@ function normalizedDirection(
 
 function passengerLocalCabinDirection(
   taxi: TaxiSceneHandle,
-): readonly [number, number, number] {
+): [number, number, number] {
   taxi.anchors.passengerSeat.computeWorldMatrix(true);
   taxi.anchors.passengerLighting.computeWorldMatrix(true);
 
