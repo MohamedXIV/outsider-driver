@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
 import { entityId } from '../../domain/ids/EntityId';
 import { PersonalSpaceStateStore } from '../../domain/spaces/PersonalSpaceState';
+import type { PersonalSpaceDefinition } from '../../content/spaces/PersonalSpaceContracts';
 import {
   PersonalSpaceOrchestrator,
   type PersonalSpaceFlagResolver,
@@ -10,13 +11,22 @@ import {
 
 describe('PersonalSpaceOrchestrator', () => {
   it('transitions through authored spaces and refreshes live persistent flags', () => {
-    const showPersonalSpace = vi.fn();
-    const refreshPersonalSpaceFlags = vi.fn();
-    const showTaxi = vi.fn();
+    let shownDefinition: PersonalSpaceDefinition | null = null;
+    let shownResolver: PersonalSpaceFlagResolver | null = null;
+    let refreshedResolver: PersonalSpaceFlagResolver | null = null;
+    let taxiShows = 0;
+
     const presentation: PersonalSpacePresentationPort = {
-      showPersonalSpace,
-      refreshPersonalSpaceFlags,
-      showTaxi,
+      showPersonalSpace: (definition, resolveFlag) => {
+        shownDefinition = definition;
+        shownResolver = resolveFlag;
+      },
+      refreshPersonalSpaceFlags: (resolveFlag) => {
+        refreshedResolver = resolveFlag;
+      },
+      showTaxi: () => {
+        taxiShows += 1;
+      },
     };
     const state = new PersonalSpaceStateStore(
       productionContent.personalSpaces,
@@ -30,27 +40,17 @@ describe('PersonalSpaceOrchestrator', () => {
     const garage = flow.enter(garageId);
 
     expect(garage.kind).toBe('garage');
-    expect(showPersonalSpace).toHaveBeenCalledTimes(1);
+    expect(shownDefinition?.id).toBe(garageId);
 
-    const resolveFlag = showPersonalSpace.mock.calls[0]?.[1] as
-      | PersonalSpaceFlagResolver
-      | undefined;
-
-    if (resolveFlag === undefined) {
+    if (shownResolver === null) {
       throw new Error('Expected personal-space flag resolver.');
     }
 
-    expect(resolveFlag('inspection-light')).toBe(false);
+    expect(shownResolver('inspection-light')).toBe(false);
 
     flow.setFlag(garageId, 'inspection-light', true);
 
-    expect(refreshPersonalSpaceFlags).toHaveBeenCalledTimes(1);
-    const refreshedResolver =
-      refreshPersonalSpaceFlags.mock.calls[0]?.[0] as
-        | PersonalSpaceFlagResolver
-        | undefined;
-
-    if (refreshedResolver === undefined) {
+    if (refreshedResolver === null) {
       throw new Error('Expected refreshed flag resolver.');
     }
 
@@ -59,6 +59,6 @@ describe('PersonalSpaceOrchestrator', () => {
     flow.leaveForTaxi();
 
     expect(state.getCurrentSpaceId()).toBeNull();
-    expect(showTaxi).toHaveBeenCalledTimes(1);
+    expect(taxiShows).toBe(1);
   });
 });

@@ -204,7 +204,17 @@ describe('production content validation', () => {
   });
 
   it('rejects personal-space assets that reference unknown persistent flags', () => {
-    const garage = productionContent.personalSpaces.spaces[0];
+    const garage = productionContent.personalSpaces.spaces.find(
+      (space) => space.kind === 'garage',
+    );
+    const home = productionContent.personalSpaces.spaces.find(
+      (space) => space.kind === 'home',
+    );
+
+    if (garage === undefined || home === undefined) {
+      throw new Error('Expected production garage and home spaces.');
+    }
+
     const inspectionAsset = garage.assets.find(
       (asset) => asset.id === 'inspection-light-strip',
     );
@@ -232,7 +242,7 @@ describe('production content validation', () => {
                 : asset,
             ),
           },
-          productionContent.personalSpaces.spaces[1],
+          home,
         ],
       },
     };
