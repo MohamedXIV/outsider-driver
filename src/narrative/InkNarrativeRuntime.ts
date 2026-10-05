@@ -2,6 +2,9 @@ import { Story } from 'inkjs';
 import * as z from 'zod';
 import { entityIdSchema } from '../domain/ids/EntityId';
 import {
+  PersonalStableKeySchema,
+} from '../content/personal/PersonalPersistenceContracts';
+import {
   TranslationRegisterSchema,
   TranslationVocabularyKeySchema,
 } from '../content/translator/TranslatorContracts';
@@ -166,6 +169,72 @@ export class InkNarrativeRuntime {
             vocabularyKey: parseTranslationVocabularyKey(vocabularyKey),
             difficulty,
           }),
+        );
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_HAS_TAXI_CAPABILITY',
+      (capability: unknown) => {
+        const personal = this.#queries.personal;
+
+        if (personal === undefined) {
+          throw new Error(
+            'Narrative requested personal persistence capability, but no personal query adapter is configured.',
+          );
+        }
+
+        return personal.hasTaxiCapability(
+          PersonalStableKeySchema.parse(capability),
+        );
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_HAS_ITEM',
+      (itemId: unknown) => {
+        const personal = this.#queries.personal;
+
+        if (personal === undefined) {
+          throw new Error(
+            'Narrative requested personal persistence item state, but no personal query adapter is configured.',
+          );
+        }
+
+        return personal.hasItem(
+          entityIdSchema('item').parse(itemId),
+        );
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_TAXI_CONDITION',
+      () => {
+        const personal = this.#queries.personal;
+
+        if (personal === undefined) {
+          throw new Error(
+            'Narrative requested taxi condition, but no personal query adapter is configured.',
+          );
+        }
+
+        return personal.getTaxiCondition();
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_HAS_UNREAD_MESSAGE',
+      (messageId: unknown) => {
+        const personal = this.#queries.personal;
+
+        if (personal === undefined) {
+          throw new Error(
+            'Narrative requested message state, but no personal query adapter is configured.',
+          );
+        }
+
+        return personal.hasUnreadMessage(
+          entityIdSchema('message').parse(messageId),
         );
       },
     );
