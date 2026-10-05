@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
 import { createInitialEconomyState } from '../economy/EconomyState';
 import { createInitialRadioState } from '../radio/RadioState';
+import { createInitialPersonalSpaceState } from '../spaces/PersonalSpaceState';
 import { entityId } from '../ids/EntityId';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
 import {
@@ -96,6 +97,7 @@ describe('TranslatorRuntime', () => {
         translatorState: state.exportState(),
         economyState: createInitialEconomyState(),
         radioState: createInitialRadioState(),
+        personalSpaceState: createInitialPersonalSpaceState(),
       },
       '2026-10-04T11:30:00.000Z',
     );

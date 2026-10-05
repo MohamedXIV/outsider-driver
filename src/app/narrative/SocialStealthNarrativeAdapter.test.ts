@@ -7,6 +7,7 @@ import { entityId } from '../../domain/ids/EntityId';
 import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
 import { createInitialEconomyState } from '../../domain/economy/EconomyState';
 import { createInitialRadioState } from '../../domain/radio/RadioState';
+import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
 import { SocialStealthNarrativeAdapter } from './SocialStealthNarrativeAdapter';
@@ -164,6 +165,7 @@ describe('SocialStealthNarrativeAdapter', () => {
         translatorState: createInitialTranslatorState(),
         economyState: createInitialEconomyState(),
         radioState: createInitialRadioState(),
+        personalSpaceState: createInitialPersonalSpaceState(),
       },
       '2026-10-04T10:00:00.000Z',
     );
