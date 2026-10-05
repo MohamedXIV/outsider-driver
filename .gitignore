@@ -10,3 +10,4 @@ test-results/
 .env.*
 !.env.example
 public/vendor/inochi2d/
+public/build-metadata.json

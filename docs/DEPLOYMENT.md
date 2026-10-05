@@ -46,3 +46,18 @@ The current frontend foundation requires no runtime secrets. Future environment 
 ## Production promotion
 
 A production deployment is not evidence that unfinished gameplay work is accepted. Production publishing and game release readiness remain separate concerns from preview infrastructure.
+
+
+## Reproducible build identity
+
+Every production build generates `/build-metadata.json` from repository-visible inputs.
+
+The metadata records:
+- application package name/version;
+- source revision from Vercel/GitHub CI when available;
+- build environment;
+- the exact Inochi2D release asset ID, artifact name, creation timestamp, and SHA-256 used by the build.
+
+Do not add wall-clock timestamps to this file: the same source revision and declared inputs should produce the same provenance metadata.
+
+The Inochi runtime fallback is fetched through the immutable GitHub release **asset ID**, not the mutable `nightly` download path, and its bytes must match the pinned SHA-256 before they are accepted.
