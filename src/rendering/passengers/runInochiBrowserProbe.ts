@@ -99,6 +99,7 @@ export async function runInochiBrowserProbe(
     reportStage('wasm-created');
 
     const runtime = new OfficialInochiRuntimeAdapter(bindings);
+    const realAda = fixture === 'ada';
 
     reportStage('empty-load-start');
     const emptySession = await InochiPuppetSession.load(
@@ -111,19 +112,20 @@ export async function runInochiBrowserProbe(
     emptySession.dispose();
     reportStage('empty-loaded');
 
-    reportStage('mesh-load-start');
-    const meshSession = await InochiPuppetSession.load(
-      runtime,
-      {
-        id: 'outsider-driver-tiny-mesh08',
-        load: () => loadFixture('/__fixtures__/tiny-mesh08.inx'),
-      },
-    );
-    meshSession.dispose();
-    reportStage('mesh-loaded');
+    if (!realAda) {
+      reportStage('mesh-load-start');
+      const meshSession = await InochiPuppetSession.load(
+        runtime,
+        {
+          id: 'outsider-driver-tiny-mesh08',
+          load: () => loadFixture('/__fixtures__/tiny-mesh08.inx'),
+        },
+      );
+      meshSession.dispose();
+      reportStage('mesh-loaded');
+    }
 
     reportStage('puppet-load-start');
-    const realAda = fixture === 'ada';
     session = await InochiPuppetSession.load(runtime, {
       id: realAda
         ? 'inochi2d-upstream-ada-static'
