@@ -26,7 +26,11 @@ export function createWorkEligibilityContext(
   return {
     officialStanding: economy.getOfficialStanding(),
     undergroundAccess: economy.getUndergroundAccess(),
-    taxiCondition: personal?.getTaxiCondition(),
+    ...(personal === null
+      ? {}
+      : {
+          taxiCondition: personal.getTaxiCondition(),
+        }),
     coverIdentityMatches: (key, value) =>
       social?.coverIdentityMatches(key, value) ?? false,
     hasTaxiCapability: (capability) =>
