@@ -46,7 +46,7 @@ describe('raiseDefinedWasmMemoryMinimum', () => {
       0x80,
       0x08,
     ]);
-    expect(WebAssembly.validate(patched)).toBe(true);
+    expect(globalThis.WebAssembly.validate(patched)).toBe(true);
   });
 
   it('leaves an already-large enough minimum byte-identical', () => {
