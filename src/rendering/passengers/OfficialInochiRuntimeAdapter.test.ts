@@ -171,4 +171,20 @@ describe('OfficialInochiRuntimeAdapter', () => {
     expect(harness.freePuppet).toHaveBeenCalledTimes(1);
     expect(() => puppet.renderFrame(0)).toThrow(/disposed/);
   });
+
+  it('frees a loaded puppet when handle construction fails', () => {
+    const harness = createBindings();
+    const runtime = new OfficialInochiRuntimeAdapter({
+      ...harness.bindings,
+      getParameterPointers: () => [800, 801],
+      getParameterName: () => 'HeadYaw',
+    });
+
+    expect(() => {
+      runtime.loadPuppet(new Uint8Array([1]).buffer);
+    }).toThrow(/Duplicate Inochi parameter name/);
+
+    expect(harness.freePuppet).toHaveBeenCalledTimes(1);
+    expect(harness.freePuppet).toHaveBeenCalledWith(99);
+  });
 });
