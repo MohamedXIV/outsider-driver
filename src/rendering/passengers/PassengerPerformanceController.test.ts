@@ -240,7 +240,7 @@ describe('PassengerPerformanceController', () => {
       },
       {
         name: 'Head',
-        values: [0.5, 0.25],
+        values: [0.5, -0.25],
       },
       {
         name: 'Mood',

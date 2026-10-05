@@ -11,7 +11,10 @@ import { createInitialRelationshipState } from '../../domain/relationships/Relat
 import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
 import { createInitialPersonalPersistenceState } from '../../domain/personal/PersonalPersistenceState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
-import { gameSaveCodec } from '../../persistence/save/gameSave';
+import {
+  createInitialGameState,
+  gameSaveCodec,
+} from '../../persistence/save/gameSave';
 import { SocialStealthNarrativeAdapter } from './SocialStealthNarrativeAdapter';
 
 const coverIdentity = {
@@ -162,14 +165,8 @@ describe('SocialStealthNarrativeAdapter', () => {
 
     const serialized = gameSaveCodec.serialize(
       {
-        rideSession: null,
+        ...createInitialGameState(),
         socialState: store.exportState(),
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
-        radioState: createInitialRadioState(),
-        personalSpaceState: createInitialPersonalSpaceState(),
-        personalPersistenceState: createInitialPersonalPersistenceState(),
-        relationshipState: createInitialRelationshipState(),
       },
       '2026-10-04T10:00:00.000Z',
     );

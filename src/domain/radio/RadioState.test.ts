@@ -7,7 +7,10 @@ import { createInitialPersonalSpaceState } from '../spaces/PersonalSpaceState';
 import { createInitialPersonalPersistenceState } from '../personal/PersonalPersistenceState';
 import { entityId } from '../ids/EntityId';
 import { createInitialTranslatorState } from '../translator/TranslatorState';
-import { gameSaveCodec } from '../../persistence/save/gameSave';
+import {
+  createInitialGameState,
+  gameSaveCodec,
+} from '../../persistence/save/gameSave';
 import {
   RadioStateStore,
   createInitialRadioState,
@@ -64,14 +67,8 @@ describe('RadioStateStore', () => {
 
     const serialized = gameSaveCodec.serialize(
       {
-        rideSession: null,
-        socialState: null,
-        translatorState: createInitialTranslatorState(),
-        economyState: createInitialEconomyState(),
+        ...createInitialGameState(),
         radioState: state.exportState(),
-        personalSpaceState: createInitialPersonalSpaceState(),
-        personalPersistenceState: createInitialPersonalPersistenceState(),
-        relationshipState: createInitialRelationshipState(),
       },
       '2026-10-04T13:10:00.000Z',
     );

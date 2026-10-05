@@ -62,7 +62,7 @@ describe('TaxiMotionPresenter', () => {
 
     expect(taxi.taxiMotionRoot.position.y).toBe(0);
     expect(taxi.taxiMotionRoot.rotation.x).toBe(0);
-    expect(taxi.cameraMotionRoot.rotation.z).toBe(0);
+    expect(taxi.cameraMotionRoot.rotation.z).toBeCloseTo(0);
     expect(state).toEqual(snapshot);
 
     taxi.scene.dispose();

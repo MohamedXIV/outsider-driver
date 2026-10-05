@@ -16,6 +16,7 @@ import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpa
 import { createInitialPersonalPersistenceState } from '../../domain/personal/PersonalPersistenceState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
+  createInitialGameState,
   gameSaveCodec,
   type GameState,
 } from '../../persistence/save/gameSave';
@@ -299,14 +300,8 @@ describe('PassengerRideOrchestrator', () => {
     ]);
 
     const state: GameState = {
+      ...createInitialGameState(),
       rideSession: original.getSessionSave(),
-      socialState: null,
-      translatorState: createInitialTranslatorState(),
-      economyState: createInitialEconomyState(),
-      radioState: createInitialRadioState(),
-      personalSpaceState: createInitialPersonalSpaceState(),
-      personalPersistenceState: createInitialPersonalPersistenceState(),
-      relationshipState: createInitialRelationshipState(),
     };
     const serialized = gameSaveCodec.serialize(
       state,
