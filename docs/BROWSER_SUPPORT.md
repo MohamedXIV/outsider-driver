@@ -20,17 +20,19 @@ GitHub CI targets these Playwright profiles on the production build:
 | Profile | Engine | Device shape | Required smoke |
 | --- | --- | --- | --- |
 | `chromium-desktop` | Chromium | Desktop | boot, taxi surface, garage/home, settings/focus, real Inochi proof |
-| `firefox-desktop` | Firefox | Desktop | boot, taxi surface, garage/home, settings/focus |
+| `firefox-desktop` | Firefox | Desktop | capability gate; full boot/garage/home/settings when WebGL is exposed, otherwise accessible compatibility fallback |
 | `webkit-desktop` | WebKit | Desktop | boot, taxi surface, garage/home, settings/focus |
 | `chromium-compact-touch` | Chromium | Pixel-class compact touch viewport | boot, personal spaces, settings/focus, touch tap, responsive bounds |
 
 The matrix is deliberately engine-oriented rather than tied to specific consumer browser version numbers. Playwright pins the browser revisions through the locked `@playwright/test` dependency and CI installs the matching engines.
 
+Browser support is capability-based, not user-agent-based. The Linux headless Playwright Firefox runner may report Babylon WebGL as unavailable even though normal hardware-accelerated Firefox remains a target browser. In that CI environment Firefox must prove the accessible compatibility path with no crash or hang. If the runner exposes WebGL, the same tests automatically exercise the full Babylon/personal-space/settings path instead.
+
 ## Inochi verification scope
 
 The verified Inochi WASM runtime and real-puppet browser proof are intentionally executed only on `chromium-desktop`.
 
-That test is a supply-chain/runtime/rendering proof and is comparatively expensive. Cross-browser projects still exercise the production Babylon surface, personal spaces, persisted accessibility/control UI, and bootstrap behavior, so compatibility coverage does not multiply the same large fixture download/render proof across every engine.
+That test is a supply-chain/runtime/rendering proof and is comparatively expensive. Chromium and WebKit exercise the production Babylon surface, personal spaces, persisted accessibility/control UI, and bootstrap behavior. Firefox exercises those same paths when its CI runtime exposes WebGL; otherwise it must prove the explicit compatibility fallback. This avoids pretending that a headless graphics limitation is a successful render while still keeping Firefox in the compatibility matrix.
 
 If an engine-specific Inochi regression is discovered, add a focused regression test for that engine rather than making every CI job repeat the full probe by default.
 
