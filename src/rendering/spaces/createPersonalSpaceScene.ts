@@ -50,10 +50,6 @@ function color3(tuple: readonly [number, number, number]): Color3 {
   return new Color3(tuple[0], tuple[1], tuple[2]);
 }
 
-function defaultFlagResolver(): boolean {
-  return false;
-}
-
 export function createPersonalSpaceScene(
   engine: AbstractEngine,
   input: PersonalSpaceDefinition,
@@ -192,9 +188,29 @@ export function createPersonalSpaceScene(
     });
   }
 
+  const authoredFlagDefaults = new Map(
+    definition.flags.map((flag) => [
+      flag.id,
+      flag.defaultValue,
+    ]),
+  );
+  const resolveAuthoredDefault: PersonalSpaceFlagResolver = (
+    flagId,
+  ) => {
+    const value = authoredFlagDefaults.get(flagId);
+
+    if (value === undefined) {
+      throw new Error(
+        `Unknown personal-space flag requested by renderer: ${flagId}`,
+      );
+    }
+
+    return value;
+  };
+
   const refreshVisibility = (
     resolveFlag: PersonalSpaceFlagResolver =
-      options.resolveFlag ?? defaultFlagResolver,
+      options.resolveFlag ?? resolveAuthoredDefault,
   ): void => {
     for (const asset of definition.assets) {
       const mesh = assets.get(asset.id);
