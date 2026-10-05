@@ -175,8 +175,103 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
   expect(summary.lightingApplied).toBe(true);
   expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
+  expect(summary.taxiRenderSucceeded).toBe(true);
+  expect(summary.taxiRenderError).toBeNull();
 });
 
+
+test('pinned upstream Ada puppet renders through official WASM in TaxiScene', async ({ page }) => {
+  let lastStage = 'not-started';
+
+  page.on('console', (message) => {
+    const text = message.text();
+    const prefix = 'INOCHI_STAGE:';
+
+    if (text.startsWith(prefix)) {
+      lastStage = text.slice(prefix.length);
+      console.log(`Inochi Ada probe stage: ${lastStage}`);
+    }
+  });
+
+  page.on('crash', () => {
+    console.log(`Inochi Ada probe page crashed after: ${lastStage}`);
+  });
+
+  const response = await page.goto('/?inochiProbe=ada', {
+    waitUntil: 'networkidle',
+  });
+
+  expect(response?.ok()).toBe(true);
+
+  await expect
+    .poll(async () => {
+      try {
+        return await page.evaluate(() => {
+          const state: unknown = Reflect.get(
+            window,
+            '__outsiderDriverInochiProbe',
+          );
+
+          if (typeof state !== 'object' || state === null) {
+            return 'pending';
+          }
+
+          const status: unknown = Reflect.get(state, 'status');
+          return status === 'success' || status === 'failure'
+            ? status
+            : 'pending';
+        });
+      } catch {
+        return `crashed-after:${lastStage}`;
+      }
+    })
+    .toMatch(/^(success|failure)$/);
+
+  const rawState: unknown = await page.evaluate(() =>
+    Reflect.get(window, '__outsiderDriverInochiProbe'),
+  );
+
+  if (!isRecord(rawState)) {
+    throw new Error('Inochi Ada probe did not publish an object state.');
+  }
+
+  if (rawState.status === 'failure') {
+    const probeError =
+      typeof rawState.error === 'string'
+        ? rawState.error
+        : 'unknown error';
+
+    throw new Error(
+      `Inochi Ada probe failed after ${lastStage}: ${probeError}`,
+    );
+  }
+
+  const summary = rawState.summary;
+
+  if (!isRecord(summary)) {
+    throw new Error('Inochi Ada probe completed without a summary.');
+  }
+
+  console.log(
+    `Inochi upstream Ada acceptance probe: ${JSON.stringify(summary)}`,
+  );
+
+  expect(typeof summary.puppetName).toBe('string');
+  expect(Number(summary.vertexCount)).toBeGreaterThan(0);
+  expect(Number(summary.indexCount)).toBeGreaterThan(0);
+  expect(Number(summary.textureCount)).toBeGreaterThan(0);
+  expect(Number(summary.commandCount)).toBeGreaterThan(0);
+  expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
+  expect(summary.taxiRenderAttempted).toBe(true);
+
+  if (summary.taxiRenderSucceeded !== true) {
+    throw new Error(
+      `Ada TaxiScene render failed: ${String(summary.taxiRenderError)}`,
+    );
+  }
+
+  expect(summary.taxiRenderError).toBeNull();
+});
 
 const personalSpaceBrowserCases = [
   ['garage', ['taxi-access', 'upgrades', 'exit']],
