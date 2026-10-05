@@ -1,6 +1,8 @@
+import { FreeCameraTouchInput } from '@babylonjs/core/Cameras/Inputs/freeCameraTouchInput';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
+import { createInitialAccessibilityPreferencesState } from '../../domain/preferences/AccessibilityPreferencesState';
 import { createPersonalSpaceScene } from './createPersonalSpaceScene';
 
 function space(kind: 'garage' | 'home') {
@@ -68,6 +70,64 @@ describe('createPersonalSpaceScene', () => {
     );
 
     expect(inspection?.isEnabled()).toBe(true);
+
+    handle.scene.dispose();
+    engine.dispose();
+  });
+
+  it('applies pointer and touch sensitivity as presentation input preferences', () => {
+    const engine = new NullEngine();
+    const definition = space('home');
+    const preferences = {
+      ...createInitialAccessibilityPreferencesState(),
+      pointerSensitivity: 2,
+      touchSensitivity: 0.5,
+    };
+    const handle = createPersonalSpaceScene(
+      engine,
+      definition,
+      {
+        accessibilityPreferences: preferences,
+      },
+    );
+
+    expect(handle.camera.angularSensibility).toBeCloseTo(
+      definition.camera.angularSensibility / 2,
+    );
+
+    const touchInput =
+      handle.camera.inputs.attached['touch'];
+
+    expect(touchInput).toBeInstanceOf(
+      FreeCameraTouchInput,
+    );
+
+    if (!(touchInput instanceof FreeCameraTouchInput)) {
+      throw new Error('Expected FreeCameraTouchInput.');
+    }
+
+    expect(touchInput.touchAngularSensibility).toBe(
+      400_000,
+    );
+    expect(touchInput.touchMoveSensibility).toBe(500);
+
+    handle.applyAccessibilityPreferences({
+      ...preferences,
+      pointerSensitivity: 0.5,
+      touchSensitivity: 2,
+    });
+
+    expect(handle.camera.angularSensibility).toBeCloseTo(
+      definition.camera.angularSensibility / 0.5,
+    );
+    expect(touchInput.touchAngularSensibility).toBe(
+      100_000,
+    );
+    expect(touchInput.touchMoveSensibility).toBe(125);
+
+    expect(handle.camera.speed).toBe(
+      definition.camera.movementSpeed,
+    );
 
     handle.scene.dispose();
     engine.dispose();

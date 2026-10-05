@@ -272,3 +272,91 @@ for (const [
     },
   );
 }
+
+
+test('accessibility and control settings persist and provide a keyboard escape path', async ({ page }) => {
+  const response = await page.goto('/', {
+    waitUntil: 'networkidle',
+  });
+
+  expect(response?.ok()).toBe(true);
+
+  const canvas = page.getByRole('application', {
+    name: 'Outsider Driver game view',
+  });
+  const settingsButton = page.getByRole('button', {
+    name: 'Accessibility and controls settings',
+  });
+
+  await canvas.focus();
+  await page.keyboard.press('Escape');
+  await expect(settingsButton).toBeFocused();
+
+  await settingsButton.press('Enter');
+
+  const interfaceScale = page.getByLabel('Interface scale');
+  const motionIntensity = page.getByLabel('Motion intensity');
+  const contrast = page.getByLabel('Contrast');
+  const focusIndicator = page.getByLabel('Focus indicator');
+  const pointerSensitivity = page.getByLabel(
+    'Pointer look sensitivity',
+  );
+  const touchSensitivity = page.getByLabel(
+    'Touch look sensitivity',
+  );
+
+  await expect(interfaceScale).toBeFocused();
+
+  await interfaceScale.fill('135');
+  await motionIntensity.fill('25');
+  await contrast.selectOption('high');
+  await focusIndicator.selectOption('always');
+  await pointerSensitivity.fill('150');
+  await touchSensitivity.fill('125');
+
+  const shell = page.locator('.game-shell');
+  await expect(shell).toHaveAttribute('data-contrast', 'high');
+  await expect(shell).toHaveAttribute(
+    'data-focus-indicator',
+    'always',
+  );
+
+  expect(
+    await shell.evaluate((element) =>
+      element.style.getPropertyValue('--game-ui-scale'),
+    ),
+  ).toBe('1.35');
+
+  await page.reload({
+    waitUntil: 'networkidle',
+  });
+
+  const reloadedSettingsButton = page.getByRole('button', {
+    name: 'Accessibility and controls settings',
+  });
+  await reloadedSettingsButton.click();
+
+  await expect(page.getByLabel('Interface scale')).toHaveValue(
+    '135',
+  );
+  await expect(page.getByLabel('Motion intensity')).toHaveValue(
+    '25',
+  );
+  await expect(page.getByLabel('Contrast')).toHaveValue('high');
+  await expect(page.getByLabel('Focus indicator')).toHaveValue(
+    'always',
+  );
+  await expect(
+    page.getByLabel('Pointer look sensitivity'),
+  ).toHaveValue('150');
+  await expect(
+    page.getByLabel('Touch look sensitivity'),
+  ).toHaveValue('125');
+
+  await page.keyboard.press('Escape');
+
+  await expect(reloadedSettingsButton).toBeFocused();
+  await expect(
+    page.locator('#game-accessibility-settings'),
+  ).toBeHidden();
+});
