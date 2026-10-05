@@ -28,7 +28,6 @@ export interface InochiRealPuppetProbeSummary {
   readonly taxiRenderAttempted: boolean;
   readonly taxiRenderSucceeded: boolean;
   readonly taxiRenderError: string | null;
-  readonly realPuppet: InochiRealPuppetProbeSummary;
 }
 
 export interface InochiBrowserProbeSummary {
@@ -52,6 +51,7 @@ export interface InochiBrowserProbeSummary {
   readonly taxiRenderAttempted: boolean;
   readonly taxiRenderSucceeded: boolean;
   readonly taxiRenderError: string | null;
+  readonly realPuppet: InochiRealPuppetProbeSummary;
 }
 
 function errorMessage(error: unknown): string {
