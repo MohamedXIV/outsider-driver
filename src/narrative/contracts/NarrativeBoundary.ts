@@ -19,6 +19,10 @@ export const NARRATIVE_EXTERNAL_FUNCTIONS = [
   'GAME_PASSENGER_SUSPICION',
   'GAME_CITY_ATTENTION',
   'GAME_TRANSLATION_LEVEL',
+  'GAME_HAS_TAXI_CAPABILITY',
+  'GAME_HAS_ITEM',
+  'GAME_TAXI_CONDITION',
+  'GAME_HAS_UNREAD_MESSAGE',
   'GAME_REVEAL_FACT',
   'GAME_RECORD_CLAIM',
   'GAME_ADJUST_SUSPICION',
@@ -85,8 +89,16 @@ export interface TranslatorNarrativeQueryPort {
   getTranslationLevel(requirement: TranslationRequirement): number;
 }
 
+export interface PersonalPersistenceNarrativeQueryPort {
+  hasTaxiCapability(capability: string): boolean;
+  hasItem(itemId: string): boolean;
+  getTaxiCondition(): number;
+  hasUnreadMessage(messageId: string): boolean;
+}
+
 export interface NarrativeQueryPort {
   readonly translator?: TranslatorNarrativeQueryPort;
+  readonly personal?: PersonalPersistenceNarrativeQueryPort;
   hasFact(factId: FactId): boolean;
   hasClaim(claimId: ClaimId): boolean;
   coverIdentityMatches(key: string, value: string): boolean;

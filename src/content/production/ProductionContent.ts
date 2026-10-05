@@ -666,6 +666,91 @@ export const productionContent = {
       },
     ],
   },
+  personalPersistence: {
+    schemaVersion: 1,
+    upgrades: [
+      {
+        schemaVersion: 1,
+        id: 'taxi-upgrade:reinforced-partition-v1',
+        data: {
+          displayName: 'Reinforced Partition',
+          slot: 'partition',
+          purchaseCostCredits: 220,
+          installationCostCredits: 45,
+          legality: 'licensed',
+          riskFootprint: 4,
+          capabilities: ['cabin.protection'],
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'taxi-upgrade:covert-radio-antenna-v1',
+        data: {
+          displayName: 'Covert Radio Antenna',
+          slot: 'radio',
+          purchaseCostCredits: 180,
+          installationCostCredits: 35,
+          legality: 'illegal',
+          riskFootprint: 38,
+          capabilities: ['radio.hidden-band'],
+        },
+      },
+      {
+        schemaVersion: 1,
+        id: 'taxi-upgrade:passenger-observation-camera-v1',
+        data: {
+          displayName: 'Passenger Observation Camera',
+          slot: 'sensor',
+          purchaseCostCredits: 150,
+          installationCostCredits: 25,
+          legality: 'restricted',
+          riskFootprint: 18,
+          capabilities: ['passenger.observation'],
+        },
+      },
+    ],
+    items: [
+      {
+        schemaVersion: 1,
+        id: 'item:docks-clinic-token',
+        data: {
+          displayName: 'Docks Clinic Token',
+          kind: 'souvenir',
+          presentationKey: 'souvenir.docks-clinic-token',
+          capabilities: [],
+        },
+      },
+    ],
+    messages: [
+      {
+        schemaVersion: 1,
+        id: 'message:first-shift-callback',
+        data: {
+          kind: 'callback',
+          senderKey: 'passenger.underground-clinic-rider',
+          passengerId: 'passenger:underground-clinic-rider',
+          subjectKey: 'message.first-shift.subject',
+          bodyKey: 'message.first-shift.body',
+        },
+      },
+    ],
+    maintenanceIssues: [
+      {
+        id: 'brake-pads-worn',
+        displayName: 'Worn Brake Pads',
+        severity: 'major',
+        repairCostCredits: 55,
+        conditionRestored: 18,
+      },
+      {
+        id: 'cabin-filter-clogged',
+        displayName: 'Clogged Cabin Filter',
+        severity: 'minor',
+        repairCostCredits: 20,
+        conditionRestored: 8,
+      },
+    ],
+  },
   narrativeStories: [
     {
       id: 'foundation-passenger',

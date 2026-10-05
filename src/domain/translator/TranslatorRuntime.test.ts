@@ -3,6 +3,7 @@ import { productionContent } from '../../content/production/ProductionContent';
 import { createInitialEconomyState } from '../economy/EconomyState';
 import { createInitialRadioState } from '../radio/RadioState';
 import { createInitialPersonalSpaceState } from '../spaces/PersonalSpaceState';
+import { createInitialPersonalPersistenceState } from '../personal/PersonalPersistenceState';
 import { entityId } from '../ids/EntityId';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
 import {
@@ -98,6 +99,7 @@ describe('TranslatorRuntime', () => {
         economyState: createInitialEconomyState(),
         radioState: createInitialRadioState(),
         personalSpaceState: createInitialPersonalSpaceState(),
+      personalPersistenceState: createInitialPersonalPersistenceState(),
       },
       '2026-10-04T11:30:00.000Z',
     );

@@ -12,6 +12,10 @@ import {
   PersonalSpaceStateSchema,
   createInitialPersonalSpaceState,
 } from '../../domain/spaces/PersonalSpaceState';
+import {
+  PersonalPersistenceStateSchema,
+  createInitialPersonalPersistenceState,
+} from '../../domain/personal/PersonalPersistenceState';
 import { SocialStealthStateSchema } from '../../domain/social/SocialStealthState';
 import {
   TranslatorStateSchema,
@@ -19,7 +23,7 @@ import {
 } from '../../domain/translator/TranslatorState';
 import { VersionedSaveCodec } from './VersionedSaveCodec';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 7 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 8 as const;
 
 export const GameStateV1Schema = z.object({}).strict();
 
@@ -74,11 +78,23 @@ export const GameStateV7Schema = z
   })
   .strict();
 
-export type GameState = z.infer<typeof GameStateV7Schema>;
+export const GameStateV8Schema = z
+  .object({
+    rideSession: RideSessionSaveSchema.nullable(),
+    socialState: SocialStealthStateSchema.nullable(),
+    translatorState: TranslatorStateSchema,
+    economyState: EconomyStateSchema,
+    radioState: RadioStateSchema,
+    personalSpaceState: PersonalSpaceStateSchema,
+    personalPersistenceState: PersonalPersistenceStateSchema,
+  })
+  .strict();
+
+export type GameState = z.infer<typeof GameStateV8Schema>;
 
 export const gameSaveCodec = new VersionedSaveCodec({
   currentVersion: CURRENT_SAVE_SCHEMA_VERSION,
-  currentSchema: GameStateV7Schema,
+  currentSchema: GameStateV8Schema,
   historicalVersions: [
     {
       version: 1,
@@ -103,6 +119,10 @@ export const gameSaveCodec = new VersionedSaveCodec({
     {
       version: 6,
       schema: GameStateV6Schema,
+    },
+    {
+      version: 7,
+      schema: GameStateV7Schema,
     },
   ],
   migrations: [
@@ -177,16 +197,31 @@ export const gameSaveCodec = new VersionedSaveCodec({
         };
       },
     },
+    {
+      fromVersion: 7,
+      toVersion: 8,
+      migrate: (state) => {
+        const v7 = GameStateV7Schema.parse(state);
+
+        return {
+          ...v7,
+          personalPersistenceState:
+            createInitialPersonalPersistenceState(),
+        };
+      },
+    },
   ],
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV7Schema.parse({
+  return GameStateV8Schema.parse({
     rideSession: null,
     socialState: null,
     translatorState: createInitialTranslatorState(),
     economyState: createInitialEconomyState(),
     radioState: createInitialRadioState(),
     personalSpaceState: createInitialPersonalSpaceState(),
+    personalPersistenceState:
+      createInitialPersonalPersistenceState(),
   });
 }

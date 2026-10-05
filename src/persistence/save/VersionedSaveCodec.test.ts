@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createInitialEconomyState } from '../../domain/economy/EconomyState';
 import { createInitialRadioState } from '../../domain/radio/RadioState';
 import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
+import { createInitialPersonalPersistenceState } from '../../domain/personal/PersonalPersistenceState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   SaveVersionError,
@@ -24,6 +25,8 @@ function currentEmptyState() {
     economyState: createInitialEconomyState(),
     radioState: createInitialRadioState(),
     personalSpaceState: createInitialPersonalSpaceState(),
+    personalPersistenceState:
+      createInitialPersonalPersistenceState(),
   };
 }
 
@@ -40,7 +43,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates the v1 empty production state through every version into v7', () => {
+  it('migrates the v1 empty production state through every version into v8', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -54,7 +57,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates v6 by adding deterministic unvisited personal-space state', () => {
+  it('migrates v6 by adding deterministic personal-space and personal-persistence state', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 6,
@@ -74,10 +77,31 @@ describe('gameSaveCodec', () => {
     });
   });
 
+  it('migrates v7 by adding deterministic personal persistence state', () => {
+    expect(
+      gameSaveCodec.decode({
+        schemaVersion: 7,
+        savedAt: timestamp,
+        state: {
+          rideSession: null,
+          socialState: null,
+          translatorState: createInitialTranslatorState(),
+          economyState: createInitialEconomyState(),
+          radioState: createInitialRadioState(),
+          personalSpaceState: createInitialPersonalSpaceState(),
+        },
+      }),
+    ).toEqual({
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+      savedAt: timestamp,
+      state: currentEmptyState(),
+    });
+  });
+
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 8,
+        schemaVersion: 9,
         savedAt: timestamp,
         state: currentEmptyState(),
       }),

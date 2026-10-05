@@ -36,6 +36,10 @@ import {
   type PersonalSpaceCatalog,
 } from '../spaces/PersonalSpaceContracts';
 import {
+  validatePersonalPersistenceCatalog,
+  type PersonalPersistenceCatalog,
+} from '../personal/PersonalPersistenceContracts';
+import {
   JobContractSchema,
   validateJobReferences,
   type JobContract,
@@ -76,6 +80,7 @@ export interface ProductionContentBundleInput {
   readonly translator: unknown;
   readonly radio: unknown;
   readonly personalSpaces: unknown;
+  readonly personalPersistence: unknown;
   readonly narrativeStories: readonly unknown[];
   readonly taxiScene: unknown;
 }
@@ -115,6 +120,7 @@ export interface ValidatedProductionContent {
   readonly translator: TranslatorCatalog;
   readonly radio: RadioCatalog;
   readonly personalSpaces: PersonalSpaceCatalog;
+  readonly personalPersistence: PersonalPersistenceCatalog;
   readonly narrativeStories: readonly ValidatedNarrativeStory[];
   readonly taxiScene: TaxiSceneDefinition;
 }
@@ -295,6 +301,7 @@ export function validateProductionContent(
   let translator: TranslatorCatalog | undefined;
   let radio: RadioCatalog | undefined;
   let personalSpaces: PersonalSpaceCatalog | undefined;
+  let personalPersistence: PersonalPersistenceCatalog | undefined;
   let narrativeStories: readonly ValidatedNarrativeStory[] | undefined;
   let taxiScene: TaxiSceneDefinition | undefined;
 
@@ -334,6 +341,17 @@ export function validateProductionContent(
     );
   } catch (error: unknown) {
     addIssue(issues, 'personal-spaces', error);
+  }
+
+  if (passengers !== undefined) {
+    try {
+      personalPersistence = validatePersonalPersistenceCatalog(
+        input.personalPersistence,
+        passengers,
+      );
+    } catch (error: unknown) {
+      addIssue(issues, 'personal-persistence', error);
+    }
   }
 
   try {
@@ -448,6 +466,7 @@ export function validateProductionContent(
     translator === undefined ||
     radio === undefined ||
     personalSpaces === undefined ||
+    personalPersistence === undefined ||
     narrativeStories === undefined ||
     taxiScene === undefined
   ) {
@@ -466,6 +485,7 @@ export function validateProductionContent(
     translator,
     radio,
     personalSpaces,
+    personalPersistence,
     narrativeStories,
     taxiScene,
   };

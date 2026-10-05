@@ -17,6 +17,7 @@ It currently registers:
 - translator languages and packs;
 - radio stations, schedules, broadcasts, information hooks, and passenger reactions;
 - 3D personal spaces: garage/home layouts, lighting, movement bounds, persistent flags, and interaction anchors;
+- taxi upgrades, maintenance issues, personal items/souvenirs, and messages/callbacks;
 - narrative story sources;
 - taxi scene definition.
 
@@ -49,6 +50,7 @@ Current checks include:
 - radio station/language references;
 - radio route/job intel targets and reacting passengers;
 - personal-space IDs, local asset/anchor/flag uniqueness, and visibility-flag references;
+- personal-persistence upgrade/item/message/maintenance schemas and message passenger references;
 - passenger narrative references;
 - passenger performance profile references;
 - Ink `performance:<cue>` tags against each passenger's authored cue catalog;
@@ -103,7 +105,7 @@ Underground jobs can require underground access and carry a risk footprint.
 
 Validation is not maintained against a hand-copied validation fixture.
 
-Babylon consumes `productionContent.taxiScene` and `productionContent.personalSpaces`; passenger acting consumes `productionContent.passengerPerformance`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`.
+Babylon consumes `productionContent.taxiScene` and `productionContent.personalSpaces`; passenger acting consumes `productionContent.passengerPerformance`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`; personal progression consumes `productionContent.personalPersistence`.
 
 Tests may mutate production-shaped data for negative/focused scenarios, but fixtures never become alternate production truth.
 
@@ -146,6 +148,6 @@ Current anchor kinds are:
 - sleep;
 - exit.
 
-Later systems such as #27 attach behavior to those typed anchors. They must not hard-code object positions or rebuild the garage/home renderer.
+Personal-persistence systems attach behavior to those typed anchors. They do not hard-code object positions or rebuild the garage/home renderer.
 
-Persistent flags are intentionally generic presentation/state hooks. They may show or hide an authored asset, but domain systems remain responsible for deciding when a flag changes.
+Persistent flags are presentation hooks, not upgrade/message truth. `PersonalSpacePersistenceProjection` derives the garage inspection light and home message indicator from authoritative personal-persistence state. Jobs and narrative query the authoritative personal state directly rather than reading scene flags.

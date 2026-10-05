@@ -84,6 +84,18 @@ export const WorkCompletionEffectsSchema = z
   })
   .strict();
 
+const workCapabilitySchema = z
+  .string()
+  .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
+
+export const WorkPersonalRequirementsSchema = z
+  .object({
+    minimumTaxiCondition: z.number().int().min(0).max(100),
+    requiredTaxiCapabilities: z.array(workCapabilitySchema),
+    requiredItemIds: z.array(entityIdSchema('item')),
+  })
+  .strict();
+
 export const JobContractSchema = z
   .object({
     id: entityIdSchema('job'),
@@ -96,6 +108,7 @@ export const JobContractSchema = z
     fare: FareTermsSchema,
     expenses: ExpenseTermsSchema,
     completionEffects: WorkCompletionEffectsSchema,
+    personalRequirements: WorkPersonalRequirementsSchema.optional(),
   })
   .strict();
 
@@ -107,7 +120,10 @@ export type WorkIdentityRequirement = z.infer<
 export interface WorkEligibilityContext {
   readonly officialStanding: number;
   readonly undergroundAccess: number;
+  readonly taxiCondition?: number;
   coverIdentityMatches(key: string, value: string): boolean;
+  hasTaxiCapability?(capability: string): boolean;
+  hasItem?(itemId: string): boolean;
 }
 
 export interface WorkEligibilityResult {
@@ -151,6 +167,29 @@ export function evaluateJobEligibility(
     job.source.minimumUndergroundAccess
   ) {
     reasons.push('underground-access');
+  }
+
+  const personal = job.personalRequirements;
+
+  if (personal !== undefined) {
+    if (
+      context.taxiCondition === undefined ||
+      context.taxiCondition < personal.minimumTaxiCondition
+    ) {
+      reasons.push('taxi-condition');
+    }
+
+    for (const capability of personal.requiredTaxiCapabilities) {
+      if (context.hasTaxiCapability?.(capability) !== true) {
+        reasons.push(`taxi-capability:${capability}`);
+      }
+    }
+
+    for (const itemId of personal.requiredItemIds) {
+      if (context.hasItem?.(itemId) !== true) {
+        reasons.push(`item:${itemId}`);
+      }
+    }
   }
 
   return {
