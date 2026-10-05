@@ -123,10 +123,12 @@ describe('production save compatibility matrix', () => {
   it.each(fixtures)(
     'fails closed when v$schemaVersion state is corrupted',
     (fixture) => {
-      const corrupted = cloneFixture(fixture);
-      corrupted.state = {
-        ...corrupted.state,
-        __corruptUnknownField: true,
+      const corrupted: HistoricalFixture = {
+        ...cloneFixture(fixture),
+        state: {
+          ...fixture.state,
+          __corruptUnknownField: true,
+        },
       };
 
       expect(() => {
