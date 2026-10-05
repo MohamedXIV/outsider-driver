@@ -12,6 +12,7 @@ It currently registers:
 - route motion profiles;
 - route experience/scenery/visual profiles;
 - passenger catalog;
+- passenger semantic performance profiles;
 - official and underground jobs;
 - translator languages and packs;
 - radio stations, schedules, broadcasts, information hooks, and passenger reactions;
@@ -47,9 +48,35 @@ Current checks include:
 - radio station/language references;
 - radio route/job intel targets and reacting passengers;
 - passenger narrative references;
+- passenger performance profile references;
+- Ink `performance:<cue>` tags against each passenger's authored cue catalog;
 - approved Ink externals + real Ink compilation;
 - taxi scene schema;
 - current save defaults and codec round-trip.
+
+## Passenger performance authoring
+
+Narrative requests passenger acting through semantic Ink tags:
+
+```ink
+Passenger: Keep moving. # performance:firm
+```
+
+The tag names a cue from that passenger's production performance profile. Narrative never names Inochi parameters such as mouth, gaze, or rig-specific controls.
+
+A performance profile maps reusable semantic channels to a specific puppet:
+
+- talk;
+- blink;
+- gaze;
+- head pose;
+- body pose;
+- named expressions;
+- named cues combining those controls.
+
+`content:check` fails when a narrative requests a cue missing from the passenger's profile.
+
+When a real puppet asset is bound, `PassengerPerformanceController` validates every authored parameter name and dimensionality against the actual Inochi runtime parameter descriptors before applying a cue.
 
 ## Job authoring
 
@@ -74,7 +101,7 @@ Underground jobs can require underground access and carry a risk footprint.
 
 Validation is not maintained against a hand-copied validation fixture.
 
-Babylon consumes `productionContent.taxiScene`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`.
+Babylon consumes `productionContent.taxiScene`; passenger acting consumes `productionContent.passengerPerformance`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`.
 
 Tests may mutate production-shaped data for negative/focused scenarios, but fixtures never become alternate production truth.
 
