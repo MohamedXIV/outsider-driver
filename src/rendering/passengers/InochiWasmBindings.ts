@@ -106,98 +106,6 @@ function readUnsignedLeb128(
   throw new Error('Unexpected end of WASM while reading section size.');
 }
 
-export interface WasmMemoryLimits {
-  readonly minimumPages: number;
-  readonly maximumPages: number | null;
-}
-
-function readSectionPayload(
-  bytes: Uint8Array,
-  targetSectionId: number,
-): Uint8Array | null {
-  let offset = 8;
-
-  while (offset < bytes.length) {
-    const sectionId = bytes[offset];
-
-    if (sectionId === undefined) {
-      break;
-    }
-
-    offset += 1;
-    const size = readUnsignedLeb128(bytes, offset);
-    offset = size.nextOffset;
-    const end = offset + size.value;
-
-    if (end > bytes.length) {
-      throw new Error('WASM section extends beyond module bytes.');
-    }
-
-    if (sectionId === targetSectionId) {
-      return bytes.subarray(offset, end);
-    }
-
-    offset = end;
-  }
-
-  return null;
-}
-
-export function readDefinedWasmMemoryLimits(
-  buffer: ArrayBuffer,
-): WasmMemoryLimits | null {
-  const bytes = new Uint8Array(buffer);
-
-  if (
-    bytes.length < 8 ||
-    bytes[0] !== 0x00 ||
-    bytes[1] !== 0x61 ||
-    bytes[2] !== 0x73 ||
-    bytes[3] !== 0x6d ||
-    bytes[4] !== 0x01 ||
-    bytes[5] !== 0x00 ||
-    bytes[6] !== 0x00 ||
-    bytes[7] !== 0x00
-  ) {
-    throw new Error('Invalid WebAssembly module header.');
-  }
-
-  const payload = readSectionPayload(bytes, 5);
-
-  if (payload === null) {
-    return null;
-  }
-
-  const count = readUnsignedLeb128(payload, 0);
-
-  if (count.value !== 1) {
-    throw new Error(
-      `Expected exactly one defined WASM memory, found ${String(count.value)}.`,
-    );
-  }
-
-  const flags = readUnsignedLeb128(payload, count.nextOffset);
-
-  if ((flags.value & 0x04) !== 0) {
-    throw new Error('WASM memory64 is not supported by the Inochi bridge.');
-  }
-
-  const minimum = readUnsignedLeb128(payload, flags.nextOffset);
-  let maximumPages: number | null = null;
-
-  if ((flags.value & 0x01) !== 0) {
-    maximumPages = readUnsignedLeb128(
-      payload,
-      minimum.nextOffset,
-    ).value;
-  }
-
-  return {
-    minimumPages: minimum.value,
-    maximumPages,
-  };
-}
-
 export function hasWasmStartSection(buffer: ArrayBuffer): boolean {
   const bytes = new Uint8Array(buffer);
 
@@ -295,16 +203,11 @@ export class InochiWasmBindings
   implements OfficialInochiBindings
 {
   readonly #exports: InochiWasmExports;
-  readonly #memoryLimits: WasmMemoryLimits | null;
   #countPointer = 0;
   #disposed = false;
 
-  private constructor(
-    exports: InochiWasmExports,
-    memoryLimits: WasmMemoryLimits | null,
-  ) {
+  private constructor(exports: InochiWasmExports) {
     this.#exports = exports;
-    this.#memoryLimits = memoryLimits;
     this.#getCountPointer();
   }
 
@@ -316,7 +219,6 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
-    const memoryLimits = readDefinedWasmMemoryLimits(bytes);
     const instantiated = await WebAssembly.instantiate(
       bytes,
       createWasiImports(),
@@ -334,18 +236,12 @@ export class InochiWasmBindings
       );
     }
 
-    // A WASM Start section has already executed before instantiate()
-    // returns. Re-running in_init() would execute the module constructors
-    // twice and can corrupt allocator/global state. Keep the explicit call
-    // only for compatible modules that do not carry a Start section.
-    if (!hasWasmStartSection(bytes)) {
-      exports.in_init();
-    }
-
-    return new InochiWasmBindings(
-      exports,
-      memoryLimits,
-    );
+    // Match the official Inochi2D TypeScript wrapper exactly: the
+    // module's WASM Start section is not a substitute for the exported
+    // library initialization call. Initialize the library after
+    // instantiation, then allocate the wrapper-style query scratchpad.
+    exports.in_init();
+    return new InochiWasmBindings(exports);
   }
 
   public loadPuppet(data: ArrayBuffer): number {
@@ -355,23 +251,11 @@ export class InochiWasmBindings
       throw new Error('Inochi2D puppet asset must not be empty.');
     }
 
-    const memoryBytesBefore = this.#exports.memory.buffer.byteLength;
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
 
     if (dataPointer === 0) {
-      const memoryBytesAfter = this.#exports.memory.buffer.byteLength;
       throw new Error(
-        [
-          `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
-          `WASM memory bytes before malloc: ${String(memoryBytesBefore)}.`,
-          `WASM memory bytes after malloc: ${String(memoryBytesAfter)}.`,
-          this.#memoryLimits === null
-            ? 'WASM defines no local memory limits.'
-            : [
-                `WASM declared minimum pages: ${String(this.#memoryLimits.minimumPages)}.`,
-                `WASM declared maximum pages: ${this.#memoryLimits.maximumPages === null ? 'unbounded' : String(this.#memoryLimits.maximumPages)}.`,
-              ].join(' '),
-        ].join(' '),
+        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
       );
     }
 
