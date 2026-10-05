@@ -279,6 +279,10 @@ const checks = [
 ];
 
 const failures = [];
+const startupReadyBudget = requireBudget(
+  report.budgets,
+  'startupReadyMs',
+);
 
 process.stdout.write(
   [
@@ -308,7 +312,11 @@ for (const [key, label] of checks) {
 }
 
 process.stdout.write(
-  'PASS Production fixture isolation: no dist/__fixtures__ content.\n',
+  [
+    'PASS Production fixture isolation: no dist/__fixtures__ content.',
+    `INFO Startup-ready browser budget: ${String(startupReadyBudget)} ms.`,
+    '',
+  ].join('\n'),
 );
 
 if (failures.length > 0) {
