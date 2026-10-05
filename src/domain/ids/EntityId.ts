@@ -18,6 +18,7 @@ export const ENTITY_KINDS = [
   'broadcast',
   'taxi-upgrade',
   'item',
+  'personal-space',
 ] as const;
 
 export const EntityKindSchema = z.enum(ENTITY_KINDS);
@@ -120,3 +121,4 @@ export type RadioStationId = EntityId<'radio-station'>;
 export type BroadcastId = EntityId<'broadcast'>;
 export type TaxiUpgradeId = EntityId<'taxi-upgrade'>;
 export type ItemId = EntityId<'item'>;
+export type PersonalSpaceId = EntityId<'personal-space'>;

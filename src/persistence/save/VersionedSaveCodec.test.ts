@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { describe, expect, it } from 'vitest';
 import { createInitialEconomyState } from '../../domain/economy/EconomyState';
 import { createInitialRadioState } from '../../domain/radio/RadioState';
+import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   SaveVersionError,
@@ -22,6 +23,7 @@ function currentEmptyState() {
     translatorState: createInitialTranslatorState(),
     economyState: createInitialEconomyState(),
     radioState: createInitialRadioState(),
+    personalSpaceState: createInitialPersonalSpaceState(),
   };
 }
 
@@ -38,7 +40,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates the v1 empty production state through every version into v6', () => {
+  it('migrates the v1 empty production state through every version into v7', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -52,67 +54,17 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates a v2 ride-session state through later persistent systems', () => {
+  it('migrates v6 by adding deterministic unvisited personal-space state', () => {
     expect(
       gameSaveCodec.decode({
-        schemaVersion: 2,
-        savedAt: timestamp,
-        state: {
-          rideSession: null,
-        },
-      }),
-    ).toEqual({
-      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
-      savedAt: timestamp,
-      state: currentEmptyState(),
-    });
-  });
-
-  it('migrates v3 by adding deterministic translator, economy, and radio state', () => {
-    expect(
-      gameSaveCodec.decode({
-        schemaVersion: 3,
-        savedAt: timestamp,
-        state: {
-          rideSession: null,
-          socialState: null,
-        },
-      }),
-    ).toEqual({
-      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
-      savedAt: timestamp,
-      state: currentEmptyState(),
-    });
-  });
-
-  it('migrates v4 by adding deterministic economy and radio state', () => {
-    expect(
-      gameSaveCodec.decode({
-        schemaVersion: 4,
-        savedAt: timestamp,
-        state: {
-          rideSession: null,
-          socialState: null,
-          translatorState: createInitialTranslatorState(),
-        },
-      }),
-    ).toEqual({
-      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
-      savedAt: timestamp,
-      state: currentEmptyState(),
-    });
-  });
-
-  it('migrates v5 by adding deterministic radio state', () => {
-    expect(
-      gameSaveCodec.decode({
-        schemaVersion: 5,
+        schemaVersion: 6,
         savedAt: timestamp,
         state: {
           rideSession: null,
           socialState: null,
           translatorState: createInitialTranslatorState(),
           economyState: createInitialEconomyState(),
+          radioState: createInitialRadioState(),
         },
       }),
     ).toEqual({
@@ -125,7 +77,7 @@ describe('gameSaveCodec', () => {
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 7,
+        schemaVersion: 8,
         savedAt: timestamp,
         state: currentEmptyState(),
       }),

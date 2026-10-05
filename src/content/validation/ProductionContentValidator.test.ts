@@ -22,6 +22,10 @@ describe('production content validation', () => {
     expect(validated.translator.packs).toHaveLength(2);
     expect(validated.radio.stations).toHaveLength(3);
     expect(validated.radio.broadcasts).toHaveLength(3);
+    expect(validated.personalSpaces.spaces.map((space) => space.id)).toEqual([
+      'personal-space:garage',
+      'personal-space:home',
+    ]);
   });
 
   it('rejects a passenger that references a missing narrative story', () => {
@@ -196,6 +200,55 @@ describe('production content validation', () => {
 
     expect(() => validateProductionContent(broken)).toThrow(
       /references unknown job intel target job:missing-radio-target/,
+    );
+  });
+
+  it('rejects personal-space assets that reference unknown persistent flags', () => {
+    const garage = productionContent.personalSpaces.spaces.find(
+      (space) => space.kind === 'garage',
+    );
+    const home = productionContent.personalSpaces.spaces.find(
+      (space) => space.kind === 'home',
+    );
+
+    if (garage === undefined || home === undefined) {
+      throw new Error('Expected production garage and home spaces.');
+    }
+
+    const inspectionAsset = garage.assets.find(
+      (asset) => asset.id === 'inspection-light-strip',
+    );
+
+    if (inspectionAsset === undefined) {
+      throw new Error('Expected garage inspection-light fixture.');
+    }
+
+    const broken = {
+      ...productionContent,
+      personalSpaces: {
+        ...productionContent.personalSpaces,
+        spaces: [
+          {
+            ...garage,
+            assets: garage.assets.map((asset) =>
+              asset.id === inspectionAsset.id
+                ? {
+                    ...asset,
+                    visibility: {
+                      flagId: 'missing-flag',
+                      visibleWhen: true,
+                    },
+                  }
+                : asset,
+            ),
+          },
+          home,
+        ],
+      },
+    };
+
+    expect(() => validateProductionContent(broken)).toThrow(
+      /references unknown visibility flag missing-flag/,
     );
   });
 

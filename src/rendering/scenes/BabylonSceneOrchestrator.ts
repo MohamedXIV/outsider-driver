@@ -1,17 +1,26 @@
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TaxiSceneDefinition } from '../../content/presentation/TaxiSceneDefinition';
+import type { PersonalSpaceDefinition } from '../../content/spaces/PersonalSpaceContracts';
+import {
+  createPersonalSpaceScene,
+  type PersonalSpaceFlagResolver,
+  type PersonalSpaceSceneHandle,
+} from '../spaces/createPersonalSpaceScene';
 import {
   createTaxiScene,
   type TaxiSceneHandle,
 } from '../taxi/createTaxiScene';
 import { createBootScene } from './createBootScene';
 
+export type BabylonSceneKind = 'boot' | 'taxi' | 'personal-space';
+
 export class BabylonSceneOrchestrator {
   readonly #engine: AbstractEngine;
   #activeScene: Scene;
-  #activeKind: 'boot' | 'taxi' = 'boot';
+  #activeKind: BabylonSceneKind = 'boot';
   #taxiScene: TaxiSceneHandle | null = null;
+  #personalSpaceScene: PersonalSpaceSceneHandle | null = null;
   #disposed = false;
 
   public constructor(engine: AbstractEngine) {
@@ -28,16 +37,61 @@ export class BabylonSceneOrchestrator {
     this.#activeScene = nextTaxiScene.scene;
     this.#activeKind = 'taxi';
     this.#taxiScene = nextTaxiScene;
+    this.#personalSpaceScene = null;
     previousScene.dispose();
 
     return nextTaxiScene;
+  }
+
+  public showPersonalSpace(
+    definition: PersonalSpaceDefinition,
+    resolveFlag: PersonalSpaceFlagResolver,
+    attachControls: boolean,
+  ): PersonalSpaceSceneHandle {
+    this.#assertAlive();
+
+    const nextSpace = createPersonalSpaceScene(
+      this.#engine,
+      definition,
+      {
+        attachControls,
+        resolveFlag,
+      },
+    );
+    const previousScene = this.#activeScene;
+
+    this.#activeScene = nextSpace.scene;
+    this.#activeKind = 'personal-space';
+    this.#taxiScene = null;
+    this.#personalSpaceScene = nextSpace;
+    previousScene.dispose();
+
+    return nextSpace;
+  }
+
+  public refreshPersonalSpaceFlags(
+    resolveFlag: PersonalSpaceFlagResolver,
+  ): void {
+    this.#assertAlive();
+
+    if (this.#personalSpaceScene === null) {
+      throw new Error(
+        'Cannot refresh personal-space flags when no personal space scene is active.',
+      );
+    }
+
+    this.#personalSpaceScene.refreshVisibility(resolveFlag);
   }
 
   public getTaxiScene(): TaxiSceneHandle | null {
     return this.#taxiScene;
   }
 
-  public getActiveSceneKind(): 'boot' | 'taxi' {
+  public getPersonalSpaceScene(): PersonalSpaceSceneHandle | null {
+    return this.#personalSpaceScene;
+  }
+
+  public getActiveSceneKind(): BabylonSceneKind {
     return this.#activeKind;
   }
 
@@ -53,6 +107,7 @@ export class BabylonSceneOrchestrator {
 
     this.#activeScene.dispose();
     this.#taxiScene = null;
+    this.#personalSpaceScene = null;
     this.#disposed = true;
   }
 

@@ -1,5 +1,6 @@
 import source from '../narrative/foundation-passenger.ink?raw';
 import { defaultTaxiSceneDefinition } from '../presentation/defaultTaxiScene';
+import { defaultPersonalSpaceCatalog } from '../spaces/defaultPersonalSpaces';
 
 export const productionContent = {
   world: {
@@ -671,6 +672,7 @@ export const productionContent = {
       source,
     },
   ],
+  personalSpaces: defaultPersonalSpaceCatalog,
   taxiScene: defaultTaxiSceneDefinition,
 } as const;
 

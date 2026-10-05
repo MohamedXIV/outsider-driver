@@ -11,6 +11,7 @@ import {
 import type { NarrativeDomainEvent } from '../../narrative/contracts/NarrativeBoundary';
 import { createInitialEconomyState } from '../../domain/economy/EconomyState';
 import { createInitialRadioState } from '../../domain/radio/RadioState';
+import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
 import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
   gameSaveCodec,
@@ -301,6 +302,7 @@ describe('PassengerRideOrchestrator', () => {
       translatorState: createInitialTranslatorState(),
       economyState: createInitialEconomyState(),
       radioState: createInitialRadioState(),
+      personalSpaceState: createInitialPersonalSpaceState(),
     };
     const serialized = gameSaveCodec.serialize(
       state,
