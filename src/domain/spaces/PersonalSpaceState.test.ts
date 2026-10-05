@@ -3,6 +3,7 @@ import { productionContent } from '../../content/production/ProductionContent';
 import { createInitialEconomyState } from '../economy/EconomyState';
 import { entityId } from '../ids/EntityId';
 import { createInitialRadioState } from '../radio/RadioState';
+import { createInitialRelationshipState } from '../relationships/RelationshipState';
 import { createInitialPersonalPersistenceState } from '../personal/PersonalPersistenceState';
 import { createInitialTranslatorState } from '../translator/TranslatorState';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
@@ -51,6 +52,7 @@ describe('PersonalSpaceStateStore', () => {
         personalSpaceState: state.exportState(),
         personalPersistenceState:
           createInitialPersonalPersistenceState(),
+        relationshipState: createInitialRelationshipState(),
       },
       '2026-10-05T04:00:00.000Z',
     );
