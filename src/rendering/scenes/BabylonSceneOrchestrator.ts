@@ -1,4 +1,9 @@
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
+import {
+  AccessibilityPreferencesStateSchema,
+  createInitialAccessibilityPreferencesState,
+  type AccessibilityPreferencesState,
+} from '../../domain/preferences/AccessibilityPreferencesState';
 import type { Scene } from '@babylonjs/core/scene';
 import type { TaxiSceneDefinition } from '../../content/presentation/TaxiSceneDefinition';
 import type { PersonalSpaceDefinition } from '../../content/spaces/PersonalSpaceContracts';
@@ -21,6 +26,8 @@ export class BabylonSceneOrchestrator {
   #activeKind: BabylonSceneKind = 'boot';
   #taxiScene: TaxiSceneHandle | null = null;
   #personalSpaceScene: PersonalSpaceSceneHandle | null = null;
+  #accessibilityPreferences: AccessibilityPreferencesState =
+    createInitialAccessibilityPreferencesState();
   #disposed = false;
 
   public constructor(engine: AbstractEngine) {
@@ -56,6 +63,8 @@ export class BabylonSceneOrchestrator {
       {
         attachControls,
         resolveFlag,
+        accessibilityPreferences:
+          this.#accessibilityPreferences,
       },
     );
     const previousScene = this.#activeScene;
@@ -67,6 +76,20 @@ export class BabylonSceneOrchestrator {
     previousScene.dispose();
 
     return nextSpace;
+  }
+
+  public applyAccessibilityPreferences(
+    preferencesInput: AccessibilityPreferencesState,
+  ): void {
+    this.#assertAlive();
+    this.#accessibilityPreferences =
+      AccessibilityPreferencesStateSchema.parse(
+        preferencesInput,
+      );
+
+    this.#personalSpaceScene?.applyAccessibilityPreferences(
+      this.#accessibilityPreferences,
+    );
   }
 
   public refreshPersonalSpaceFlags(

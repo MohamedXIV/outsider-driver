@@ -1,5 +1,6 @@
 import { Engine } from '@babylonjs/core/Engines/engine';
 import type { RenderingRuntimePort } from '../app/ports/RenderingRuntimePort';
+import type { AccessibilityPreferencesStore } from '../domain/preferences/AccessibilityPreferencesState';
 import type {
   PersonalSpaceFlagResolver,
   PersonalSpacePresentationPort,
@@ -13,6 +14,7 @@ export class BabylonRenderingRuntime
 {
   readonly #engine: Engine;
   readonly #scenes: BabylonSceneOrchestrator;
+  readonly #unsubscribePreferences: () => void;
   readonly #renderFrame = (): void => {
     this.#scenes.render();
   };
@@ -22,9 +24,17 @@ export class BabylonRenderingRuntime
   #started = false;
   #disposed = false;
 
-  public constructor(canvas: HTMLCanvasElement) {
+  public constructor(
+    canvas: HTMLCanvasElement,
+    preferences: AccessibilityPreferencesStore,
+  ) {
     this.#engine = new Engine(canvas, true, { stencil: true }, true);
     this.#scenes = new BabylonSceneOrchestrator(this.#engine);
+    this.#unsubscribePreferences = preferences.subscribe(
+      (state) => {
+        this.#scenes.applyAccessibilityPreferences(state);
+      },
+    );
     this.#scenes.showTaxi(productionContent.taxiScene);
   }
 
@@ -71,6 +81,7 @@ export class BabylonRenderingRuntime
 
     window.removeEventListener('resize', this.#resize);
     this.#engine.stopRenderLoop(this.#renderFrame);
+    this.#unsubscribePreferences();
     this.#scenes.dispose();
     this.#engine.dispose();
     this.#started = false;

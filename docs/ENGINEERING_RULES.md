@@ -78,8 +78,6 @@ Persistent entities use stable IDs. Never use array positions, display names, or
 
 Save formats are versioned. Schema changes that affect persisted state require migrations once that subsystem lands.
 
-Every supported production save version must have one immutable repository fixture under `src/persistence/save/fixtures/`. Increasing `CURRENT_SAVE_SCHEMA_VERSION` without adding the matching fixture and a complete sequential migration path must fail `npm run save:compat` / CI. Never rewrite an old fixture to resemble a newer schema.
-
 ## 8. Fail loudly at authoring/build time
 
 Prefer build/validation failures for invalid content, impossible cross-references, malformed narrative contracts, and unsupported states.

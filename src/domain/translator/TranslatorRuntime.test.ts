@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
-import { createInitialEconomyState } from '../economy/EconomyState';
-import { createInitialRadioState } from '../radio/RadioState';
-import { createInitialRelationshipState } from '../relationships/RelationshipState';
-import { createInitialPersonalSpaceState } from '../spaces/PersonalSpaceState';
-import { createInitialPersonalPersistenceState } from '../personal/PersonalPersistenceState';
 import { entityId } from '../ids/EntityId';
-import { gameSaveCodec } from '../../persistence/save/gameSave';
+import {
+  createInitialGameState,
+  gameSaveCodec,
+} from '../../persistence/save/gameSave';
 import {
   TranslatorRuntime,
   TRANSLATION_LEVEL_CODE,
@@ -94,14 +92,8 @@ describe('TranslatorRuntime', () => {
 
     const serialized = gameSaveCodec.serialize(
       {
-        rideSession: null,
-        socialState: null,
+        ...createInitialGameState(),
         translatorState: state.exportState(),
-        economyState: createInitialEconomyState(),
-        radioState: createInitialRadioState(),
-        personalSpaceState: createInitialPersonalSpaceState(),
-        personalPersistenceState: createInitialPersonalPersistenceState(),
-        relationshipState: createInitialRelationshipState(),
       },
       '2026-10-04T11:30:00.000Z',
     );

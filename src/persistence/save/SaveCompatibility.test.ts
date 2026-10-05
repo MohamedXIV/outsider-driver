@@ -8,6 +8,7 @@ import v6 from './fixtures/v6.json';
 import v7 from './fixtures/v7.json';
 import v8 from './fixtures/v8.json';
 import v9 from './fixtures/v9.json';
+import v10 from './fixtures/v10.json';
 import {
   CURRENT_SAVE_SCHEMA_VERSION,
   gameSaveCodec,
@@ -29,6 +30,7 @@ const fixtures = [
   v7,
   v8,
   v9,
+  v10,
 ] satisfies readonly HistoricalFixture[];
 
 const stableIdPattern =
@@ -142,7 +144,7 @@ describe('production save compatibility matrix', () => {
   it('rejects malformed envelopes with an actionable boundary error', () => {
     expect(() => {
       gameSaveCodec.decode({
-        schemaVersion: 9,
+        schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
         savedAt: 'not-a-timestamp',
         state: {},
       });
@@ -150,7 +152,7 @@ describe('production save compatibility matrix', () => {
 
     expect(() => {
       gameSaveCodec.decode({
-        schemaVersion: 9,
+        schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
         savedAt: '2026-01-02T03:04:05.000Z',
         state: {},
         unexpected: true,
@@ -160,7 +162,7 @@ describe('production save compatibility matrix', () => {
 
   it('rejects malformed JSON with a save-specific error', () => {
     expect(() => {
-      gameSaveCodec.deserialize('{"schemaVersion":9,');
+      gameSaveCodec.deserialize(`{"schemaVersion":${String(CURRENT_SAVE_SCHEMA_VERSION)},`);
     }).toThrow(/Save data is not valid JSON/);
   });
 

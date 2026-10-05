@@ -7,6 +7,8 @@ import type {
 } from '../../content/passengers/PassengerPerformanceContracts';
 import { PassengerPerformanceProfileSchema } from '../../content/passengers/PassengerPerformanceContracts';
 import type { PassengerPerformanceControlPort } from '../../app/ports/PassengerPerformancePort';
+import type { MotionIntensityPort } from '../../app/preferences/PresentationPreferencesPort';
+import { fullMotionIntensity } from '../../app/preferences/PresentationPreferencesPort';
 import type { InochiParameterDescriptor } from './InochiRuntimeContracts';
 
 const unitSchema = z.number().min(0).max(1);
@@ -54,6 +56,7 @@ export class PassengerPerformanceController
 {
   readonly #puppet: PassengerPerformancePuppetPort;
   readonly #profile: PassengerPerformanceProfile;
+  readonly #motion: MotionIntensityPort;
   readonly #descriptorByName: ReadonlyMap<
     string,
     InochiParameterDescriptor
@@ -67,8 +70,10 @@ export class PassengerPerformanceController
   public constructor(
     puppet: PassengerPerformancePuppetPort,
     profileInput: unknown,
+    motion: MotionIntensityPort = fullMotionIntensity,
   ) {
     this.#puppet = puppet;
+    this.#motion = motion;
     this.#profile =
       PassengerPerformanceProfileSchema.parse(profileInput);
 
@@ -256,8 +261,9 @@ export class PassengerPerformanceController
     xInput: number,
     yInput: number,
   ): void {
-    const x = signedSchema.parse(xInput);
-    const y = signedSchema.parse(yInput);
+    const intensity = this.#motion.getMotionIntensity();
+    const x = signedSchema.parse(xInput) * intensity;
+    const y = signedSchema.parse(yInput) * intensity;
 
     this.#applyChannel(channel, {
       value: 0,

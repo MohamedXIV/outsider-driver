@@ -9,13 +9,8 @@ import {
   type PassengerId,
 } from '../../domain/ids/EntityId';
 import type { NarrativeDomainEvent } from '../../narrative/contracts/NarrativeBoundary';
-import { createInitialEconomyState } from '../../domain/economy/EconomyState';
-import { createInitialRadioState } from '../../domain/radio/RadioState';
-import { createInitialRelationshipState } from '../../domain/relationships/RelationshipState';
-import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
-import { createInitialPersonalPersistenceState } from '../../domain/personal/PersonalPersistenceState';
-import { createInitialTranslatorState } from '../../domain/translator/TranslatorState';
 import {
+  createInitialGameState,
   gameSaveCodec,
   type GameState,
 } from '../../persistence/save/gameSave';
@@ -299,14 +294,8 @@ describe('PassengerRideOrchestrator', () => {
     ]);
 
     const state: GameState = {
+      ...createInitialGameState(),
       rideSession: original.getSessionSave(),
-      socialState: null,
-      translatorState: createInitialTranslatorState(),
-      economyState: createInitialEconomyState(),
-      radioState: createInitialRadioState(),
-      personalSpaceState: createInitialPersonalSpaceState(),
-      personalPersistenceState: createInitialPersonalPersistenceState(),
-      relationshipState: createInitialRelationshipState(),
     };
     const serialized = gameSaveCodec.serialize(
       state,

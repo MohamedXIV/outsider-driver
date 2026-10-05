@@ -1,5 +1,7 @@
 import './styles.css';
 import { GameApplication } from './app/GameApplication';
+import { BrowserAccessibilityPreferencesPersistence } from './app/preferences/BrowserAccessibilityPreferencesPersistence';
+import { AccessibilityPreferencesStore } from './domain/preferences/AccessibilityPreferencesState';
 import { BabylonRenderingRuntime } from './rendering/BabylonRenderingRuntime';
 import { createGameSurface } from './ui/createGameSurface';
 
@@ -9,8 +11,21 @@ if (root === null) {
   throw new Error('Application root #app was not found.');
 }
 
-const surface = createGameSurface(root);
-const rendering = new BabylonRenderingRuntime(surface.canvas);
+const preferencesPersistence =
+  new BrowserAccessibilityPreferencesPersistence();
+const preferences = new AccessibilityPreferencesStore(
+  preferencesPersistence.load(),
+);
+const stopPreferencePersistence = preferences.subscribe(
+  (state) => {
+    preferencesPersistence.save(state);
+  },
+);
+const surface = createGameSurface(root, preferences);
+const rendering = new BabylonRenderingRuntime(
+  surface.canvas,
+  preferences,
+);
 const application = new GameApplication(rendering);
 
 application.start();
@@ -18,6 +33,7 @@ application.start();
 if (import.meta.hot !== undefined) {
   import.meta.hot.dispose(() => {
     application.dispose();
+    stopPreferencePersistence();
     surface.dispose();
   });
 }

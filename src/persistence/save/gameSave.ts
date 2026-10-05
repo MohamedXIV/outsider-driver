@@ -5,6 +5,10 @@ import {
   createInitialEconomyState,
 } from '../../domain/economy/EconomyState';
 import {
+  AccessibilityPreferencesStateSchema,
+  createInitialAccessibilityPreferencesState,
+} from '../../domain/preferences/AccessibilityPreferencesState';
+import {
   RadioStateSchema,
   createInitialRadioState,
 } from '../../domain/radio/RadioState';
@@ -27,7 +31,7 @@ import {
 } from '../../domain/translator/TranslatorState';
 import { VersionedSaveCodec } from './VersionedSaveCodec';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 9 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 10 as const;
 
 export const GameStateV1Schema = z.object({}).strict();
 
@@ -107,11 +111,26 @@ export const GameStateV9Schema = z
   })
   .strict();
 
-export type GameState = z.infer<typeof GameStateV9Schema>;
+export const GameStateV10Schema = z
+  .object({
+    rideSession: RideSessionSaveSchema.nullable(),
+    socialState: SocialStealthStateSchema.nullable(),
+    translatorState: TranslatorStateSchema,
+    economyState: EconomyStateSchema,
+    radioState: RadioStateSchema,
+    personalSpaceState: PersonalSpaceStateSchema,
+    personalPersistenceState: PersonalPersistenceStateSchema,
+    relationshipState: RelationshipStateSchema,
+    accessibilityPreferences:
+      AccessibilityPreferencesStateSchema,
+  })
+  .strict();
+
+export type GameState = z.infer<typeof GameStateV10Schema>;
 
 export const gameSaveCodec = new VersionedSaveCodec({
   currentVersion: CURRENT_SAVE_SCHEMA_VERSION,
-  currentSchema: GameStateV9Schema,
+  currentSchema: GameStateV10Schema,
   historicalVersions: [
     {
       version: 1,
@@ -144,6 +163,10 @@ export const gameSaveCodec = new VersionedSaveCodec({
     {
       version: 8,
       schema: GameStateV8Schema,
+    },
+    {
+      version: 9,
+      schema: GameStateV9Schema,
     },
   ],
   migrations: [
@@ -243,11 +266,24 @@ export const gameSaveCodec = new VersionedSaveCodec({
         };
       },
     },
+    {
+      fromVersion: 9,
+      toVersion: 10,
+      migrate: (state) => {
+        const v9 = GameStateV9Schema.parse(state);
+
+        return {
+          ...v9,
+          accessibilityPreferences:
+            createInitialAccessibilityPreferencesState(),
+        };
+      },
+    },
   ],
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV9Schema.parse({
+  return GameStateV10Schema.parse({
     rideSession: null,
     socialState: null,
     translatorState: createInitialTranslatorState(),
@@ -257,5 +293,7 @@ export function createInitialGameState(): GameState {
     personalPersistenceState:
       createInitialPersonalPersistenceState(),
     relationshipState: createInitialRelationshipState(),
+    accessibilityPreferences:
+      createInitialAccessibilityPreferencesState(),
   });
 }

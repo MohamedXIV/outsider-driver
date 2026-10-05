@@ -1,23 +1,36 @@
+import type { MotionIntensityPort } from '../../app/preferences/PresentationPreferencesPort';
+import { fullMotionIntensity } from '../../app/preferences/PresentationPreferencesPort';
 import type { VehicleDynamicsState } from '../../domain/vehicle/VehicleDynamics';
 import type { TaxiSceneHandle } from './createTaxiScene';
 
 export class TaxiMotionPresenter {
   readonly #taxi: TaxiSceneHandle;
+  readonly #motion: MotionIntensityPort;
 
-  public constructor(taxi: TaxiSceneHandle) {
+  public constructor(
+    taxi: TaxiSceneHandle,
+    motion: MotionIntensityPort = fullMotionIntensity,
+  ) {
     this.#taxi = taxi;
+    this.#motion = motion;
   }
 
   public apply(state: VehicleDynamicsState): void {
+    const intensity = this.#motion.getMotionIntensity();
+
     this.#taxi.taxiMotionRoot.position.y =
-      state.bodyVerticalOffsetMeters;
-    this.#taxi.taxiMotionRoot.rotation.x = state.bodyPitchRadians;
-    this.#taxi.taxiMotionRoot.rotation.z = state.bodyRollRadians;
+      state.bodyVerticalOffsetMeters * intensity;
+    this.#taxi.taxiMotionRoot.rotation.x =
+      state.bodyPitchRadians * intensity;
+    this.#taxi.taxiMotionRoot.rotation.z =
+      state.bodyRollRadians * intensity;
 
     this.#taxi.cameraMotionRoot.position.y =
-      state.cameraVerticalOffsetMeters;
-    this.#taxi.cameraMotionRoot.rotation.x = state.cameraPitchRadians;
-    this.#taxi.cameraMotionRoot.rotation.z = state.cameraRollRadians;
+      state.cameraVerticalOffsetMeters * intensity;
+    this.#taxi.cameraMotionRoot.rotation.x =
+      state.cameraPitchRadians * intensity;
+    this.#taxi.cameraMotionRoot.rotation.z =
+      state.cameraRollRadians * intensity;
   }
 
   public reset(): void {

@@ -17,7 +17,9 @@ function descriptor(
   };
 }
 
-function createHarness() {
+function createHarness(
+  getMotionIntensity: () => number = () => 1,
+) {
   const descriptors = [
     descriptor('Mouth', [0], [1], [0]),
     descriptor('Blink', [0], [1], [0]),
@@ -148,6 +150,9 @@ function createHarness() {
     controller: new PassengerPerformanceController(
       puppet,
       profile,
+      {
+        getMotionIntensity,
+      },
     ),
     writes,
   };
@@ -212,6 +217,34 @@ describe('PassengerPerformanceController', () => {
       {
         name: 'Head',
         values: [1, 0.5],
+      },
+    ]);
+  });
+
+  it('attenuates gaze/head/body performance while preserving talk and expressions', () => {
+    const { controller, writes } = createHarness(() => 0.25);
+
+    controller.setTalk(0.8);
+    controller.setGaze(1, -1);
+    controller.setHeadPose(1, 1);
+    controller.setExpression('concerned');
+
+    expect(writes).toEqual([
+      {
+        name: 'Mouth',
+        values: [0.8],
+      },
+      {
+        name: 'Gaze',
+        values: [0.25, -0.5],
+      },
+      {
+        name: 'Head',
+        values: [0.5, -0.25],
+      },
+      {
+        name: 'Mood',
+        values: [0.5],
       },
     ]);
   });

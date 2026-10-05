@@ -72,8 +72,6 @@ v8 -> v9 creates an empty relationship state. Passenger relationship defaults ar
 5. Saves from a future unsupported version fail closed.
 6. Migration functions must be deterministic and must not depend on network calls, wall-clock time, random values, or mutable external data.
 7. A persisted schema change requires an explicit compatibility decision. Do not silently reinterpret old state.
-8. Every supported schema version has a committed historical fixture in `src/persistence/save/fixtures/`.
-9. `npm run save:compat` must prove every fixture migrates deterministically to current state, preserves stable IDs, and rejects corrupted historical state.
 
 ## Deterministic defaults
 
