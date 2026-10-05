@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "budgets": {
+    "entryJavaScriptBytes": 1300000,
+    "entryJavaScriptGzipBytes": 325000,
+    "totalJavaScriptBytes": 2000000,
+    "totalJavaScriptGzipBytes": 500000,
+    "maxLazyJavaScriptBytes": 150000,
+    "initialTransferGzipBytes": 340000,
+    "inochiWasmBytes": 7000000,
+    "startupReadyMs": 5000
+  }
+}
