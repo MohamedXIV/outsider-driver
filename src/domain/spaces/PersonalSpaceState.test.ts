@@ -49,6 +49,8 @@ describe('PersonalSpaceStateStore', () => {
         economyState: createInitialEconomyState(),
         radioState: createInitialRadioState(),
         personalSpaceState: state.exportState(),
+        personalPersistenceState:
+          createInitialPersonalPersistenceState(),
       },
       '2026-10-05T04:00:00.000Z',
     );
