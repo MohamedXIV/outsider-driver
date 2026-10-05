@@ -279,7 +279,12 @@ for (const [
 }
 
 
-test('accessibility and control settings persist and provide a keyboard escape path', async ({ page }) => {
+test('accessibility and control settings persist and provide a keyboard escape path', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name === 'chromium-compact-touch',
+    'The compact profile has a dedicated touch/layout settings contract; the full reload/persistence scenario is covered across the desktop engine matrix.',
+  );
+
   const response = await page.goto('/', {
     waitUntil: 'networkidle',
   });
