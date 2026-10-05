@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceRepository": "Inochi2D/inochi2d",
   "upstreamTag": "nightly",
   "assetId": 604648505,
   "assetName": "inochi2d-wasm-release.tar",
   "assetCreatedAt": "2026-10-02T02:39:31Z",
   "sha256": "d32dc0d463b0883e08cad3a74d2a8f9fb85e09e5777daaa6635ba9c407603b54",
-  "artifactClass": "release",
-  "fallbackReason": "Pinned official nightly release WASM. Revalidated after fixing duplicate in_init execution for modules with a WASM Start section."
+  "artifactClass": "release-provisioned-memory-floor",
+  "fallbackReason": "Pinned official nightly release WASM. The verified archive is provisioned with a 1024-page (64 MiB) initial memory floor before instantiation because the current upstream walloc memory.grow path fails in Chromium; walloc then owns those preallocated pages from its first constructor-time allocation.",
+  "minimumMemoryPages": 1024
 }
