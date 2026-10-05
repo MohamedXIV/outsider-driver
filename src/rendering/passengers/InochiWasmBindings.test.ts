@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  growWasmMemoryToMinimumPages,
   hasWasmStartSection,
+  reserveUnmanagedWasmStaging,
 } from './InochiWasmBindings';
 
 function wasmBytes(...body: number[]): ArrayBuffer {
@@ -53,38 +53,53 @@ describe('hasWasmStartSection', () => {
 });
 
 
-describe('growWasmMemoryToMinimumPages', () => {
-  it('grows exported memory to the requested page floor', () => {
+describe('reserveUnmanagedWasmStaging', () => {
+  it('reserves page-aligned caller-owned bytes beyond current WASM memory', () => {
     const memory = new WebAssembly.Memory({
-      initial: 1,
+      initial: 2,
       maximum: 8,
     });
 
-    expect(
-      growWasmMemoryToMinimumPages(memory, 4),
-    ).toBe(4);
+    const staging = reserveUnmanagedWasmStaging(
+      memory,
+      65_537,
+    );
+
+    expect(staging).toEqual({
+      pointer: 2 * 65_536,
+      capacity: 2 * 65_536,
+    });
     expect(memory.buffer.byteLength).toBe(4 * 65_536);
-  });
 
-  it('does not shrink an already larger memory', () => {
-    const memory = new WebAssembly.Memory({
-      initial: 3,
-      maximum: 8,
-    });
+    new Uint8Array(
+      memory.buffer,
+      staging.pointer,
+      4,
+    ).set([1, 2, 3, 4]);
 
     expect(
-      growWasmMemoryToMinimumPages(memory, 2),
-    ).toBe(3);
+      Array.from(
+        new Uint8Array(
+          memory.buffer,
+          staging.pointer,
+          4,
+        ),
+      ),
+    ).toEqual([1, 2, 3, 4]);
   });
 
-  it('rejects invalid page floors', () => {
+  it('rejects invalid staging sizes and reports growth failure', () => {
     const memory = new WebAssembly.Memory({
       initial: 1,
-      maximum: 8,
+      maximum: 1,
     });
 
     expect(() =>
-      growWasmMemoryToMinimumPages(memory, 0),
-    ).toThrow(/minimum memory page count/);
+      reserveUnmanagedWasmStaging(memory, 0),
+    ).toThrow(/staging byte length/);
+
+    expect(() =>
+      reserveUnmanagedWasmStaging(memory, 1),
+    ).toThrow(/could not reserve/);
   });
 });
