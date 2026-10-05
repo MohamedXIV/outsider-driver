@@ -20,7 +20,7 @@
     "runtime:prepare": "node scripts/prepare-inochi-runtime.mjs",
     "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs",
     "build:metadata": "node scripts/write-build-metadata.mjs",
-    "lock:verify": "git diff --exit-code -- package-lock.json"
+    "lock:verify": "node scripts/verify-package-lock.mjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",

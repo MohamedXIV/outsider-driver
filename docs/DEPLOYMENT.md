@@ -6,6 +6,8 @@ Outsider Driver is web-first so cloud agents can verify real builds without a lo
 
 Every pull request must pass the repository CI checks. A Vercel preview is useful evidence, but a successful deployment does not replace lint, unit tests, type checking, production build, or browser smoke verification.
 
+Canonical CI installs dependencies with `npm ci` from the committed `package-lock.json`. A package manifest / lockfile mismatch is therefore a hard failure before verification begins. `npm run lock:verify` also checks the repository-visible root dependency contract without network access.
+
 The browser smoke test runs Playwright against the output of `npm run build` served by `vite preview`. It must prove that:
 
 - the production page loads successfully;
@@ -47,17 +49,20 @@ The current frontend foundation requires no runtime secrets. Future environment 
 
 A production deployment is not evidence that unfinished gameplay work is accepted. Production publishing and game release readiness remain separate concerns from preview infrastructure.
 
-
 ## Reproducible build identity
 
 Every production build generates `/build-metadata.json` from repository-visible inputs.
 
 The metadata records:
+
 - application package name/version;
 - source revision from Vercel/GitHub CI when available;
 - build environment;
-- the exact Inochi2D release asset ID, artifact name, creation timestamp, and SHA-256 used by the build.
+- SHA-256 of the committed npm dependency lockfile;
+- the complete pinned Inochi2D runtime provenance manifest.
 
-Do not add wall-clock timestamps to this file: the same source revision and declared inputs should produce the same provenance metadata.
+The Inochi runtime provenance lives in one canonical file: `config/inochi-runtime.json`. Runtime preparation and build metadata both consume that same file so asset ID/digest/version evidence cannot silently drift between scripts.
 
-The Inochi runtime fallback is fetched through the immutable GitHub release **asset ID**, not the mutable `nightly` download path, and its bytes must match the pinned SHA-256 before they are accepted.
+Do not add wall-clock timestamps to build metadata: the same source revision and declared inputs should produce the same provenance metadata.
+
+The current Inochi fallback is fetched through the immutable GitHub release **asset ID**, not the mutable `nightly` download path, and its bytes must match the pinned SHA-256 before they are accepted. The repository records why the debug fallback is currently required; upgrading to a release artifact means changing the reviewed provenance manifest and passing exact-head browser/runtime proof again.
