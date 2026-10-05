@@ -16,7 +16,7 @@ describe('production content validation', () => {
       'foundation-passenger',
     ]);
     expect(validated.routeMotion.profiles).toHaveLength(1);
-    expect(validated.passengerPerformance.profiles).toHaveLength(0);
+    expect(validated.passengerPerformance.profiles).toHaveLength(2);
     expect(validated.routeExperience.segmentScenery).toHaveLength(1);
     expect(validated.translator.languages).toHaveLength(1);
     expect(validated.translator.packs).toHaveLength(2);
@@ -72,6 +72,27 @@ describe('production content validation', () => {
 
     expect(() => validateProductionContent(broken)).toThrow(
       /Passenger performance profile references unknown passenger/,
+    );
+  });
+
+  it('rejects narrative performance tags that are missing from the passenger profile', () => {
+    const story = productionContent.narrativeStories[0];
+
+    const broken = {
+      ...productionContent,
+      narrativeStories: [
+        {
+          ...story,
+          source: story.source.replace(
+            'performance:guarded',
+            'performance:missing-cue',
+          ),
+        },
+      ],
+    };
+
+    expect(() => validateProductionContent(broken)).toThrow(
+      /narrative requests missing performance cue missing-cue/,
     );
   });
 

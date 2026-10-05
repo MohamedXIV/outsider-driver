@@ -50,6 +50,11 @@ const narrativeStoryIdSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
 
+const performanceCueNameSchema = z
+  .string()
+  .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
+const performanceCueTagRegex = /#\s*performance:([^\s#]*)/g;
+
 const NarrativeStorySourceSchema = z
   .object({
     id: narrativeStoryIdSchema,
@@ -148,6 +153,62 @@ function requirePassengerNarratives(
       throw new Error(
         `${passenger.id} references missing narrative story ${passenger.data.narrativeStoryId}`,
       );
+    }
+  }
+}
+
+function performanceCueNames(source: string): readonly string[] {
+  return [...source.matchAll(performanceCueTagRegex)].map((match) =>
+    performanceCueNameSchema.parse(match[1] ?? ''),
+  );
+}
+
+function requirePassengerPerformanceNarrativeCues(
+  passengers: PassengerCatalog,
+  performance: PassengerPerformanceCatalog,
+  stories: readonly ValidatedNarrativeStory[],
+): void {
+  const storyById = new Map(
+    stories.map((story) => [story.id, story]),
+  );
+  const profileByPassengerId = new Map(
+    performance.profiles.map((profile) => [
+      profile.passengerId,
+      profile,
+    ]),
+  );
+
+  for (const passenger of passengers.passengers) {
+    const story = storyById.get(passenger.data.narrativeStoryId);
+
+    if (story === undefined) {
+      continue;
+    }
+
+    const requestedCues = performanceCueNames(story.source);
+
+    if (requestedCues.length === 0) {
+      continue;
+    }
+
+    const profile = profileByPassengerId.get(passenger.id);
+
+    if (profile === undefined) {
+      throw new Error(
+        `${passenger.id} narrative requests performance cues but has no performance profile.`,
+      );
+    }
+
+    const knownCueNames = new Set(
+      profile.cues.map((cue) => cue.name),
+    );
+
+    for (const cueName of requestedCues) {
+      if (!knownCueNames.has(cueName)) {
+        throw new Error(
+          `${passenger.id} narrative requests missing performance cue ${cueName}.`,
+        );
+      }
     }
   }
 }
@@ -324,6 +385,26 @@ export function validateProductionContent(
       requirePassengerNarratives(passengers, narrativeStories);
     } catch (error: unknown) {
       addIssue(issues, 'passenger-narrative', error);
+    }
+  }
+
+  if (
+    passengers !== undefined &&
+    passengerPerformance !== undefined &&
+    narrativeStories !== undefined
+  ) {
+    try {
+      requirePassengerPerformanceNarrativeCues(
+        passengers,
+        passengerPerformance,
+        narrativeStories,
+      );
+    } catch (error: unknown) {
+      addIssue(
+        issues,
+        'passenger-performance-narrative',
+        error,
+      );
     }
   }
 
