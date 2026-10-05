@@ -110,6 +110,77 @@ function createVisualPayload(emptyBytes, includeTexture) {
   payload.meta.name = 'Outsider Driver CI Visual Puppet';
   payload.meta.rigger = 'Outsider Driver';
   payload.meta.artist = 'Outsider Driver';
+  payload.param = [
+    {
+      uuid: 4100000001,
+      name: 'Mouth',
+      is_vec2: false,
+      min: 0,
+      max: 1,
+      defaults: 0,
+      axis_points: [0, 1],
+      bindings: [],
+    },
+    {
+      uuid: 4100000002,
+      name: 'Blink',
+      is_vec2: false,
+      min: 0,
+      max: 1,
+      defaults: 0,
+      axis_points: [0, 1],
+      bindings: [],
+    },
+    {
+      uuid: 4100000003,
+      name: 'Gaze',
+      is_vec2: true,
+      min: [-1, -1],
+      max: [1, 1],
+      defaults: [0, 0],
+      axis_points: [
+        [-1, 0, 1],
+        [-1, 0, 1],
+      ],
+      bindings: [],
+    },
+    {
+      uuid: 4100000004,
+      name: 'Head',
+      is_vec2: true,
+      min: [-1, -1],
+      max: [1, 1],
+      defaults: [0, 0],
+      axis_points: [
+        [-1, 0, 1],
+        [-1, 0, 1],
+      ],
+      bindings: [],
+    },
+    {
+      uuid: 4100000005,
+      name: 'Body',
+      is_vec2: true,
+      min: [-1, -1],
+      max: [1, 1],
+      defaults: [0, 0],
+      axis_points: [
+        [-1, 0, 1],
+        [-1, 0, 1],
+      ],
+      bindings: [],
+    },
+    {
+      uuid: 4100000006,
+      name: 'Mood',
+      is_vec2: false,
+      min: -1,
+      max: 1,
+      defaults: 0,
+      axis_points: [-1, 0, 1],
+      bindings: [],
+    },
+  ];
   root.children = [
     {
       uuid: 2976579761,

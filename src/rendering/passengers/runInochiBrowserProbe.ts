@@ -6,12 +6,15 @@ import { InochiPuppetSession } from './InochiPuppetSession';
 import { compileInochiRenderProgram } from './InochiRenderProgram';
 import { InochiWasmBindings } from './InochiWasmBindings';
 import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
+import { PassengerPerformanceController } from './PassengerPerformanceController';
 
 export interface InochiBrowserProbeSummary {
   readonly puppetName: string;
   readonly puppetAuthor: string;
   readonly parameterCount: number;
   readonly parameterExercised: string | null;
+  readonly performanceCueApplied: string | null;
+  readonly performanceValues: Readonly<Record<string, readonly number[]>>;
   readonly vertexCount: number;
   readonly indexCount: number;
   readonly textureCount: number;
@@ -134,6 +137,28 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       parameterExercised = firstParameter.name;
     }
 
+    const performanceProfile =
+      productionContent.passengerPerformance.profiles[0];
+    let performanceCueApplied: string | null = null;
+
+    if (performanceProfile !== undefined) {
+      const performance = new PassengerPerformanceController(
+        session,
+        performanceProfile,
+      );
+      performance.applyCue('guarded');
+      performanceCueApplied = 'guarded';
+    }
+
+    const performanceValues = Object.fromEntries(
+      session
+        .listParameters()
+        .map((parameter) => [
+          parameter.name,
+          [...parameter.value],
+        ]),
+    );
+
     reportStage('frame-start');
     const frame = session.frame(1 / 60);
     reportStage('frame-built');
@@ -164,6 +189,8 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       puppetAuthor: session.author,
       parameterCount: parameters.length,
       parameterExercised,
+      performanceCueApplied,
+      performanceValues,
       vertexCount: frame.vertices.length,
       indexCount: frame.indices.length,
       textureCount: frame.textures.length,

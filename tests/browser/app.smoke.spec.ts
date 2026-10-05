@@ -131,6 +131,18 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
   expect(Number(summary.indexCount)).toBeGreaterThan(0);
   expect(Number(summary.textureCount)).toBeGreaterThan(0);
   expect(Number(summary.commandCount)).toBeGreaterThan(0);
+  expect(Number(summary.parameterCount)).toBeGreaterThanOrEqual(6);
+  expect(summary.performanceCueApplied).toBe('guarded');
+
+  if (!isRecord(summary.performanceValues)) {
+    throw new Error(
+      'Inochi browser probe did not publish semantic performance values.',
+    );
+  }
+
+  expect(summary.performanceValues.Mouth).toEqual([0.2]);
+  expect(summary.performanceValues.Mood).toEqual([-0.4]);
+  expect(summary.performanceValues.Gaze).toEqual([-0.25, 0.05]);
   expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
 });
