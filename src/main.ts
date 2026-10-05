@@ -152,10 +152,16 @@ function bootstrapSupportedGame(
 const compatibility = detectBrowserRuntimeSupport();
 const disposeApplication = compatibility.supported
   ? bootstrapSupportedGame(root)
-  : createUnsupportedBrowserSurface(
-      root,
-      compatibility,
-    ).dispose;
+  : (() => {
+      const unsupported = createUnsupportedBrowserSurface(
+        root,
+        compatibility,
+      );
+
+      return (): void => {
+        unsupported.dispose();
+      };
+    })();
 
 if (import.meta.hot !== undefined) {
   import.meta.hot.dispose(() => {
