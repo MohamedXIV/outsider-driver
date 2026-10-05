@@ -251,7 +251,6 @@ export function evaluateJobEligibility(
       (
         humanAttitude === undefined ||
         humanAttitude === null ||
-        humanAttitude === null ||
         humanAttitude < relationship.minimumHumanAttitude
       )
     ) {
@@ -262,6 +261,7 @@ export function evaluateJobEligibility(
       relationship.maximumHumanAttitude !== undefined &&
       (
         humanAttitude === undefined ||
+        humanAttitude === null ||
         humanAttitude > relationship.maximumHumanAttitude
       )
     ) {
