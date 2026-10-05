@@ -10,16 +10,16 @@ The limits were established from production `main` at `538b7dc6d7d57ca7653f4204c
 
 | Metric | Observed baseline | Budget | Purpose |
 | --- | ---: | ---: | --- |
-| entry JavaScript | ~1.161 MB raw | 1.300 MB | catch growth in the always-loaded application/Babylon entry |
-| entry JavaScript gzip | ~286 KB | 325 KB | bound initial compressed JS transfer |
-| total JavaScript | ~1.776 MB raw | 2.000 MB | bound aggregate production code/chunks |
-| total JavaScript gzip | ~443 KB | 500 KB | bound aggregate compressed JavaScript |
-| largest lazy JS chunk | ~115 KB raw | 150 KB | prevent a single deferred feature chunk from silently ballooning |
-| initial HTML/CSS/module transfer | ~288 KB gzip | 340 KB | protect the first production navigation payload |
+| entry JavaScript | 1,161,446 B | 1,300,000 B | catch growth in the always-loaded application/Babylon entry |
+| entry JavaScript gzip | 283,935 B | 325,000 B | bound initial compressed JS transfer |
+| total JavaScript | 1,776,670 B | 2,000,000 B | bound aggregate production code/chunks |
+| total JavaScript gzip | 439,109 B | 500,000 B | bound aggregate compressed JavaScript |
+| largest lazy JS chunk | 114,610 B | 150,000 B | prevent a single deferred feature chunk from silently ballooning |
+| initial HTML/CSS/module transfer | 321,781 B | 380,000 B | protect the first production navigation payload |
 | Inochi2D WASM | 6,537,169 bytes | 7,000,000 bytes | catch a major runtime artifact increase |
 | startup-ready | measured in Chromium CI | 5,000 ms | catch gross startup regressions without treating CI jitter as micro-performance |
 
-The build checker reports exact byte counts from the generated output. The baseline values above are rounded from the Vite production report and are explanatory only.
+The byte baselines above come from the first deterministic budget report on this branch. The initial-transfer measurement includes the HTML, entry module, stylesheet, and Vite modulepreload references emitted by the production index.
 
 ## Initial loading contract
 
