@@ -43,7 +43,12 @@ test('production build boots a Babylon game surface without browser errors', asy
   expect(browserErrors).toEqual([]);
 });
 
-test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }) => {
+test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'The expensive real-Inochi proof runs once on canonical desktop Chromium; cross-browser projects exercise the production Babylon/UI surface without repeating the WASM fixture.',
+  );
+
   let lastStage = 'not-started';
 
   page.on('console', (message) => {
@@ -359,4 +364,125 @@ test('accessibility and control settings persist and provide a keyboard escape p
   await expect(
     page.locator('#game-accessibility-settings'),
   ).toBeHidden();
+});
+
+
+test('compact touch profile remains usable without horizontal overflow', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-compact-touch',
+    'This contract targets the compact touch compatibility profile.',
+  );
+
+  const browserErrors: string[] = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      browserErrors.push(`console: ${message.text()}`);
+    }
+  });
+
+  page.on('pageerror', (error) => {
+    browserErrors.push(`page: ${error.message}`);
+  });
+
+  const response = await page.goto('/', {
+    waitUntil: 'networkidle',
+  });
+
+  expect(response?.ok()).toBe(true);
+
+  const metrics = await page.evaluate(() => ({
+    innerWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    maxTouchPoints: navigator.maxTouchPoints,
+    coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+  }));
+
+  expect(metrics.innerWidth).toBeLessThanOrEqual(500);
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(
+    metrics.innerWidth,
+  );
+  expect(metrics.maxTouchPoints).toBeGreaterThan(0);
+  expect(metrics.coarsePointer).toBe(true);
+
+  const settingsButton = page.getByRole('button', {
+    name: 'Accessibility and controls settings',
+  });
+  const box = await settingsButton.boundingBox();
+
+  if (box === null) {
+    throw new Error(
+      'Compact touch settings button has no tappable bounding box.',
+    );
+  }
+
+  await page.touchscreen.tap(
+    box.x + box.width / 2,
+    box.y + box.height / 2,
+  );
+
+  await expect(
+    page.locator('#game-accessibility-settings'),
+  ).toBeVisible();
+
+  const panelBox = await page
+    .locator('#game-accessibility-settings')
+    .boundingBox();
+
+  if (panelBox === null) {
+    throw new Error(
+      'Compact touch settings panel has no rendered bounds.',
+    );
+  }
+
+  expect(panelBox.x).toBeGreaterThanOrEqual(0);
+  expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(
+    metrics.innerWidth + 1,
+  );
+  expect(browserErrors).toEqual([]);
+});
+
+test('unsupported WebGL capability fails into an accessible compatibility surface', async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'One deterministic browser profile is sufficient for the unsupported-capability contract.',
+  );
+
+  const browserErrors: string[] = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      browserErrors.push(`console: ${message.text()}`);
+    }
+  });
+
+  page.on('pageerror', (error) => {
+    browserErrors.push(`page: ${error.message}`);
+  });
+
+  await page.addInitScript(() => {
+    Object.defineProperty(globalThis, 'WebGLRenderingContext', {
+      configurable: true,
+      value: undefined,
+    });
+  });
+
+  const response = await page.goto('/', {
+    waitUntil: 'networkidle',
+  });
+
+  expect(response?.ok()).toBe(true);
+
+  const alert = page.getByRole('alert');
+  await expect(alert).toBeVisible();
+  await expect(alert).toContainText(
+    'This browser cannot run Outsider Driver',
+  );
+  await expect(alert).toContainText('WebGL graphics');
+  await expect(
+    page.getByRole('application', {
+      name: 'Outsider Driver game view',
+    }),
+  ).toHaveCount(0);
+  expect(browserErrors).toEqual([]);
 });
