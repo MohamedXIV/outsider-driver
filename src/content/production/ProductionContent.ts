@@ -89,6 +89,42 @@ export const productionContent = {
       },
     ],
   },
+  relationships: {
+    schemaVersion: 1,
+    profiles: [
+      {
+        passengerId: 'passenger:official-clinic-rider',
+        trust: {
+          initialValue: 0,
+        },
+        initialHumanAttitude: -10,
+      },
+      {
+        passengerId: 'passenger:underground-clinic-rider',
+        trust: {
+          initialValue: 15,
+        },
+        affection: {
+          initialValue: 0,
+        },
+        initialHumanAttitude: -45,
+        recurrence: {
+          minimumCompletedRides: 1,
+          cooldownMinutes: 12 * 60,
+          dailyWindow: {
+            startMinuteOfDay: 18 * 60,
+            endMinuteOfDay: 23 * 60,
+          },
+          requiredFactIds: [
+            'fact:underground-clinic-window',
+          ],
+          forbiddenFactIds: [],
+          minimumTrust: 10,
+          minimumAffection: 0,
+        },
+      },
+    ],
+  },
   passengerPerformance: {
     schemaVersion: 1,
     profiles: [
