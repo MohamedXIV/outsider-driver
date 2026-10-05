@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "savedAt": "2026-01-02T03:04:05.000Z",
+  "state": {
+    "rideSession": {
+      "rideId": "ride:migration-v2",
+      "jobId": "job:migration-v2",
+      "passengerId": "passenger:migration-rider",
+      "pickupLocationId": "location:migration-pickup",
+      "destinationLocationId": "location:migration-destination",
+      "initialRouteId": "route:migration-route",
+      "acceptedAt": {
+        "day": 12,
+        "minuteOfDay": 321
+      },
+      "narrativeStoryId": "migration.story",
+      "phase": "assigned"
+    }
+  }
+}

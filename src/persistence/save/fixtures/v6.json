@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 6,
+  "savedAt": "2026-01-02T03:04:05.000Z",
+  "state": {
+    "rideSession": {
+      "rideId": "ride:migration-v2",
+      "jobId": "job:migration-v2",
+      "passengerId": "passenger:migration-rider",
+      "pickupLocationId": "location:migration-pickup",
+      "destinationLocationId": "location:migration-destination",
+      "initialRouteId": "route:migration-route",
+      "acceptedAt": {
+        "day": 12,
+        "minuteOfDay": 321
+      },
+      "narrativeStoryId": "migration.story",
+      "phase": "assigned"
+    },
+    "socialState": {
+      "schemaVersion": 1,
+      "coverIdentity": {
+        "id": "identity:migration-cover",
+        "displayName": "Migration Cover",
+        "attributes": [
+          {
+            "key": "work-permit",
+            "value": "licensed-driver"
+          }
+        ]
+      },
+      "claims": [
+        {
+          "id": "claim:migration-origin",
+          "subject": "origin",
+          "value": "outer-colony",
+          "context": "migration-test",
+          "audience": {
+            "kind": "passenger",
+            "passengerId": "passenger:migration-rider"
+          },
+          "source": {
+            "kind": "player",
+            "sourceId": "migration.fixture"
+          }
+        }
+      ],
+      "knownFactIds": [
+        "fact:migration-known"
+      ],
+      "passengerSuspicion": [
+        {
+          "passengerId": "passenger:migration-rider",
+          "value": 27,
+          "lastReason": "migration.fixture"
+        }
+      ],
+      "cityAttention": {
+        "value": 13,
+        "lastReason": "migration.fixture"
+      }
+    },
+    "translatorState": {
+      "schemaVersion": 1,
+      "ownedPackIds": [
+        "translator-pack:migration-pack"
+      ],
+      "activePackIds": [
+        "translator-pack:migration-pack"
+      ]
+    },
+    "economyState": {
+      "schemaVersion": 1,
+      "credits": 123,
+      "lifetimeEarnedCredits": 400,
+      "lifetimeExpenseCredits": 277,
+      "officialStanding": 11,
+      "undergroundAccess": 29,
+      "settledRideIds": [
+        "ride:migration-settled"
+      ]
+    },
+    "radioState": {
+      "schemaVersion": 1,
+      "tunedStationId": "radio-station:migration-underground",
+      "listening": true,
+      "discoveredStationIds": [
+        "radio-station:migration-underground"
+      ],
+      "heardBroadcastIds": [
+        "broadcast:migration-news"
+      ]
+    }
+  }
+}
