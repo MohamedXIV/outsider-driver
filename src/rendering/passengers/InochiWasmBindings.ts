@@ -70,6 +70,41 @@ interface InochiWasmExports extends WebAssembly.Exports {
 }
 
 const WASM_START_SECTION_ID = 8;
+const WASM_PAGE_BYTES = 65_536;
+
+export interface InochiWasmCreateOptions {
+  readonly minimumMemoryPages?: number;
+}
+
+export function growWasmMemoryToMinimumPages(
+  memory: WebAssembly.Memory,
+  minimumPages: number,
+): number {
+  if (
+    !Number.isSafeInteger(minimumPages) ||
+    minimumPages <= 0 ||
+    minimumPages > 65_536
+  ) {
+    throw new Error(
+      `Invalid Inochi WASM minimum memory page count: ${String(minimumPages)}.`,
+    );
+  }
+
+  const currentPages =
+    memory.buffer.byteLength / WASM_PAGE_BYTES;
+
+  if (!Number.isInteger(currentPages)) {
+    throw new Error(
+      'Inochi WASM memory byte length is not page-aligned.',
+    );
+  }
+
+  if (currentPages < minimumPages) {
+    memory.grow(minimumPages - currentPages);
+  }
+
+  return memory.buffer.byteLength / WASM_PAGE_BYTES;
+}
 
 function readUnsignedLeb128(
   bytes: Uint8Array,
@@ -213,6 +248,7 @@ export class InochiWasmBindings
 
   public static async create(
     runtimeUrl = '/vendor/inochi2d/inochi2d.wasm',
+    options: InochiWasmCreateOptions = {},
   ): Promise<InochiWasmBindings> {
     const response = requireHttpOk(
       await fetch(runtimeUrl),
@@ -233,6 +269,13 @@ export class InochiWasmBindings
     ) {
       throw new Error(
         'Loaded WASM does not expose the expected Inochi2D C API.',
+      );
+    }
+
+    if (options.minimumMemoryPages !== undefined) {
+      growWasmMemoryToMinimumPages(
+        exports.memory,
+        options.minimumMemoryPages,
       );
     }
 
