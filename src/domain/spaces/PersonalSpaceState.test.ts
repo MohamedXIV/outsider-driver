@@ -3,6 +3,7 @@ import { productionContent } from '../../content/production/ProductionContent';
 import { createInitialEconomyState } from '../economy/EconomyState';
 import { entityId } from '../ids/EntityId';
 import { createInitialRadioState } from '../radio/RadioState';
+import { createInitialPersonalPersistenceState } from '../personal/PersonalPersistenceState';
 import { createInitialTranslatorState } from '../translator/TranslatorState';
 import { gameSaveCodec } from '../../persistence/save/gameSave';
 import {
