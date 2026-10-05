@@ -104,12 +104,17 @@ export const PersonalSpaceDefinitionSchema = z
           .strict()
           .refine(
             (bounds) =>
-              bounds.max[0] > bounds.min[0] &&
-              bounds.max[1] > bounds.min[1] &&
-              bounds.max[2] > bounds.min[2],
+              bounds.max[0] >= bounds.min[0] &&
+              bounds.max[1] >= bounds.min[1] &&
+              bounds.max[2] >= bounds.min[2] &&
+              (
+                bounds.max[0] > bounds.min[0] ||
+                bounds.max[1] > bounds.min[1] ||
+                bounds.max[2] > bounds.min[2]
+              ),
             {
               message:
-                'Personal space camera bounds max must exceed min on every axis.',
+                'Personal space camera bounds cannot invert an axis or collapse to a single point.',
               path: ['max'],
             },
           ),
