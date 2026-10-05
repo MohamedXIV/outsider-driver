@@ -34,13 +34,14 @@ Concrete systems project authored documents into this validation graph so cross-
 
 ## Save format
 
-Every save is wrapped in a strict envelope. Current game state is schema v6 and contains:
+Every save is wrapped in a strict envelope. Current game state is schema v7 and contains:
 
 - resumable `rideSession`;
 - nullable `socialState`;
 - persistent `translatorState`;
 - persistent `economyState`;
-- persistent `radioState`.
+- persistent `radioState`;
+- persistent `personalSpaceState`.
 
 `economyState` stores credits, lifetime earnings/expenses, official standing, underground access, and settled ride IDs so a retry cannot pay the same ride twice.
 
@@ -53,11 +54,12 @@ Production save evolution:
 - v3: persistent social-stealth state;
 - v4: translator ownership/activation;
 - v5: economy/work progression state;
-- v6: radio tuning, listening, discovery, and heard-broadcast history.
+- v6: radio tuning, listening, discovery, and heard-broadcast history;
+- v7: personal-space current/visited state and authored flag overrides.
 
 The social slot remains nullable because historical saves must not fabricate a cover identity that the player never selected.
 
-v3 -> v4 creates empty translator ownership. v4 -> v5 creates a deterministic empty economy state: zero credits, zero official standing, zero underground access, and no settled rides. v5 -> v6 creates radio off, untuned, with no hidden stations discovered and no broadcasts marked heard.
+v3 -> v4 creates empty translator ownership. v4 -> v5 creates a deterministic empty economy state: zero credits, zero official standing, zero underground access, and no settled rides. v5 -> v6 creates radio off, untuned, with no hidden stations discovered and no broadcasts marked heard. v6 -> v7 creates personal-space state outside every space with no fabricated visits and no flag overrides.
 
 ## Migration rules
 

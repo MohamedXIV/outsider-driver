@@ -123,8 +123,8 @@ Use stable IDs and explicit models for at least:
 - Broadcast
 - TaxiUpgrade
 - Item / Souvenir
-- HomeState
-- GarageState
+- PersonalSpaceState
+- HomeState / GarageState projections where useful
 - TimeState
 
 Do not force all of these into one database or giant state object. Define bounded services/models with serialized state contracts.
@@ -181,6 +181,34 @@ Passenger rendering may use a stylized material rather than physically identical
 - time/weather changes.
 
 The goal is visual coherence, not strict physical equivalence.
+
+## Personal-space architecture
+
+Garage and home use one authored personal-space system.
+
+```text
+PersonalSpaceCatalog
+   |
+   +--> garage definition
+   +--> home definition
+   |
+   v
+PersonalSpaceStateStore
+ current / visited / flag overrides
+   |
+   v
+PersonalSpaceOrchestrator
+   |
+   v
+BabylonSceneOrchestrator
+ generic 3D personal-space scene
+```
+
+Persistent truth stays in `PersonalSpaceStateStore`. The Babylon scene receives an authored definition plus a read-only flag resolver; it does not decide upgrades, messages, possessions, or progression.
+
+Interaction anchors are typed extension points for later systems. Adding authored props/anchors must not require a garage-specific renderer branch.
+
+First-person movement is deliberately bounded to these authored spaces. This is not an on-foot open-world subsystem.
 
 ## Save architecture
 

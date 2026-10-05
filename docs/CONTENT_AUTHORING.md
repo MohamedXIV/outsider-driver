@@ -16,6 +16,7 @@ It currently registers:
 - official and underground jobs;
 - translator languages and packs;
 - radio stations, schedules, broadcasts, information hooks, and passenger reactions;
+- 3D personal spaces: garage/home layouts, lighting, movement bounds, persistent flags, and interaction anchors;
 - narrative story sources;
 - taxi scene definition.
 
@@ -47,6 +48,7 @@ Current checks include:
 - translator language/pack references and compatibility;
 - radio station/language references;
 - radio route/job intel targets and reacting passengers;
+- personal-space IDs, local asset/anchor/flag uniqueness, and visibility-flag references;
 - passenger narrative references;
 - passenger performance profile references;
 - Ink `performance:<cue>` tags against each passenger's authored cue catalog;
@@ -101,7 +103,7 @@ Underground jobs can require underground access and carry a risk footprint.
 
 Validation is not maintained against a hand-copied validation fixture.
 
-Babylon consumes `productionContent.taxiScene`; passenger acting consumes `productionContent.passengerPerformance`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`.
+Babylon consumes `productionContent.taxiScene` and `productionContent.personalSpaces`; passenger acting consumes `productionContent.passengerPerformance`; translator systems consume `productionContent.translator`; work/economy systems consume `productionContent.jobs`; radio systems consume `productionContent.radio`.
 
 Tests may mutate production-shaped data for negative/focused scenarios, but fixtures never become alternate production truth.
 
@@ -118,3 +120,32 @@ When broadcasts, upgrades, or other authored systems land:
 7. keep `npm run content:check` green.
 
 If a content type cannot be validated from repository-visible files, its authoring architecture is incomplete.
+
+
+## Personal-space authoring
+
+Garage and home are authored through the same `PersonalSpaceCatalog`. They are not bespoke scene-code islands.
+
+A personal space defines:
+
+- stable `personal-space:<slug>` identity;
+- garage/home kind and display name;
+- first-person camera spawn, movement speed, look sensitivity, and movement bounds;
+- environment + practical lighting;
+- collidable 3D assets;
+- persistent boolean flags with deterministic authored defaults;
+- assets whose visibility can depend on those flags;
+- typed interaction anchors.
+
+Current anchor kinds are:
+
+- taxi access;
+- upgrades;
+- messages;
+- possessions;
+- sleep;
+- exit.
+
+Later systems such as #27 attach behavior to those typed anchors. They must not hard-code object positions or rebuild the garage/home renderer.
+
+Persistent flags are intentionally generic presentation/state hooks. They may show or hide an authored asset, but domain systems remain responsible for deciding when a flag changes.
