@@ -7,6 +7,12 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import type { Scene } from '@babylonjs/core/scene';
 import {
+  NEUTRAL_PASSENGER_LIGHTING,
+  PassengerLightingStateSchema,
+  type PassengerLightingSink,
+  type PassengerLightingState,
+} from './PassengerLighting';
+import {
   parseInochiPartVariables,
 } from './InochiDrawVariables';
 import {
@@ -64,11 +70,22 @@ varying vec2 vUV;
 varying vec2 vMaskUV;
 
 uniform sampler2D albedoSampler;
+uniform sampler2D emissiveSampler;
 uniform sampler2D maskSampler;
 uniform vec3 tint;
 uniform vec3 screenTint;
 uniform float opacity;
+uniform float emissionStrength;
 uniform float hasMask;
+
+uniform vec3 passengerAmbientColor;
+uniform float passengerAmbientIntensity;
+uniform vec3 passengerKeyColor;
+uniform float passengerKeyIntensity;
+uniform vec3 passengerKeyDirection;
+uniform vec3 passengerAccentColor;
+uniform float passengerAccentIntensity;
+uniform vec3 passengerAccentDirection;
 
 vec4 inochiScreen(vec4 inColor, vec3 screenColor) {
   return vec4(
@@ -80,6 +97,13 @@ vec4 inochiScreen(vec4 inColor, vec3 screenColor) {
   );
 }
 
+float stylizedFacing(vec3 normal, vec3 direction) {
+  return 0.25 + 0.75 * max(
+    dot(normal, normalize(direction)),
+    0.0
+  );
+}
+
 void main(void) {
   float maskValue = mix(
     1.0,
@@ -88,9 +112,40 @@ void main(void) {
   );
   vec4 inAlbedo =
     texture2D(albedoSampler, vUV) * opacity * maskValue;
-
-  gl_FragColor =
+  vec4 authored =
     inochiScreen(inAlbedo, screenTint) * vec4(tint, 1.0);
+
+  // A deliberately gentle curved-paper normal: enough to place the
+  // illustrated passenger in the cabin light without pretending the
+  // puppet is a physically modelled 3D surface.
+  vec3 paperNormal = normalize(vec3(
+    (vUV.x - 0.5) * 0.30,
+    (0.5 - vUV.y) * 0.12,
+    1.0
+  ));
+  float keyFacing = stylizedFacing(
+    paperNormal,
+    passengerKeyDirection
+  );
+  float accentFacing = stylizedFacing(
+    paperNormal,
+    passengerAccentDirection
+  );
+  vec3 illumination =
+    passengerAmbientColor * passengerAmbientIntensity +
+    passengerKeyColor * passengerKeyIntensity * keyFacing +
+    passengerAccentColor * passengerAccentIntensity * accentFacing;
+  illumination = max(illumination, vec3(0.035));
+
+  vec3 emissive =
+    texture2D(emissiveSampler, vUV).rgb *
+    emissionStrength *
+    authored.a;
+
+  gl_FragColor = vec4(
+    authored.rgb * illumination + emissive,
+    authored.a
+  );
 }
 `;
 
@@ -186,13 +241,16 @@ function requireSupportedDrawableTextures(
   command: InochiDrawCommand,
 ): void {
   for (
-    let sourceIndex = 1;
+    let sourceIndex = 2;
     sourceIndex < command.sourceTextureIds.length;
     sourceIndex += 1
   ) {
     if (command.sourceTextureIds[sourceIndex] !== null) {
+      const label =
+        sourceIndex === 2 ? 'Bumpmap' : `attachment ${String(sourceIndex)}`;
+
       throw new Error(
-        `Inochi texture attachment ${String(sourceIndex)} requires the 2D-in-3D lighting material pipeline.`,
+        `Inochi ${label} is not represented exactly by the stylized passenger lighting bridge.`,
       );
     }
   }
@@ -215,7 +273,9 @@ function requireNoComposites(
   }
 }
 
-export class BabylonInochiPassengerRenderer {
+export class BabylonInochiPassengerRenderer
+  implements PassengerLightingSink
+{
   readonly #scene: Scene;
   readonly #root: TransformNode;
   readonly #pixelsPerSceneUnit: number;
@@ -226,6 +286,9 @@ export class BabylonInochiPassengerRenderer {
   readonly #materials: ShaderMaterial[] = [];
   readonly #maskTextures: RawTexture[] = [];
   readonly #whiteMaskTexture: RawTexture;
+  readonly #blackEmissiveTexture: RawTexture;
+  #lightingState: PassengerLightingState =
+    NEUTRAL_PASSENGER_LIGHTING;
   #disposed = false;
 
   public constructor(
@@ -277,11 +340,43 @@ export class BabylonInochiPassengerRenderer {
       Constants.TEXTURE_CLAMP_ADDRESSMODE;
     this.#whiteMaskTexture.wrapV =
       Constants.TEXTURE_CLAMP_ADDRESSMODE;
+
+    this.#blackEmissiveTexture = RawTexture.CreateRGBATexture(
+      new Uint8Array([0, 0, 0, 255]),
+      1,
+      1,
+      scene,
+      false,
+      false,
+      Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+    );
+    this.#blackEmissiveTexture.name = 'inochi-black-emissive';
+    this.#blackEmissiveTexture.wrapU =
+      Constants.TEXTURE_CLAMP_ADDRESSMODE;
+    this.#blackEmissiveTexture.wrapV =
+      Constants.TEXTURE_CLAMP_ADDRESSMODE;
   }
 
   public get root(): TransformNode {
     this.#assertAlive();
     return this.#root;
+  }
+
+  public setLighting(stateInput: PassengerLightingState): void {
+    this.#assertAlive();
+    this.#lightingState =
+      PassengerLightingStateSchema.parse(stateInput);
+
+    for (const material of this.#materials) {
+      this.#applyLightingToMaterial(material);
+    }
+  }
+
+  public getLightingState(): PassengerLightingState {
+    this.#assertAlive();
+    return PassengerLightingStateSchema.parse(
+      this.#lightingState,
+    );
   }
 
   public render(frameInput: InochiDrawFrame): void {
@@ -364,6 +459,7 @@ export class BabylonInochiPassengerRenderer {
 
     this.#textures.clear();
     this.#whiteMaskTexture.dispose();
+    this.#blackEmissiveTexture.dispose();
     this.#root.dispose();
     this.#disposed = true;
   }
@@ -401,6 +497,19 @@ export class BabylonInochiPassengerRenderer {
     if (texture === undefined) {
       throw new Error(
         `Inochi drawable command references unavailable texture ${String(sourceTextureId)}.`,
+      );
+    }
+
+    const emissiveTextureId = command.sourceTextureIds[1];
+    const emissiveTexture =
+      emissiveTextureId === null ||
+      emissiveTextureId === undefined
+        ? this.#blackEmissiveTexture
+        : this.#textures.get(emissiveTextureId)?.texture;
+
+    if (emissiveTexture === undefined) {
+      throw new Error(
+        `Inochi drawable command references unavailable emissive texture ${String(emissiveTextureId)}.`,
       );
     }
 
@@ -445,9 +554,22 @@ export class BabylonInochiPassengerRenderer {
           'tint',
           'screenTint',
           'opacity',
+          'emissionStrength',
           'hasMask',
+          'passengerAmbientColor',
+          'passengerAmbientIntensity',
+          'passengerKeyColor',
+          'passengerKeyIntensity',
+          'passengerKeyDirection',
+          'passengerAccentColor',
+          'passengerAccentIntensity',
+          'passengerAccentDirection',
         ],
-        samplers: ['albedoSampler', 'maskSampler'],
+        samplers: [
+          'albedoSampler',
+          'emissiveSampler',
+          'maskSampler',
+        ],
         needAlphaBlending: true,
       },
     );
@@ -460,6 +582,10 @@ export class BabylonInochiPassengerRenderer {
       'albedoSampler',
       texture.texture,
     );
+    material.setTexture(
+      'emissiveSampler',
+      emissiveTexture,
+    );
     material.setVector3(
       'tint',
       Vector3.FromArray(variables.tint),
@@ -469,6 +595,11 @@ export class BabylonInochiPassengerRenderer {
       Vector3.FromArray(variables.screenTint),
     );
     material.setFloat('opacity', variables.opacity);
+    material.setFloat(
+      'emissionStrength',
+      variables.emissionStrength,
+    );
+    this.#applyLightingToMaterial(material);
 
     const snapshotIndex =
       maskResult?.snapshotIndexByCommand.get(
@@ -494,6 +625,45 @@ export class BabylonInochiPassengerRenderer {
 
     this.#meshes.push(mesh);
     this.#materials.push(material);
+  }
+
+  #applyLightingToMaterial(
+    material: ShaderMaterial,
+  ): void {
+    const state = this.#lightingState;
+
+    material.setVector3(
+      'passengerAmbientColor',
+      Vector3.FromArray(state.ambientColor),
+    );
+    material.setFloat(
+      'passengerAmbientIntensity',
+      state.ambientIntensity,
+    );
+    material.setVector3(
+      'passengerKeyColor',
+      Vector3.FromArray(state.keyColor),
+    );
+    material.setFloat(
+      'passengerKeyIntensity',
+      state.keyIntensity,
+    );
+    material.setVector3(
+      'passengerKeyDirection',
+      Vector3.FromArray(state.keyDirection),
+    );
+    material.setVector3(
+      'passengerAccentColor',
+      Vector3.FromArray(state.accentColor),
+    );
+    material.setFloat(
+      'passengerAccentIntensity',
+      state.accentIntensity,
+    );
+    material.setVector3(
+      'passengerAccentDirection',
+      Vector3.FromArray(state.accentDirection),
+    );
   }
 
   #syncTextures(
