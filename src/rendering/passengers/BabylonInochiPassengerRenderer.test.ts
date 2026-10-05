@@ -146,19 +146,21 @@ describe('BabylonInochiPassengerRenderer', () => {
   });
 
   it.each([
-    'normal',
-    'screen',
-    'linear-dodge',
+    ['normal', Constants.ALPHA_PREMULTIPLIED_PORTERDUFF],
+    ['screen', Constants.ALPHA_SCREENMODE],
+    ['linear-dodge', Constants.ALPHA_ONEONE],
   ] as const)(
     'uses a reference-exact Babylon blend state for %s',
-    (blendMode) => {
+    (blendMode, expectedAlphaMode) => {
       const harness = createRenderer();
 
-      expect(() => {
-        harness.renderer.render(
-          frame([command('normal', blendMode)]),
-        );
-      }).not.toThrow();
+      harness.renderer.render(
+        frame([command('normal', blendMode)]),
+      );
+
+      expect(
+        harness.renderer.getCommandMeshes()[0]?.material?.alphaMode,
+      ).toBe(expectedAlphaMode);
 
       disposeHarness(harness);
     },
