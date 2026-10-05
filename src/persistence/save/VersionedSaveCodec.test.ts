@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { describe, expect, it } from 'vitest';
 import { createInitialEconomyState } from '../../domain/economy/EconomyState';
+import { createInitialAccessibilityPreferencesState } from '../../domain/preferences/AccessibilityPreferencesState';
 import { createInitialRadioState } from '../../domain/radio/RadioState';
 import { createInitialRelationshipState } from '../../domain/relationships/RelationshipState';
 import { createInitialPersonalSpaceState } from '../../domain/spaces/PersonalSpaceState';
@@ -29,6 +30,8 @@ function currentEmptyState() {
     personalPersistenceState:
       createInitialPersonalPersistenceState(),
     relationshipState: createInitialRelationshipState(),
+    accessibilityPreferences:
+      createInitialAccessibilityPreferencesState(),
   };
 }
 
@@ -45,7 +48,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates the v1 empty production state through every version into v9', () => {
+  it('migrates the v1 empty production state through every version into v10', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -59,48 +62,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates v6 by adding deterministic personal-space and personal-persistence state', () => {
-    expect(
-      gameSaveCodec.decode({
-        schemaVersion: 6,
-        savedAt: timestamp,
-        state: {
-          rideSession: null,
-          socialState: null,
-          translatorState: createInitialTranslatorState(),
-          economyState: createInitialEconomyState(),
-          radioState: createInitialRadioState(),
-        },
-      }),
-    ).toEqual({
-      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
-      savedAt: timestamp,
-      state: currentEmptyState(),
-    });
-  });
-
-  it('migrates v7 by adding deterministic personal persistence state', () => {
-    expect(
-      gameSaveCodec.decode({
-        schemaVersion: 7,
-        savedAt: timestamp,
-        state: {
-          rideSession: null,
-          socialState: null,
-          translatorState: createInitialTranslatorState(),
-          economyState: createInitialEconomyState(),
-          radioState: createInitialRadioState(),
-          personalSpaceState: createInitialPersonalSpaceState(),
-        },
-      }),
-    ).toEqual({
-      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
-      savedAt: timestamp,
-      state: currentEmptyState(),
-    });
-  });
-
-  it('migrates v8 by adding deterministic relationship state', () => {
+  it('migrates v8 by adding deterministic relationship and accessibility state', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 8,
@@ -123,10 +85,54 @@ describe('gameSaveCodec', () => {
     });
   });
 
+  it('migrates v9 by adding deterministic accessibility preferences', () => {
+    expect(
+      gameSaveCodec.decode({
+        schemaVersion: 9,
+        savedAt: timestamp,
+        state: {
+          rideSession: null,
+          socialState: null,
+          translatorState: createInitialTranslatorState(),
+          economyState: createInitialEconomyState(),
+          radioState: createInitialRadioState(),
+          personalSpaceState: createInitialPersonalSpaceState(),
+          personalPersistenceState:
+            createInitialPersonalPersistenceState(),
+          relationshipState: createInitialRelationshipState(),
+        },
+      }),
+    ).toEqual({
+      schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+      savedAt: timestamp,
+      state: currentEmptyState(),
+    });
+  });
+
+  it('round-trips non-default accessibility preferences through the production save', () => {
+    const state = createInitialGameState();
+    const customized = {
+      ...state,
+      accessibilityPreferences: {
+        ...state.accessibilityPreferences,
+        uiScale: 1.4,
+        motionIntensity: 0.25,
+        contrastMode: 'high' as const,
+        focusIndicator: 'always' as const,
+        pointerSensitivity: 1.5,
+        touchSensitivity: 0.75,
+      },
+    };
+    const encoded = gameSaveCodec.encode(customized, timestamp);
+
+    expect(gameSaveCodec.decode(encoded).state.accessibilityPreferences)
+      .toEqual(customized.accessibilityPreferences);
+  });
+
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 10,
+        schemaVersion: 11,
         savedAt: timestamp,
         state: currentEmptyState(),
       }),
