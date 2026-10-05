@@ -92,7 +92,9 @@ describe('PersonalPersistenceStateStore', () => {
 
     expect(store.hasUnreadMessage(messageId)).toBe(false);
     expect(store.hasUnreadMessages()).toBe(false);
-  });  it('round-trips populated personal progression through the production save', () => {
+  });
+
+  it('round-trips populated personal progression through the production save', () => {
     const store = createStore();
     const antenna = entityId(
       'taxi-upgrade',
