@@ -406,34 +406,30 @@ export class InochiWasmBindings
       );
     }
 
-    const valuesPointer = this.#exports.nu_malloc(
-      dimensions * 4,
-    );
+    // The official C API exposes the current parameter value as a mutable
+    // float pointer. Writing the parameter-owned buffer directly avoids a
+    // browser/WASM scratch-copy path that produced stale values for 2D
+    // parameters while remaining equivalent to upstream
+    // in_parameter_set_value(), whose implementation only copies into this
+    // same currentValue buffer.
+    const valuesPointer =
+      this.#exports.in_parameter_get_value(parameterPointer);
 
     if (valuesPointer === 0) {
       throw new Error(
-        'Inochi2D could not allocate parameter scratch memory.',
+        'Inochi2D returned a null current-value pointer for a parameter.',
       );
     }
 
-    try {
-      const view = new DataView(
-        this.#exports.memory.buffer,
-        valuesPointer,
-        dimensions * 4,
-      );
+    const view = new DataView(
+      this.#exports.memory.buffer,
+      valuesPointer,
+      dimensions * 4,
+    );
 
-      values.forEach((value, index) => {
-        view.setFloat32(index * 4, value, true);
-      });
-
-      this.#exports.in_parameter_set_value(
-        parameterPointer,
-        valuesPointer,
-      );
-    } finally {
-      this.#exports.nu_free(valuesPointer);
-    }
+    values.forEach((value, index) => {
+      view.setFloat32(index * 4, value, true);
+    });
   }
 
   public getTexturePointers(
