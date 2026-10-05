@@ -231,12 +231,13 @@ for (const [
         )
         .toBe('success');
 
-      const raw: unknown = await page.evaluate(() =>
-        Reflect.get(
+      const raw: unknown = await page.evaluate(() => {
+        const value: unknown = Reflect.get(
           window,
           '__outsiderDriverPersonalSpaceProbe',
-        ),
-      );
+        );
+        return value;
+      });
 
       if (!isRecord(raw) || !isRecord(raw.summary)) {
         throw new Error(
