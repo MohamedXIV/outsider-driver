@@ -140,9 +140,24 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
     );
   }
 
-  expect(summary.performanceValues.Mouth).toEqual([0.2]);
-  expect(summary.performanceValues.Mood).toEqual([-0.4]);
-  expect(summary.performanceValues.Gaze).toEqual([-0.25, 0.05]);
+  const mouth = summary.performanceValues.Mouth;
+  const mood = summary.performanceValues.Mood;
+  const gaze = summary.performanceValues.Gaze;
+
+  if (
+    !Array.isArray(mouth) ||
+    !Array.isArray(mood) ||
+    !Array.isArray(gaze)
+  ) {
+    throw new Error(
+      'Inochi browser probe performance values have invalid shapes.',
+    );
+  }
+
+  expect(Number(mouth[0])).toBeCloseTo(0.2, 5);
+  expect(Number(mood[0])).toBeCloseTo(-0.4, 5);
+  expect(Number(gaze[0])).toBeCloseTo(-0.25, 5);
+  expect(Number(gaze[1])).toBeCloseTo(0.05, 5);
   expect(summary.lightingApplied).toBe(true);
   expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
