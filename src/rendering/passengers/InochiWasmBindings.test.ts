@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { hasWasmStartSection } from './InochiWasmBindings';
+import {
+  growWasmMemoryToMinimumPages,
+  hasWasmStartSection,
+} from './InochiWasmBindings';
 
 function wasmBytes(...body: number[]): ArrayBuffer {
   return Uint8Array.from([
@@ -46,5 +49,42 @@ describe('hasWasmStartSection', () => {
         ),
       );
     }).toThrow(/section extends beyond module bytes/);
+  });
+});
+
+
+describe('growWasmMemoryToMinimumPages', () => {
+  it('grows exported memory to the requested page floor', () => {
+    const memory = new WebAssembly.Memory({
+      initial: 1,
+      maximum: 8,
+    });
+
+    expect(
+      growWasmMemoryToMinimumPages(memory, 4),
+    ).toBe(4);
+    expect(memory.buffer.byteLength).toBe(4 * 65_536);
+  });
+
+  it('does not shrink an already larger memory', () => {
+    const memory = new WebAssembly.Memory({
+      initial: 3,
+      maximum: 8,
+    });
+
+    expect(
+      growWasmMemoryToMinimumPages(memory, 2),
+    ).toBe(3);
+  });
+
+  it('rejects invalid page floors', () => {
+    const memory = new WebAssembly.Memory({
+      initial: 1,
+      maximum: 8,
+    });
+
+    expect(() =>
+      growWasmMemoryToMinimumPages(memory, 0),
+    ).toThrow(/minimum memory page count/);
   });
 });
