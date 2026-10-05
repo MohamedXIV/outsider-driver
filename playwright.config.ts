@@ -17,14 +17,37 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'chromium-desktop',
       use: {
         ...devices['Desktop Chrome'],
+        browserName: 'chromium',
+      },
+    },
+    {
+      name: 'firefox-desktop',
+      use: {
+        ...devices['Desktop Firefox'],
+        browserName: 'firefox',
+      },
+    },
+    {
+      name: 'webkit-desktop',
+      use: {
+        ...devices['Desktop Safari'],
+        browserName: 'webkit',
+      },
+    },
+    {
+      name: 'chromium-compact-touch',
+      use: {
+        ...devices['Pixel 5'],
+        browserName: 'chromium',
       },
     },
   ],
   webServer: {
-    command: 'npm run preview -- --host 127.0.0.1 --port 4173',
+    command:
+      'npm run preview -- --host 127.0.0.1 --port 4173',
     url: baseURL,
     reuseExistingServer: !isCi,
     timeout: 30_000,
