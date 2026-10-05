@@ -254,11 +254,17 @@ export class InochiWasmBindings
       throw new Error('Inochi2D puppet asset must not be empty.');
     }
 
+    const memoryBytesBefore = this.#exports.memory.buffer.byteLength;
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
 
     if (dataPointer === 0) {
+      const memoryBytesAfter = this.#exports.memory.buffer.byteLength;
       throw new Error(
-        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
+        [
+          `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
+          `WASM memory bytes before malloc: ${String(memoryBytesBefore)}.`,
+          `WASM memory bytes after malloc: ${String(memoryBytesAfter)}.`,
+        ].join(' '),
       );
     }
 
