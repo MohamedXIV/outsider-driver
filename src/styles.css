@@ -25,8 +25,41 @@ body {
 }
 
 .game-shell {
+  --game-ui-scale: 1;
+  --game-motion-intensity: 1;
+  --game-panel-bg: rgb(8 11 18 / 94%);
+  --game-panel-border: rgb(238 241 245 / 35%);
+  --game-control-bg: #151b28;
+  --game-control-fg: #eef1f5;
+  --game-focus: #eef1f5;
+
   position: relative;
+  overflow: hidden;
   background: #080b12;
+  color: #eef1f5;
+  font-size: calc(1rem * var(--game-ui-scale));
+}
+
+.game-shell[data-contrast="high"] {
+  --game-panel-bg: #000;
+  --game-panel-border: #fff;
+  --game-control-bg: #000;
+  --game-control-fg: #fff;
+  --game-focus: #fff;
+
+  color: #fff;
+}
+
+.game-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .game-canvas {
@@ -38,7 +71,122 @@ body {
   touch-action: none;
 }
 
-.game-canvas:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: -2px;
+.game-canvas:focus-visible,
+.game-shell[data-focus-indicator="always"] .game-canvas:focus {
+  outline: 3px solid var(--game-focus);
+  outline-offset: -3px;
+}
+
+.game-settings-button,
+.game-settings-close {
+  appearance: none;
+  border: 1px solid var(--game-panel-border);
+  border-radius: 0.35rem;
+  background: var(--game-control-bg);
+  color: var(--game-control-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.game-settings-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  padding: 0.55rem 0.8rem;
+}
+
+.game-settings-panel {
+  position: absolute;
+  top: 3.75rem;
+  right: 0.75rem;
+  z-index: 11;
+  width: min(26rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 4.5rem);
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--game-panel-border);
+  border-radius: 0.5rem;
+  background: var(--game-panel-bg);
+  color: inherit;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 35%);
+}
+
+.game-settings-panel[hidden] {
+  display: none;
+}
+
+.game-settings-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1.15em;
+}
+
+.game-settings-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(7rem, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 0.8rem;
+}
+
+.game-settings-row select,
+.game-settings-row input {
+  min-width: 0;
+  accent-color: currentColor;
+}
+
+.game-settings-row select {
+  grid-column: 2 / 4;
+  padding: 0.35rem;
+  border: 1px solid var(--game-panel-border);
+  border-radius: 0.25rem;
+  background: var(--game-control-bg);
+  color: var(--game-control-fg);
+  font: inherit;
+}
+
+.game-settings-value {
+  min-width: 3.25rem;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-settings-close {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.game-settings-button:focus-visible,
+.game-settings-close:focus-visible,
+.game-settings-row input:focus-visible,
+.game-settings-row select:focus-visible,
+.game-shell[data-focus-indicator="always"] .game-settings-button:focus,
+.game-shell[data-focus-indicator="always"] .game-settings-close:focus,
+.game-shell[data-focus-indicator="always"] .game-settings-row input:focus,
+.game-shell[data-focus-indicator="always"] .game-settings-row select:focus {
+  outline: 3px solid var(--game-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .game-settings-panel {
+    top: 3.5rem;
+    right: 0.5rem;
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 4rem);
+  }
+
+  .game-settings-button {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .game-settings-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .game-settings-row input,
+  .game-settings-row select {
+    grid-column: 1 / 2;
+  }
 }
