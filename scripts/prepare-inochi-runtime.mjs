@@ -213,7 +213,7 @@ export function raiseDefinedWasmMemoryMinimum(
       bytes.subarray(payloadEnd),
     );
 
-    if (!WebAssembly.validate(patched)) {
+    if (!globalThis.WebAssembly.validate(patched)) {
       throw new Error(
         'Provisioned Inochi2D WASM failed validation after raising the memory minimum.',
       );
