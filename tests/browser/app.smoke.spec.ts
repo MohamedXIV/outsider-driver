@@ -227,9 +227,13 @@ test('pinned upstream Ada puppet renders through official WASM in TaxiScene', as
     })
     .toMatch(/^(success|failure)$/);
 
-  const rawState: unknown = await page.evaluate(() =>
-    Reflect.get(window, '__outsiderDriverInochiProbe'),
-  );
+  const rawState: unknown = await page.evaluate(() => {
+    const value: unknown = Reflect.get(
+      window,
+      '__outsiderDriverInochiProbe',
+    );
+    return value;
+  });
 
   if (!isRecord(rawState)) {
     throw new Error('Inochi Ada probe did not publish an object state.');
