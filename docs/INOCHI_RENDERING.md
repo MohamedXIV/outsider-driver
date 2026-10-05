@@ -6,9 +6,11 @@ Important passenger puppets are rendered through the official Inochi2D WebAssemb
 
 `npm run runtime:prepare` downloads the pinned official Inochi2D WASM release archive and verifies its SHA-256 digest before extracting the runtime to the generated public vendor directory.
 
+The current upstream WASM declares growable memory, but its walloc `memory.grow` path fails in Chromium. Provisioning therefore raises the module's declared initial memory floor to 1024 pages (64 MiB) before instantiation. This happens before the WASM Start section and constructor-time allocations, so walloc owns the preallocated pages from its first allocation; there is no post-instantiation/manual heap growth.
+
 The binary is not committed to Git. The BSD-2-Clause license is distributed in `public/third-party/Inochi2D-LICENSE.txt`.
 
-Build/dev commands prepare the runtime automatically. A changed upstream nightly artifact with a different digest fails the build rather than silently changing renderer behavior.
+Build/dev commands prepare the runtime automatically. A changed upstream nightly archive with a different digest, an incompatible WASM memory declaration, or an invalid patched module fails the build rather than silently changing renderer behavior.
 
 ## Boundary layers
 
