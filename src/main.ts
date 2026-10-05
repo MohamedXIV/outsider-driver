@@ -139,6 +139,7 @@ function bootstrapSupportedGame(
   const application = new GameApplication(rendering);
 
   application.start();
+  performance.mark('outsider-driver:startup-ready');
   void runRequestedInochiProbe();
   void runRequestedPersonalSpaceProbe(rendering);
 

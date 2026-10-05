@@ -16,12 +16,13 @@
     "test:watch": "vitest",
     "test:browser": "npm run fixture:inochi && playwright test",
     "build": "npm run runtime:prepare && npm run build:metadata && npm run typecheck && vite build",
-    "check": "npm run lock:verify && npm run lint && npm run content:check && npm run save:compat && npm run test && npm run build",
+    "check": "npm run lock:verify && npm run lint && npm run content:check && npm run save:compat && npm run test && npm run build && npm run budget:check",
     "runtime:prepare": "node scripts/prepare-inochi-runtime.mjs",
     "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs",
     "build:metadata": "node scripts/write-build-metadata.mjs",
     "lock:verify": "node scripts/verify-package-lock.mjs",
-    "save:compat": "vitest run src/persistence/save/SaveCompatibility.test.ts --reporter=verbose"
+    "save:compat": "vitest run src/persistence/save/SaveCompatibility.test.ts --reporter=verbose",
+    "budget:check": "node scripts/check-production-budgets.mjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",

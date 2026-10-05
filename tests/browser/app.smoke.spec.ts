@@ -1,4 +1,21 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+
+interface PerformanceBudgetConfig {
+  readonly budgets: {
+    readonly startupReadyMs: number;
+  };
+}
+
+const performanceBudgetConfig = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../config/performance-budgets.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+) as PerformanceBudgetConfig;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -64,6 +81,32 @@ test('production build resolves its runtime capability contract without browser 
 
   if (testInfo.project.name !== 'firefox-desktop') {
     expect(outcome).toBe('game');
+  }
+
+  if (
+    testInfo.project.name === 'chromium-desktop' &&
+    outcome === 'game'
+  ) {
+    const startupReadyMs = await page.evaluate(() => {
+      const mark = performance
+        .getEntriesByName('outsider-driver:startup-ready')
+        .at(-1);
+
+      return mark?.startTime ?? null;
+    });
+
+    if (startupReadyMs === null) {
+      throw new Error(
+        'Production startup did not publish the startup-ready performance mark.',
+      );
+    }
+
+    console.log(
+      `Production startup-ready: ${startupReadyMs.toFixed(1)} ms / ${String(performanceBudgetConfig.budgets.startupReadyMs)} ms budget`,
+    );
+    expect(startupReadyMs).toBeLessThanOrEqual(
+      performanceBudgetConfig.budgets.startupReadyMs,
+    );
   }
 
   expect(browserErrors).toEqual([]);
