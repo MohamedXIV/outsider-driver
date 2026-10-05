@@ -6,11 +6,9 @@ Important passenger puppets are rendered through the official Inochi2D WebAssemb
 
 `npm run runtime:prepare` downloads the pinned official Inochi2D WASM release archive and verifies its SHA-256 digest before extracting the runtime to the generated public vendor directory.
 
-The current upstream WASM declares growable memory, but its walloc `memory.grow` path fails in Chromium. Provisioning therefore raises the module's declared initial memory floor to 1024 pages (64 MiB) before instantiation. This happens before the WASM Start section and constructor-time allocations, so walloc owns the preallocated pages from its first allocation; there is no post-instantiation/manual heap growth.
-
 The binary is not committed to Git. The BSD-2-Clause license is distributed in `public/third-party/Inochi2D-LICENSE.txt`.
 
-Build/dev commands prepare the runtime automatically. A changed upstream nightly archive with a different digest, an incompatible WASM memory declaration, or an invalid patched module fails the build rather than silently changing renderer behavior.
+Build/dev commands prepare the runtime automatically. A changed upstream nightly artifact with a different digest fails the build rather than silently changing renderer behavior.
 
 ## Boundary layers
 
@@ -112,11 +110,12 @@ Unit/runtime validation covers:
 - soft-mask alpha/dodge/nesting/edge coverage;
 - Babylon seat placement, geometry, UV/UV2, material state, ordering, unsupported-state failures, and disposal.
 
-The production browser smoke has two complementary proofs:
+The production browser smoke additionally:
 
-- a tiny generated puppet exercises deterministic semantic performance parameters and the stylized lighting bridge through the real official WASM runtime;
-- the pinned upstream Inochi2D `examples/ada-static.inx` puppet is the real-puppet acceptance fixture for the rendering bridge.
+- provisions the digest-verified official WASM runtime;
+- loads a valid generated Inochi puppet through the real runtime;
+- extracts a real draw frame;
+- renders that frame through Babylon inside the real TaxiScene passenger seat;
+- reports the live draw-state/blend summary.
 
-The Ada proof is digest-pinned by its upstream Git blob identity. It must load through official WASM, produce a non-empty real draw frame, and render successfully beneath the real TaxiScene passenger-seat anchor. The probe reports live draw states, blend modes, mask depth, and composite depth so renderer support is driven by observed puppet requirements rather than speculative complexity.
-
-A generated fixture can verify narrow contracts, but it is not a substitute for the real upstream puppet acceptance gate for #21. None of these fixtures create a parallel demo renderer; all pass through the same production runtime/session/Babylon bridge.
+Small generated/pinned fixtures exercise production architecture. They are not a separate demo/vertical-slice renderer.
