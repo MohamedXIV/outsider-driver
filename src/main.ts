@@ -68,3 +68,56 @@ async function runRequestedInochiProbe(): Promise<void> {
 }
 
 void runRequestedInochiProbe();
+
+
+type PersonalSpaceProbeState =
+  | { readonly status: 'pending' }
+  | {
+      readonly status: 'success';
+      readonly summary: unknown;
+    }
+  | {
+      readonly status: 'failure';
+      readonly error: string;
+    };
+
+function publishPersonalSpaceProbeState(
+  state: PersonalSpaceProbeState,
+): void {
+  Reflect.set(window, '__outsiderDriverPersonalSpaceProbe', state);
+}
+
+async function runRequestedPersonalSpaceProbe(): Promise<void> {
+  const requested = new URLSearchParams(window.location.search)
+    .get('spaceProbe');
+
+  if (requested !== 'garage' && requested !== 'home') {
+    return;
+  }
+
+  publishPersonalSpaceProbeState({ status: 'pending' });
+
+  try {
+    const { runPersonalSpaceBrowserProbe } = await import(
+      './rendering/spaces/runPersonalSpaceBrowserProbe'
+    );
+    const summary = await runPersonalSpaceBrowserProbe(
+      requested,
+      rendering,
+    );
+    publishPersonalSpaceProbeState({
+      status: 'success',
+      summary,
+    });
+  } catch (error) {
+    publishPersonalSpaceProbeState({
+      status: 'failure',
+      error:
+        error instanceof Error
+          ? error.message
+          : String(error),
+    });
+  }
+}
+
+void runRequestedPersonalSpaceProbe();

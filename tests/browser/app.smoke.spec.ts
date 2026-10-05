@@ -176,3 +176,91 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
   expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
 });
+
+
+test.each([
+  ['garage', ['taxi-access', 'upgrades', 'exit']],
+  ['home', ['messages', 'possessions', 'sleep', 'exit']],
+] as const)(
+  'production build renders the authored %s as a live 3D personal space',
+  async (kind, expectedInteractionKinds, { page }) => {
+    const browserErrors: string[] = [];
+
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        browserErrors.push(`console: ${message.text()}`);
+      }
+    });
+
+    page.on('pageerror', (error) => {
+      browserErrors.push(`page: ${error.message}`);
+    });
+
+    const response = await page.goto(
+      `/?spaceProbe=${kind}`,
+      {
+        waitUntil: 'networkidle',
+      },
+    );
+
+    expect(response?.ok()).toBe(true);
+
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const state: unknown = Reflect.get(
+            window,
+            '__outsiderDriverPersonalSpaceProbe',
+          );
+
+          if (typeof state !== 'object' || state === null) {
+            return 'pending';
+          }
+
+          const status: unknown = Reflect.get(state, 'status');
+          return typeof status === 'string'
+            ? status
+            : 'pending';
+        }),
+      )
+      .toBe('success');
+
+    const raw: unknown = await page.evaluate(() =>
+      Reflect.get(
+        window,
+        '__outsiderDriverPersonalSpaceProbe',
+      ),
+    );
+
+    if (!isRecord(raw) || !isRecord(raw.summary)) {
+      throw new Error(
+        'Personal-space browser probe completed without a summary.',
+      );
+    }
+
+    const summary = raw.summary;
+    expect(summary.kind).toBe(kind);
+    expect(summary.spaceId).toBe(`personal-space:${kind}`);
+    expect(summary.visited).toBe(true);
+    expect(summary.currentSpaceId).toBe(
+      `personal-space:${kind}`,
+    );
+    expect(summary.exercisedFlagValue).toBe(true);
+
+    if (!Array.isArray(summary.interactionKinds)) {
+      throw new Error(
+        'Personal-space probe interaction kinds were not an array.',
+      );
+    }
+
+    expect(summary.interactionKinds).toEqual(
+      expect.arrayContaining([...expectedInteractionKinds]),
+    );
+
+    const gameCanvas = page.getByRole('application', {
+      name: 'Outsider Driver game view',
+    });
+    await expect(gameCanvas).toBeVisible();
+    expect(browserErrors).toEqual([]);
+  },
+);
