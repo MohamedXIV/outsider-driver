@@ -10,6 +10,7 @@ import {
   type ClaimProposal,
 } from '../../domain/social/SocialStealthState';
 import type { TranslationRequirement } from '../../domain/translator/TranslatorRuntime';
+import type { RelationshipDimension } from '../../content/relationships/RelationshipContracts';
 
 export const NARRATIVE_EXTERNAL_FUNCTIONS = [
   'GAME_HAS_FACT',
@@ -23,10 +24,15 @@ export const NARRATIVE_EXTERNAL_FUNCTIONS = [
   'GAME_HAS_ITEM',
   'GAME_TAXI_CONDITION',
   'GAME_HAS_UNREAD_MESSAGE',
+  'GAME_RELATIONSHIP',
+  'GAME_HUMAN_ATTITUDE',
+  'GAME_COMPLETED_RIDES_WITH',
   'GAME_REVEAL_FACT',
   'GAME_RECORD_CLAIM',
   'GAME_ADJUST_SUSPICION',
   'GAME_ADJUST_CITY_ATTENTION',
+  'GAME_ADJUST_RELATIONSHIP',
+  'GAME_ADJUST_HUMAN_ATTITUDE',
 ] as const;
 
 export const NarrativeExternalFunctionSchema = z.enum(
@@ -74,11 +80,32 @@ const AdjustCityAttentionEventSchema = z
   })
   .strict();
 
+const AdjustRelationshipEventSchema = z
+  .object({
+    type: z.literal('relationship.adjust'),
+    passengerId: entityIdSchema('passenger'),
+    dimension: z.enum(['trust', 'affection']),
+    delta: adjustmentSchema,
+    reason: reasonSchema,
+  })
+  .strict();
+
+const AdjustHumanAttitudeEventSchema = z
+  .object({
+    type: z.literal('human-attitude.adjust'),
+    passengerId: entityIdSchema('passenger'),
+    delta: adjustmentSchema,
+    reason: reasonSchema,
+  })
+  .strict();
+
 export const NarrativeDomainEventSchema = z.discriminatedUnion('type', [
   RevealFactEventSchema,
   RecordClaimEventSchema,
   AdjustSuspicionEventSchema,
   AdjustCityAttentionEventSchema,
+  AdjustRelationshipEventSchema,
+  AdjustHumanAttitudeEventSchema,
 ]);
 
 export type NarrativeDomainEvent = z.infer<
@@ -96,9 +123,19 @@ export interface PersonalPersistenceNarrativeQueryPort {
   hasUnreadMessage(messageId: string): boolean;
 }
 
+export interface RelationshipNarrativeQueryPort {
+  getRelationshipMetric(
+    passengerId: PassengerId,
+    dimension: RelationshipDimension,
+  ): number;
+  getHumanAttitude(passengerId: PassengerId): number;
+  getCompletedRideCount(passengerId: PassengerId): number;
+}
+
 export interface NarrativeQueryPort {
   readonly translator?: TranslatorNarrativeQueryPort;
   readonly personal?: PersonalPersistenceNarrativeQueryPort;
+  readonly relationships?: RelationshipNarrativeQueryPort;
   hasFact(factId: FactId): boolean;
   hasClaim(claimId: ClaimId): boolean;
   coverIdentityMatches(key: string, value: string): boolean;

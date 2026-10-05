@@ -64,6 +64,11 @@ export class SocialStealthNarrativeAdapter
       case 'city-attention.adjust':
         this.#store.adjustCityAttention(event.delta, event.reason);
         return;
+      case 'relationship.adjust':
+      case 'human-attitude.adjust':
+        throw new Error(
+          `SocialStealthNarrativeAdapter cannot handle ${event.type}; compose a relationship event sink.`,
+        );
     }
   }
 }
