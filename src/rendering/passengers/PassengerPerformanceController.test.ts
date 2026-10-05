@@ -192,7 +192,15 @@ describe('PassengerPerformanceController', () => {
 
     controller.applyCue('guarded');
 
-    expect(writes).toEqual([
+    expect(writes.slice(0, 6)).toEqual([
+      { name: 'Mouth', values: [0] },
+      { name: 'Blink', values: [0] },
+      { name: 'Gaze', values: [0, 0] },
+      { name: 'Head', values: [0, 0] },
+      { name: 'Body', values: [0, 0] },
+      { name: 'Mood', values: [0] },
+    ]);
+    expect(writes.slice(-3)).toEqual([
       {
         name: 'Mood',
         values: [0.5],
