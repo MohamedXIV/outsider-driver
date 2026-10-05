@@ -72,6 +72,34 @@ describe('PassengerLightingBridge', () => {
     engine.dispose();
   });
 
+  it('keeps headlights as a first-class transient accent source', () => {
+    const engine = new NullEngine();
+    const taxi = createTaxiScene(
+      engine,
+      productionContent.taxiScene,
+    );
+
+    const state = resolvePassengerLighting(taxi, {
+      accents: [
+        {
+          kind: 'headlights',
+          color: [0.9, 0.95, 1],
+          intensity: 1.4,
+          direction: [0.1, -0.2, 1],
+        },
+      ],
+    });
+
+    expect(state.accentColor).toEqual([0.9, 0.95, 1]);
+    expect(state.accentIntensity).toBeCloseTo(1.4);
+    expect(
+      Math.hypot(...state.accentDirection),
+    ).toBeCloseTo(1);
+
+    taxi.scene.dispose();
+    engine.dispose();
+  });
+
   it('can attenuate cabin/world light for tunnels while retaining transient neon/emergency light', () => {
     const engine = new NullEngine();
     const taxi = createTaxiScene(

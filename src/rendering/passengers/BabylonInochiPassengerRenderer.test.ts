@@ -236,29 +236,109 @@ describe('BabylonInochiPassengerRenderer', () => {
     disposeHarness(harness);
   });
 
-  it('fails loud when optional lighting attachments arrive before the lighting pipeline', () => {
+  it('accepts the official emissive attachment and preserves explicit passenger lighting state', () => {
     const harness = createRenderer();
-    const base = command('normal');
+    const baseFrame = frame();
+    const baseCommand = baseFrame.commands[0];
+
+    if (baseCommand === undefined) {
+      throw new Error('Expected fixture draw command.');
+    }
+
+    harness.renderer.setLighting({
+      ambientColor: [0.2, 0.3, 0.5],
+      ambientIntensity: 0.6,
+      keyColor: [1, 0.4, 0.2],
+      keyIntensity: 1.1,
+      keyDirection: [0.2, 0.4, 1],
+      accentColor: [0.1, 0.5, 1],
+      accentIntensity: 0.8,
+      accentDirection: [-0.4, 0.1, 1],
+    });
+
+    const litFrame: InochiDrawFrame = {
+      ...baseFrame,
+      textures: [
+        ...baseFrame.textures,
+        {
+          id: 78,
+          width: 1,
+          height: 1,
+          channels: 4,
+          pixels: new Uint8Array([64, 32, 16, 255]),
+        },
+      ],
+      commands: [
+        {
+          ...baseCommand,
+          sourceTextureIds: [
+            77,
+            78,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+          ],
+        },
+      ],
+    };
 
     expect(() => {
-      harness.renderer.render(
-        frame([
-          {
-            ...base,
-            sourceTextureIds: [
-              77,
-              77,
-              null,
-              null,
-              null,
-              null,
-              null,
-              null,
-            ],
-          },
-        ]),
-      );
-    }).toThrow(/lighting material pipeline/);
+      harness.renderer.render(litFrame);
+      harness.taxi.scene.render();
+    }).not.toThrow();
+    expect(harness.renderer.getLightingState()).toMatchObject({
+      ambientIntensity: 0.6,
+      keyIntensity: 1.1,
+      accentIntensity: 0.8,
+    });
+
+    disposeHarness(harness);
+  });
+
+  it('keeps the official bump-map attachment fail-closed until exact semantics are implemented', () => {
+    const harness = createRenderer();
+    const baseFrame = frame();
+    const baseCommand = baseFrame.commands[0];
+
+    if (baseCommand === undefined) {
+      throw new Error('Expected fixture draw command.');
+    }
+
+    const bumpFrame: InochiDrawFrame = {
+      ...baseFrame,
+      textures: [
+        ...baseFrame.textures,
+        {
+          id: 79,
+          width: 1,
+          height: 1,
+          channels: 4,
+          pixels: new Uint8Array([128, 128, 255, 255]),
+        },
+      ],
+      commands: [
+        {
+          ...baseCommand,
+          sourceTextureIds: [
+            77,
+            null,
+            79,
+            null,
+            null,
+            null,
+            null,
+            null,
+          ],
+        },
+      ],
+    };
+
+    expect(() => {
+      harness.renderer.render(bumpFrame);
+    }).toThrow(/Bumpmap is not represented exactly/);
 
     disposeHarness(harness);
   });

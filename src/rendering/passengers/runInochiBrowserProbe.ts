@@ -7,6 +7,7 @@ import { compileInochiRenderProgram } from './InochiRenderProgram';
 import { InochiWasmBindings } from './InochiWasmBindings';
 import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
 import { PassengerPerformanceController } from './PassengerPerformanceController';
+import { PassengerLightingBridge } from './PassengerLighting';
 
 export interface InochiBrowserProbeSummary {
   readonly puppetName: string;
@@ -15,6 +16,7 @@ export interface InochiBrowserProbeSummary {
   readonly parameterExercised: string | null;
   readonly performanceCueApplied: string | null;
   readonly performanceValues: Readonly<Record<string, readonly number[]>>;
+  readonly lightingApplied: boolean;
   readonly vertexCount: number;
   readonly indexCount: number;
   readonly textureCount: number;
@@ -172,6 +174,27 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxi.scene,
       taxi.anchors.passengerSeat,
     );
+    const lighting = new PassengerLightingBridge(
+      taxi,
+      renderer,
+    );
+    lighting.sync({
+      darkness: 0.15,
+      accents: [
+        {
+          kind: 'neon',
+          color: [0.15, 0.45, 1],
+          intensity: 0.7,
+          direction: [-0.4, 0.1, 1],
+        },
+        {
+          kind: 'headlights',
+          color: [1, 0.9, 0.7],
+          intensity: 0.5,
+          direction: [0.3, -0.1, 1],
+        },
+      ],
+    });
     reportStage('renderer-created');
 
     try {
@@ -191,6 +214,7 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       parameterExercised,
       performanceCueApplied,
       performanceValues,
+      lightingApplied: true,
       vertexCount: frame.vertices.length,
       indexCount: frame.indices.length,
       textureCount: frame.textures.length,
