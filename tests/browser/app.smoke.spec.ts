@@ -1,5 +1,21 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import performanceBudgetConfig from '../../config/performance-budgets.json';
+
+interface PerformanceBudgetConfig {
+  readonly budgets: {
+    readonly startupReadyMs: number;
+  };
+}
+
+const performanceBudgetConfig = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../config/performance-budgets.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+) as PerformanceBudgetConfig;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
