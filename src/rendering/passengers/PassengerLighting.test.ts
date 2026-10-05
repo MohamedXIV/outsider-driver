@@ -56,10 +56,6 @@ describe('PassengerLightingBridge', () => {
     const profile =
       productionContent.routeExperience.districtVisuals[0];
 
-    if (profile === undefined) {
-      throw new Error('Expected production district visual profile.');
-    }
-
     expect(state.ambientColor).toEqual(profile.ambientColor);
     expect(state.ambientIntensity).toBeCloseTo(
       profile.ambientIntensity *

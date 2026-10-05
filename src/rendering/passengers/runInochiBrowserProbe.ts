@@ -141,16 +141,12 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
 
     const performanceProfile =
       productionContent.passengerPerformance.profiles[0];
-    let performanceCueApplied: string | null = null;
-
-    if (performanceProfile !== undefined) {
-      const performance = new PassengerPerformanceController(
-        session,
-        performanceProfile,
-      );
-      performance.applyCue('guarded');
-      performanceCueApplied = 'guarded';
-    }
+    const performance = new PassengerPerformanceController(
+      session,
+      performanceProfile,
+    );
+    performance.applyCue('guarded');
+    const performanceCueApplied = 'guarded';
 
     const performanceValues = Object.fromEntries(
       session

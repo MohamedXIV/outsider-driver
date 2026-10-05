@@ -26,10 +26,10 @@ function createHarness() {
     descriptor('Body', [-1, -1], [1, 1], [0, 0]),
     descriptor('Mood', [-1], [1], [0]),
   ];
-  const writes: Array<{
+  const writes: {
     readonly name: string;
     readonly values: readonly number[];
-  }> = [];
+  }[] = [];
 
   const puppet = {
     listParameters: () => descriptors,
