@@ -34,7 +34,7 @@ Concrete systems project authored documents into this validation graph so cross-
 
 ## Save format
 
-Every save is wrapped in a strict envelope. Current game state is schema v8 and contains:
+Every save is wrapped in a strict envelope. Current game state is schema v9 and contains:
 
 - resumable `rideSession`;
 - nullable `socialState`;
@@ -42,9 +42,10 @@ Every save is wrapped in a strict envelope. Current game state is schema v8 and 
 - persistent `economyState`;
 - persistent `radioState`;
 - persistent `personalSpaceState`;
-- persistent `personalPersistenceState`.
+- persistent `personalPersistenceState`;
+- persistent `relationshipState`.
 
-`economyState` stores credits, lifetime earnings/expenses, official standing, underground access, and settled ride IDs so a retry cannot pay the same ride twice.
+`relationshipState` stores only authoritative relationship progression and recurring-ride history. It does not duplicate passenger suspicion or city attention.
 
 `schemaVersion` is independent from content document versions and subsystem-local state versions.
 
@@ -55,13 +56,12 @@ Production save evolution:
 - v3: persistent social-stealth state;
 - v4: translator ownership/activation;
 - v5: economy/work progression state;
-- v6: radio tuning, listening, discovery, and heard-broadcast history;
-- v7: personal-space current/visited state and authored flag overrides;
-- v8: owned/installed taxi upgrades, taxi condition/maintenance, possessions, and delivered/read messages.
+- v6: radio tuning, discovery, listening, and heard-broadcast history;
+- v7: personal-space visit/current-space state;
+- v8: taxi upgrades, maintenance, possessions, and messages;
+- v9: persistent relationship dimensions, human attitude, and completed recurring-ride history.
 
-The social slot remains nullable because historical saves must not fabricate a cover identity that the player never selected.
-
-v3 -> v4 creates empty translator ownership. v4 -> v5 creates a deterministic empty economy state: zero credits, zero official standing, zero underground access, and no settled rides. v5 -> v6 creates radio off, untuned, with no hidden stations discovered and no broadcasts marked heard. v6 -> v7 creates personal-space state outside every space with no fabricated visits and no flag overrides. v7 -> v8 creates a fully maintained taxi with no owned/installed upgrades, possessions, maintenance issues, or delivered messages.
+v8 -> v9 creates an empty relationship state. Passenger relationship defaults are materialized from validated content only when that passenger first participates in the relationship system; the migration does not fabricate historical rides or retroactive affection/trust.
 
 ## Migration rules
 
@@ -77,9 +77,9 @@ v3 -> v4 creates empty translator ownership. v4 -> v5 creates a deterministic em
 
 Defaults that become persistent truth must be deterministic.
 
-Good examples include empty translator ownership, zero economy progression, or a fixed starting amount when product rules explicitly define one.
+Good examples include empty translator ownership, zero economy progression, or an empty relationship state for a pre-v9 save.
 
-Bad examples include random IDs at load time, `Date.now()` inside a migration, or choosing a fallback route based on current catalog order.
+Bad examples include random IDs at load time, `Date.now()` inside a migration, or fabricating prior passenger rides during migration.
 
 The caller supplies save timestamps explicitly so serialization remains testable and deterministic.
 
@@ -87,4 +87,4 @@ The caller supplies save timestamps explicitly so serialization remains testable
 
 No data contract may assume a seven-day campaign, fixed passenger count, fixed route count, maximum translator-pack catalog, or fixed upgrade catalog.
 
-Limits are allowed only when they are intentional product rules and documented as such.
+Recurring passenger cooldowns and availability are authored from game time and completed-ride history, not from a fixed campaign length.
