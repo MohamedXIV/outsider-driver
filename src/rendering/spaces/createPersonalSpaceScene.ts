@@ -1,4 +1,5 @@
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
+import { FreeCameraTouchInput } from '@babylonjs/core/Cameras/Inputs/freeCameraTouchInput';
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { PointLight } from '@babylonjs/core/Lights/pointLight';
@@ -9,6 +10,11 @@ import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Scene } from '@babylonjs/core/scene';
+import {
+  AccessibilityPreferencesStateSchema,
+  createInitialAccessibilityPreferencesState,
+  type AccessibilityPreferencesState,
+} from '../../domain/preferences/AccessibilityPreferencesState';
 import {
   PersonalSpaceDefinitionSchema,
   type PersonalSpaceDefinition,
@@ -21,6 +27,7 @@ export type PersonalSpaceFlagResolver = (flagId: string) => boolean;
 export interface PersonalSpaceSceneOptions {
   readonly attachControls?: boolean;
   readonly resolveFlag?: PersonalSpaceFlagResolver;
+  readonly accessibilityPreferences?: AccessibilityPreferencesState;
 }
 
 export interface PersonalSpaceInteractionAnchor {
@@ -40,6 +47,9 @@ export interface PersonalSpaceSceneHandle {
     PersonalSpaceInteractionAnchor
   >;
   refreshVisibility(resolveFlag?: PersonalSpaceFlagResolver): void;
+  applyAccessibilityPreferences(
+    preferences: AccessibilityPreferencesState,
+  ): void;
 }
 
 function vector3(tuple: readonly [number, number, number]): Vector3 {
@@ -76,8 +86,8 @@ export function createPersonalSpaceScene(
   camera.minZ = definition.camera.minZ;
   camera.maxZ = definition.camera.maxZ;
   camera.speed = definition.camera.movementSpeed;
-  camera.angularSensibility =
-    definition.camera.angularSensibility;
+  const touchInput = new FreeCameraTouchInput(false);
+  camera.inputs.add(touchInput);
   camera.checkCollisions = true;
   camera.ellipsoid = new Vector3(0.34, 0.84, 0.34);
   camera.applyGravity = false;
@@ -86,6 +96,28 @@ export function createPersonalSpaceScene(
   camera.keysLeft = [65, 37];
   camera.keysRight = [68, 39];
   scene.activeCamera = camera;
+
+  const applyAccessibilityPreferences = (
+    preferencesInput: AccessibilityPreferencesState,
+  ): void => {
+    const preferences =
+      AccessibilityPreferencesStateSchema.parse(
+        preferencesInput,
+      );
+
+    camera.angularSensibility =
+      definition.camera.angularSensibility /
+      preferences.pointerSensitivity;
+    touchInput.touchAngularSensibility =
+      200_000 / preferences.touchSensitivity;
+    touchInput.touchMoveSensibility =
+      250 / preferences.touchSensitivity;
+  };
+
+  applyAccessibilityPreferences(
+    options.accessibilityPreferences ??
+      createInitialAccessibilityPreferencesState(),
+  );
 
   const bounds = definition.camera.bounds;
   scene.onBeforeRenderObservable.add(() => {
@@ -242,5 +274,6 @@ export function createPersonalSpaceScene(
     assets,
     interactionAnchors,
     refreshVisibility,
+    applyAccessibilityPreferences,
   };
 }
