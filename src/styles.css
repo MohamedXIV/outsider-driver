@@ -190,3 +190,29 @@ body {
     grid-column: 1 / 2;
   }
 }
+
+
+.game-compatibility-shell {
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.game-compatibility-panel {
+  width: min(42rem, 100%);
+  padding: clamp(1rem, 4vw, 2rem);
+  border: 1px solid var(--game-panel-border, rgb(238 241 245 / 35%));
+  border-radius: 0.5rem;
+  background: var(--game-panel-bg, rgb(8 11 18 / 94%));
+}
+
+.game-compatibility-panel h1 {
+  margin-block-start: 0;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+}
+
+.game-compatibility-panel p,
+.game-compatibility-panel li {
+  line-height: 1.5;
+}
