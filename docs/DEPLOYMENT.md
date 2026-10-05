@@ -16,8 +16,9 @@ Critical cross-browser checks prove:
 
 - the production page loads successfully;
 - the expected Babylon game canvas is visible and initialized when required capabilities exist;
-- garage/home personal-space probes remain functional;
-- accessibility/control UI and keyboard focus behavior remain functional;
+- garage/home personal-space probes remain functional on capability-supported profiles;
+- accessibility/control UI and keyboard focus behavior remain functional on capability-supported profiles;
+- a headless engine that cannot expose required WebGL must pass the explicit compatibility surface rather than being misreported as a rendering regression;
 - compact touch layout/tapping does not hit fatal overflow/bootstrap failures;
 - unsupported WebGL capability produces an accessible compatibility surface rather than a crash;
 - no uncaught page errors or browser console errors occur.
