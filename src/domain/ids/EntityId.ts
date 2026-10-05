@@ -18,6 +18,7 @@ export const ENTITY_KINDS = [
   'broadcast',
   'taxi-upgrade',
   'item',
+  'message',
   'personal-space',
 ] as const;
 
@@ -121,4 +122,5 @@ export type RadioStationId = EntityId<'radio-station'>;
 export type BroadcastId = EntityId<'broadcast'>;
 export type TaxiUpgradeId = EntityId<'taxi-upgrade'>;
 export type ItemId = EntityId<'item'>;
+export type MessageId = EntityId<'message'>;
 export type PersonalSpaceId = EntityId<'personal-space'>;
