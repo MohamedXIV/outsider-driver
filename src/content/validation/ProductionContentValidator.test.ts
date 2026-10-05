@@ -26,6 +26,9 @@ describe('production content validation', () => {
       'personal-space:garage',
       'personal-space:home',
     ]);
+    expect(validated.personalPersistence.upgrades).toHaveLength(3);
+    expect(validated.personalPersistence.items).toHaveLength(1);
+    expect(validated.personalPersistence.messages).toHaveLength(1);
   });
 
   it('rejects a passenger that references a missing narrative story', () => {
@@ -249,6 +252,28 @@ describe('production content validation', () => {
 
     expect(() => validateProductionContent(broken)).toThrow(
       /references unknown visibility flag missing-flag/,
+    );
+  });
+
+  it('rejects personal callbacks that reference missing passengers', () => {
+    const broken = {
+      ...productionContent,
+      personalPersistence: {
+        ...productionContent.personalPersistence,
+        messages: [
+          {
+            ...productionContent.personalPersistence.messages[0],
+            data: {
+              ...productionContent.personalPersistence.messages[0].data,
+              passengerId: 'passenger:missing-callback-rider',
+            },
+          },
+        ],
+      },
+    };
+
+    expect(() => validateProductionContent(broken)).toThrow(
+      /references unknown passenger passenger:missing-callback-rider/,
     );
   });
 
