@@ -9,20 +9,26 @@ import {
   type PersonalSpacePresentationPort,
 } from './PersonalSpaceOrchestrator';
 
+interface ShownSpaceCall {
+  readonly definition: PersonalSpaceDefinition;
+  readonly resolveFlag: PersonalSpaceFlagResolver;
+}
+
 describe('PersonalSpaceOrchestrator', () => {
   it('transitions through authored spaces and refreshes live persistent flags', () => {
-    let shownDefinition: PersonalSpaceDefinition | null = null;
-    let shownResolver: PersonalSpaceFlagResolver | null = null;
-    let refreshedResolver: PersonalSpaceFlagResolver | null = null;
+    const shownSpaces: ShownSpaceCall[] = [];
+    const refreshedResolvers: PersonalSpaceFlagResolver[] = [];
     let taxiShows = 0;
 
     const presentation: PersonalSpacePresentationPort = {
       showPersonalSpace: (definition, resolveFlag) => {
-        shownDefinition = definition;
-        shownResolver = resolveFlag;
+        shownSpaces.push({
+          definition,
+          resolveFlag,
+        });
       },
       refreshPersonalSpaceFlags: (resolveFlag) => {
-        refreshedResolver = resolveFlag;
+        refreshedResolvers.push(resolveFlag);
       },
       showTaxi: () => {
         taxiShows += 1;
@@ -40,9 +46,12 @@ describe('PersonalSpaceOrchestrator', () => {
     const garage = flow.enter(garageId);
 
     expect(garage.kind).toBe('garage');
-    expect(shownDefinition?.id).toBe(garageId);
+    expect(shownSpaces).toHaveLength(1);
+    expect(shownSpaces[0]?.definition.id).toBe(garageId);
 
-    if (shownResolver === null) {
+    const shownResolver = shownSpaces[0]?.resolveFlag;
+
+    if (shownResolver === undefined) {
       throw new Error('Expected personal-space flag resolver.');
     }
 
@@ -50,7 +59,10 @@ describe('PersonalSpaceOrchestrator', () => {
 
     flow.setFlag(garageId, 'inspection-light', true);
 
-    if (refreshedResolver === null) {
+    expect(refreshedResolvers).toHaveLength(1);
+    const refreshedResolver = refreshedResolvers[0];
+
+    if (refreshedResolver === undefined) {
       throw new Error('Expected refreshed flag resolver.');
     }
 
