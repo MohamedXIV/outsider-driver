@@ -8,12 +8,21 @@ Every pull request must pass the repository CI checks. A Vercel preview is usefu
 
 Canonical CI installs dependencies with `npm ci` from the committed `package-lock.json`. A package manifest / lockfile mismatch is therefore a hard failure before verification begins. `npm run lock:verify` also checks the repository-visible root dependency contract without network access.
 
-The browser smoke test runs Playwright against the output of `npm run build` served by `vite preview`. It must prove that:
+The browser compatibility suite runs Playwright against the output of `npm run build` served by `vite preview`.
+
+The supported matrix is defined in `docs/BROWSER_SUPPORT.md` and covers desktop Chromium, Firefox, WebKit, plus a compact touch Chromium profile.
+
+Critical cross-browser checks prove:
 
 - the production page loads successfully;
-- the expected game canvas is visible and initialized;
-- no uncaught page errors occur;
-- no browser console errors occur during boot.
+- the expected Babylon game canvas is visible and initialized when required capabilities exist;
+- garage/home personal-space probes remain functional;
+- accessibility/control UI and keyboard focus behavior remain functional;
+- compact touch layout/tapping does not hit fatal overflow/bootstrap failures;
+- unsupported WebGL capability produces an accessible compatibility surface rather than a crash;
+- no uncaught page errors or browser console errors occur.
+
+The expensive verified-WASM/real-Inochi puppet proof remains scoped to canonical desktop Chromium so the compatibility matrix stays practical.
 
 ## Vercel Git integration
 
