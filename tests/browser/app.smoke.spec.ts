@@ -111,7 +111,8 @@ test('production build resolves its runtime capability contract without browser 
 
   expect(browserErrors).toEqual([]);
 });
-test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScene rendering', async ({ page }, testInfo) => {
+test('verified WASM renders the baseline puppet and pinned upstream Ada in TaxiScene', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
   test.skip(
     testInfo.project.name !== 'chromium-desktop',
     'The expensive real-Inochi proof runs once on canonical desktop Chromium; cross-browser projects exercise the production Babylon/UI surface without repeating the WASM fixture.',
@@ -250,6 +251,33 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
   expect(summary.taxiRenderAttempted).toBe(true);
   expect(summary.taxiRenderSucceeded).toBe(true);
   expect(summary.taxiRenderError).toBeNull();
+
+  if (!isRecord(summary.realPuppet)) {
+    throw new Error(
+      'Inochi browser probe did not publish the pinned real-puppet summary.',
+    );
+  }
+
+  const realPuppet = summary.realPuppet;
+  console.log(
+    `Inochi pinned Ada probe: ${JSON.stringify(realPuppet)}`,
+  );
+
+  expect(realPuppet.puppetName).toBe('Ada');
+  expect(typeof realPuppet.puppetAuthor).toBe('string');
+  expect(Number(realPuppet.parameterCount)).toBeGreaterThan(0);
+  expect(typeof realPuppet.parameterExercised).toBe('string');
+  expect(realPuppet.parameterValueChanged).toBe(true);
+  expect(Number(realPuppet.vertexCount)).toBeGreaterThan(0);
+  expect(Number(realPuppet.indexCount)).toBeGreaterThan(0);
+  expect(Number(realPuppet.textureCount)).toBeGreaterThan(0);
+  expect(Number(realPuppet.commandCount)).toBeGreaterThan(0);
+  expect(Array.isArray(realPuppet.drawStates)).toBe(true);
+  expect(Array.isArray(realPuppet.blendModes)).toBe(true);
+  expect(typeof realPuppet.taxiPassengerSeatAnchor).toBe('string');
+  expect(realPuppet.taxiRenderAttempted).toBe(true);
+  expect(realPuppet.taxiRenderSucceeded).toBe(true);
+  expect(realPuppet.taxiRenderError).toBeNull();
 });
 
 
