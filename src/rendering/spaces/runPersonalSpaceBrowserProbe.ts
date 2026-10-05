@@ -37,7 +37,9 @@ export async function runPersonalSpaceBrowserProbe(
 
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => resolve());
+      requestAnimationFrame(() => {
+        resolve();
+      });
     });
   });
 
