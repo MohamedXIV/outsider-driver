@@ -213,8 +213,9 @@ function alphaModeForBlendMode(mode: InochiBlendMode): number {
     case 'normal':
       return Constants.ALPHA_PREMULTIPLIED_PORTERDUFF;
     case 'screen':
-    case 'linear-dodge':
       return Constants.ALPHA_SCREENMODE;
+    case 'linear-dodge':
+      return Constants.ALPHA_ONEONE;
     case 'multiply':
     case 'overlay':
     case 'darken':
