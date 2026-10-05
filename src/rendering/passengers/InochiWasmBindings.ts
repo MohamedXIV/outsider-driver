@@ -98,6 +98,7 @@ export function reserveUnmanagedWasmStaging(
 
     throw new Error(
       `Inochi2D could not reserve ${String(byteLength)} bytes of unmanaged WASM staging memory${detail}`,
+      { cause: error },
     );
   }
 
