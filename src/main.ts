@@ -58,7 +58,7 @@ async function runRequestedInochiProbe(): Promise<void> {
   const requested = new URLSearchParams(window.location.search)
     .get('inochiProbe');
 
-  if (requested !== '1' && requested !== 'ada') {
+  if (requested !== '1') {
     return;
   }
 
@@ -68,9 +68,7 @@ async function runRequestedInochiProbe(): Promise<void> {
     const { runInochiBrowserProbe } = await import(
       './rendering/passengers/runInochiBrowserProbe'
     );
-    const summary = await runInochiBrowserProbe(
-      requested === 'ada' ? 'ada' : 'ci',
-    );
+    const summary = await runInochiBrowserProbe();
     publishInochiProbeState({
       status: 'success',
       summary,
