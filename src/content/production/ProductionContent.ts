@@ -90,7 +90,218 @@ export const productionContent = {
   },
   passengerPerformance: {
     schemaVersion: 1,
-    profiles: [],
+    profiles: [
+      {
+        passengerId: 'passenger:official-clinic-rider',
+        channels: {
+          talk: [
+            {
+              parameterName: 'Mouth',
+              components: [{ source: 'value', invert: false }],
+            },
+          ],
+          blink: [
+            {
+              parameterName: 'Blink',
+              components: [{ source: 'value', invert: false }],
+            },
+          ],
+          gaze: [
+            {
+              parameterName: 'Gaze',
+              components: [
+                { source: 'x', invert: false },
+                { source: 'y', invert: false },
+              ],
+            },
+          ],
+          head: [
+            {
+              parameterName: 'Head',
+              components: [
+                { source: 'x', invert: false },
+                { source: 'y', invert: false },
+              ],
+            },
+          ],
+          body: [
+            {
+              parameterName: 'Body',
+              components: [
+                { source: 'x', invert: false },
+                { source: 'y', invert: false },
+              ],
+            },
+          ],
+        },
+        expressions: [
+          {
+            name: 'guarded',
+            assignments: [
+              {
+                parameterName: 'Mood',
+                normalizedValues: [-0.4],
+              },
+            ],
+          },
+          {
+            name: 'firm',
+            assignments: [
+              {
+                parameterName: 'Mood',
+                normalizedValues: [0.5],
+              },
+            ],
+          },
+        ],
+        cues: [
+          {
+            name: 'neutral',
+            expression: null,
+            operations: [
+              { channel: 'talk', values: [0] },
+              { channel: 'blink', values: [0] },
+              { channel: 'gaze', values: [0, 0] },
+              { channel: 'head', values: [0, 0] },
+              { channel: 'body', values: [0, 0] },
+            ],
+          },
+          {
+            name: 'guarded',
+            expression: 'guarded',
+            operations: [
+              { channel: 'talk', values: [0.2] },
+              { channel: 'gaze', values: [-0.25, 0.05] },
+              { channel: 'head', values: [-0.12, 0.04] },
+              { channel: 'body', values: [-0.08, 0] },
+            ],
+          },
+          {
+            name: 'speaking',
+            expression: null,
+            operations: [
+              { channel: 'talk', values: [0.7] },
+              { channel: 'gaze', values: [0, 0] },
+            ],
+          },
+          {
+            name: 'firm',
+            expression: 'firm',
+            operations: [
+              { channel: 'talk', values: [0.35] },
+              { channel: 'gaze', values: [0.1, 0] },
+              { channel: 'head', values: [0.08, 0.02] },
+              { channel: 'body', values: [0.05, 0] },
+            ],
+          },
+        ],
+      },
+      {
+        passengerId: 'passenger:underground-clinic-rider',
+        channels: {
+          talk: [
+            {
+              parameterName: 'Mouth',
+              components: [{ source: 'value', invert: false }],
+            },
+          ],
+          blink: [
+            {
+              parameterName: 'Blink',
+              components: [{ source: 'value', invert: false }],
+            },
+          ],
+          gaze: [
+            {
+              parameterName: 'Gaze',
+              components: [
+                { source: 'x', invert: false },
+                { source: 'y', invert: false },
+              ],
+            },
+          ],
+          head: [
+            {
+              parameterName: 'Head',
+              components: [
+                { source: 'x', invert: false },
+                { source: 'y', invert: false },
+              ],
+            },
+          ],
+          body: [
+            {
+              parameterName: 'Body',
+              components: [
+                { source: 'x', invert: false },
+                { source: 'y', invert: false },
+              ],
+            },
+          ],
+        },
+        expressions: [
+          {
+            name: 'guarded',
+            assignments: [
+              {
+                parameterName: 'Mood',
+                normalizedValues: [-0.4],
+              },
+            ],
+          },
+          {
+            name: 'firm',
+            assignments: [
+              {
+                parameterName: 'Mood',
+                normalizedValues: [0.5],
+              },
+            ],
+          },
+        ],
+        cues: [
+          {
+            name: 'neutral',
+            expression: null,
+            operations: [
+              { channel: 'talk', values: [0] },
+              { channel: 'blink', values: [0] },
+              { channel: 'gaze', values: [0, 0] },
+              { channel: 'head', values: [0, 0] },
+              { channel: 'body', values: [0, 0] },
+            ],
+          },
+          {
+            name: 'guarded',
+            expression: 'guarded',
+            operations: [
+              { channel: 'talk', values: [0.2] },
+              { channel: 'gaze', values: [-0.25, 0.05] },
+              { channel: 'head', values: [-0.12, 0.04] },
+              { channel: 'body', values: [-0.08, 0] },
+            ],
+          },
+          {
+            name: 'speaking',
+            expression: null,
+            operations: [
+              { channel: 'talk', values: [0.7] },
+              { channel: 'gaze', values: [0, 0] },
+            ],
+          },
+          {
+            name: 'firm',
+            expression: 'firm',
+            operations: [
+              { channel: 'talk', values: [0.35] },
+              { channel: 'gaze', values: [0.1, 0] },
+              { channel: 'head', values: [0.08, 0.02] },
+              { channel: 'body', values: [0.05, 0] },
+            ],
+          },
+        ],
+      },
+    ],
   },
   jobs: [
     {

@@ -7,9 +7,9 @@ EXTERNAL GAME_ADJUST_CITY_ATTENTION(delta, reason)
 === start ===
 ~ temp knows_checkpoint = GAME_HAS_FACT("fact:docks-checkpoint-rumor")
 { knows_checkpoint:
-    Passenger: You already know what the customs lights mean.
+    Passenger: You already know what the customs lights mean. # performance:firm
 - else:
-    Passenger: Customs lights sweep every cab after midnight.
+    Passenger: Customs lights sweep every cab after midnight. # performance:guarded
     ~ GAME_REVEAL_FACT("fact:docks-checkpoint-rumor")
 }
 
@@ -22,5 +22,5 @@ EXTERNAL GAME_ADJUST_CITY_ATTENTION(delta, reason)
 
 === consequence ===
 ~ GAME_ADJUST_CITY_ATTENTION(1, "checkpoint-conversation")
-Passenger: Keep moving.
+Passenger: Keep moving. # performance:firm
 -> END

@@ -207,6 +207,7 @@ export class PassengerPerformanceController
       );
     }
 
+    this.reset();
     this.setExpression(cue.expression);
 
     for (const operation of cue.operations) {
