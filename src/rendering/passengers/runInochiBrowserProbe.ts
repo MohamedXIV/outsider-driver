@@ -14,15 +14,6 @@ export interface InochiBrowserProbeSummary {
   readonly puppetAuthor: string;
   readonly parameterCount: number;
   readonly parameterExercised: string | null;
-  readonly parameterDescriptors: Readonly<Record<
-    string,
-    {
-      readonly lowerBounds: readonly number[];
-      readonly upperBounds: readonly number[];
-      readonly value: readonly number[];
-    }
-  >>;
-  readonly directGazeWriteReadback: readonly number[] | null;
   readonly performanceCueApplied: string | null;
   readonly performanceValues: Readonly<Record<string, readonly number[]>>;
   readonly lightingApplied: boolean;
@@ -136,32 +127,6 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
     reportStage('puppet-loaded');
     reportStage('parameters-start');
     const parameters = session.listParameters();
-    const parameterDescriptors = Object.fromEntries(
-      parameters.map((parameter) => [
-        parameter.name,
-        {
-          lowerBounds: [...parameter.lowerBounds],
-          upperBounds: [...parameter.upperBounds],
-          value: [...parameter.value],
-        },
-      ]),
-    );
-    const gazeDescriptor = parameters.find(
-      (parameter) => parameter.name === 'Gaze',
-    );
-    let directGazeWriteReadback: readonly number[] | null = null;
-
-    if (gazeDescriptor !== undefined) {
-      session.setParameter('Gaze', [-0.25, 0.05]);
-      directGazeWriteReadback =
-        session
-          .listParameters()
-          .find((parameter) => parameter.name === 'Gaze')
-          ?.value ?? null;
-      session.setParameter('Gaze', gazeDescriptor.value);
-    }
-
-    reportStage('parameter-diagnostic-complete');
     reportStage('parameters-loaded');
     const firstParameter = parameters[0];
     let parameterExercised: string | null = null;
@@ -174,8 +139,55 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       parameterExercised = firstParameter.name;
     }
 
-    const performanceProfile =
+    const basePerformanceProfile =
       productionContent.passengerPerformance.profiles[0];
+    const performanceProfile = {
+      ...basePerformanceProfile,
+      channels: {
+        talk: [
+          {
+            parameterName: 'Mouth',
+            components: [{ source: 'value', invert: false }],
+          },
+        ],
+        blink: [
+          {
+            parameterName: 'Blink',
+            components: [{ source: 'value', invert: false }],
+          },
+        ],
+        gaze: [
+          {
+            parameterName: 'GazeX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'GazeY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+        head: [
+          {
+            parameterName: 'HeadX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'HeadY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+        body: [
+          {
+            parameterName: 'BodyX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'BodyY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+      },
+    };
     const performance = new PassengerPerformanceController(
       session,
       performanceProfile,
@@ -243,8 +255,6 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       puppetAuthor: session.author,
       parameterCount: parameters.length,
       parameterExercised,
-      parameterDescriptors,
-      directGazeWriteReadback,
       performanceCueApplied,
       performanceValues,
       lightingApplied: true,

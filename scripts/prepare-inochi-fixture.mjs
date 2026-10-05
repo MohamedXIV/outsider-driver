@@ -131,55 +131,24 @@ function createVisualPayload(emptyBytes, includeTexture) {
       axis_points: [0, 1],
       bindings: [],
     },
-    {
-      uuid: 4100000003,
-      name: 'Gaze',
-      is_vec2: true,
-      min: [-1, -1],
-      max: [1, 1],
-      defaults: [0, 0],
-      axis_points: [
-        [-1, 0, 1],
-        [-1, 0, 1],
-      ],
-      bindings: [],
-    },
-    {
-      uuid: 4100000004,
-      name: 'Head',
-      is_vec2: true,
-      min: [-1, -1],
-      max: [1, 1],
-      defaults: [0, 0],
-      axis_points: [
-        [-1, 0, 1],
-        [-1, 0, 1],
-      ],
-      bindings: [],
-    },
-    {
-      uuid: 4100000005,
-      name: 'Body',
-      is_vec2: true,
-      min: [-1, -1],
-      max: [1, 1],
-      defaults: [0, 0],
-      axis_points: [
-        [-1, 0, 1],
-        [-1, 0, 1],
-      ],
-      bindings: [],
-    },
-    {
-      uuid: 4100000006,
-      name: 'Mood',
+    ...[
+      ['GazeX', 4100000003],
+      ['GazeY', 4100000004],
+      ['HeadX', 4100000005],
+      ['HeadY', 4100000006],
+      ['BodyX', 4100000007],
+      ['BodyY', 4100000008],
+      ['Mood', 4100000009],
+    ].map(([name, uuid]) => ({
+      uuid,
+      name,
       is_vec2: false,
       min: -1,
       max: 1,
       defaults: 0,
       axis_points: [-1, 0, 1],
       bindings: [],
-    },
+    })),
   ];
   root.children = [
     {

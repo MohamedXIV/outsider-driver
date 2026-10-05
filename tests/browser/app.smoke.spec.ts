@@ -131,7 +131,7 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
   expect(Number(summary.indexCount)).toBeGreaterThan(0);
   expect(Number(summary.textureCount)).toBeGreaterThan(0);
   expect(Number(summary.commandCount)).toBeGreaterThan(0);
-  expect(Number(summary.parameterCount)).toBeGreaterThanOrEqual(6);
+  expect(Number(summary.parameterCount)).toBeGreaterThanOrEqual(9);
   expect(summary.performanceCueApplied).toBe('guarded');
 
   if (!isRecord(summary.performanceValues)) {
@@ -142,16 +142,22 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
 
   const mouth = summary.performanceValues.Mouth;
   const mood = summary.performanceValues.Mood;
-  const gaze = summary.performanceValues.Gaze;
-  const head = summary.performanceValues.Head;
-  const body = summary.performanceValues.Body;
+  const gazeX = summary.performanceValues.GazeX;
+  const gazeY = summary.performanceValues.GazeY;
+  const headX = summary.performanceValues.HeadX;
+  const headY = summary.performanceValues.HeadY;
+  const bodyX = summary.performanceValues.BodyX;
+  const bodyY = summary.performanceValues.BodyY;
 
   if (
     !Array.isArray(mouth) ||
     !Array.isArray(mood) ||
-    !Array.isArray(gaze) ||
-    !Array.isArray(head) ||
-    !Array.isArray(body)
+    !Array.isArray(gazeX) ||
+    !Array.isArray(gazeY) ||
+    !Array.isArray(headX) ||
+    !Array.isArray(headY) ||
+    !Array.isArray(bodyX) ||
+    !Array.isArray(bodyY)
   ) {
     throw new Error(
       'Inochi browser probe performance values have invalid shapes.',
@@ -160,12 +166,12 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
 
   expect(Number(mouth[0])).toBeCloseTo(0.2, 5);
   expect(Number(mood[0])).toBeCloseTo(-0.4, 5);
-  expect(Number(gaze[0])).toBeCloseTo(-0.25, 5);
-  expect(Number(gaze[1])).toBeCloseTo(0.05, 5);
-  expect(Number(head[0])).toBeCloseTo(-0.12, 5);
-  expect(Number(head[1])).toBeCloseTo(0.04, 5);
-  expect(Number(body[0])).toBeCloseTo(-0.08, 5);
-  expect(Number(body[1])).toBeCloseTo(0, 5);
+  expect(Number(gazeX[0])).toBeCloseTo(-0.25, 5);
+  expect(Number(gazeY[0])).toBeCloseTo(0.05, 5);
+  expect(Number(headX[0])).toBeCloseTo(-0.12, 5);
+  expect(Number(headY[0])).toBeCloseTo(0.04, 5);
+  expect(Number(bodyX[0])).toBeCloseTo(-0.08, 5);
+  expect(Number(bodyY[0])).toBeCloseTo(0, 5);
   expect(summary.lightingApplied).toBe(true);
   expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
