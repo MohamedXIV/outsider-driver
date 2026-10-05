@@ -14,6 +14,15 @@ export interface InochiBrowserProbeSummary {
   readonly puppetAuthor: string;
   readonly parameterCount: number;
   readonly parameterExercised: string | null;
+  readonly parameterDescriptors: Readonly<Record<
+    string,
+    {
+      readonly lowerBounds: readonly number[];
+      readonly upperBounds: readonly number[];
+      readonly value: readonly number[];
+    }
+  >>;
+  readonly directGazeWriteReadback: readonly number[] | null;
   readonly performanceCueApplied: string | null;
   readonly performanceValues: Readonly<Record<string, readonly number[]>>;
   readonly lightingApplied: boolean;
@@ -118,6 +127,40 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
     meshSession.dispose();
     reportStage('mesh-loaded');
 
+    reportStage('parameter-diagnostic-load-start');
+    const diagnosticSession = await InochiPuppetSession.load(runtime, {
+      id: 'outsider-driver-tiny-visual08-diagnostic',
+      load: () => loadFixture('/__fixtures__/tiny-visual08.inx'),
+    });
+    const diagnosticParameters = diagnosticSession.listParameters();
+    const parameterDescriptors = Object.fromEntries(
+      diagnosticParameters.map((parameter) => [
+        parameter.name,
+        {
+          lowerBounds: [...parameter.lowerBounds],
+          upperBounds: [...parameter.upperBounds],
+          value: [...parameter.value],
+        },
+      ]),
+    );
+    let directGazeWriteReadback: readonly number[] | null = null;
+
+    if (
+      diagnosticParameters.some(
+        (parameter) => parameter.name === 'Gaze',
+      )
+    ) {
+      diagnosticSession.setParameter('Gaze', [-0.25, 0.05]);
+      directGazeWriteReadback =
+        diagnosticSession
+          .listParameters()
+          .find((parameter) => parameter.name === 'Gaze')
+          ?.value ?? null;
+    }
+
+    diagnosticSession.dispose();
+    reportStage('parameter-diagnostic-complete');
+
     reportStage('puppet-load-start');
     session = await InochiPuppetSession.load(runtime, {
       id: 'outsider-driver-tiny-visual08',
@@ -208,6 +251,8 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       puppetAuthor: session.author,
       parameterCount: parameters.length,
       parameterExercised,
+      parameterDescriptors,
+      directGazeWriteReadback,
       performanceCueApplied,
       performanceValues,
       lightingApplied: true,
