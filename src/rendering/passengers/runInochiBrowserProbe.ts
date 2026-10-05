@@ -9,8 +9,6 @@ import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
 import { PassengerPerformanceController } from './PassengerPerformanceController';
 import { PassengerLightingBridge } from './PassengerLighting';
 
-export type InochiBrowserProbeFixture = 'ci' | 'ada';
-
 export interface InochiBrowserProbeSummary {
   readonly puppetName: string;
   readonly puppetAuthor: string;
@@ -59,9 +57,7 @@ async function loadFixture(url: string): Promise<ArrayBuffer> {
   return response.arrayBuffer();
 }
 
-export async function runInochiBrowserProbe(
-  fixture: InochiBrowserProbeFixture = 'ci',
-): Promise<InochiBrowserProbeSummary> {
+export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary> {
   const canvas = document.createElement('canvas');
   canvas.width = 640;
   canvas.height = 640;
@@ -98,8 +94,7 @@ export async function runInochiBrowserProbe(
     bindings = await InochiWasmBindings.create();
     reportStage('wasm-created');
 
-    let runtime = new OfficialInochiRuntimeAdapter(bindings);
-    const realAda = fixture === 'ada';
+    const runtime = new OfficialInochiRuntimeAdapter(bindings);
 
     reportStage('empty-load-start');
     const emptySession = await InochiPuppetSession.load(
@@ -112,39 +107,21 @@ export async function runInochiBrowserProbe(
     emptySession.dispose();
     reportStage('empty-loaded');
 
-    if (realAda) {
-      bindings.dispose();
-      bindings = null;
-      reportStage('ada-wasm-create-start');
-      bindings = await InochiWasmBindings.create();
-      runtime = new OfficialInochiRuntimeAdapter(bindings);
-      reportStage('ada-wasm-created');
-    }
-
-    if (!realAda) {
-      reportStage('mesh-load-start');
-      const meshSession = await InochiPuppetSession.load(
-        runtime,
-        {
-          id: 'outsider-driver-tiny-mesh08',
-          load: () => loadFixture('/__fixtures__/tiny-mesh08.inx'),
-        },
-      );
-      meshSession.dispose();
-      reportStage('mesh-loaded');
-    }
+    reportStage('mesh-load-start');
+    const meshSession = await InochiPuppetSession.load(
+      runtime,
+      {
+        id: 'outsider-driver-tiny-mesh08',
+        load: () => loadFixture('/__fixtures__/tiny-mesh08.inx'),
+      },
+    );
+    meshSession.dispose();
+    reportStage('mesh-loaded');
 
     reportStage('puppet-load-start');
     session = await InochiPuppetSession.load(runtime, {
-      id: realAda
-        ? 'inochi2d-upstream-ada-static'
-        : 'outsider-driver-tiny-visual08',
-      load: () =>
-        loadFixture(
-          realAda
-            ? '/__fixtures__/ada-static.inx'
-            : '/__fixtures__/tiny-visual08.inx',
-        ),
+      id: 'outsider-driver-tiny-visual08',
+      load: () => loadFixture('/__fixtures__/tiny-visual08.inx'),
     });
 
     reportStage('puppet-loaded');
@@ -162,65 +139,61 @@ export async function runInochiBrowserProbe(
       parameterExercised = firstParameter.name;
     }
 
-    let performanceCueApplied: string | null = null;
-
-    if (!realAda) {
-      const basePerformanceProfile =
-        productionContent.passengerPerformance.profiles[0];
-      const performanceProfile = {
-        ...basePerformanceProfile,
-        channels: {
-          talk: [
-            {
-              parameterName: 'Mouth',
-              components: [{ source: 'value', invert: false }],
-            },
-          ],
-          blink: [
-            {
-              parameterName: 'Blink',
-              components: [{ source: 'value', invert: false }],
-            },
-          ],
-          gaze: [
-            {
-              parameterName: 'GazeX',
-              components: [{ source: 'x', invert: false }],
-            },
-            {
-              parameterName: 'GazeY',
-              components: [{ source: 'y', invert: false }],
-            },
-          ],
-          head: [
-            {
-              parameterName: 'HeadX',
-              components: [{ source: 'x', invert: false }],
-            },
-            {
-              parameterName: 'HeadY',
-              components: [{ source: 'y', invert: false }],
-            },
-          ],
-          body: [
-            {
-              parameterName: 'BodyX',
-              components: [{ source: 'x', invert: false }],
-            },
-            {
-              parameterName: 'BodyY',
-              components: [{ source: 'y', invert: false }],
-            },
-          ],
-        },
-      };
-      const performance = new PassengerPerformanceController(
-        session,
-        performanceProfile,
-      );
-      performance.applyCue('guarded');
-      performanceCueApplied = 'guarded';
-    }
+    const basePerformanceProfile =
+      productionContent.passengerPerformance.profiles[0];
+    const performanceProfile = {
+      ...basePerformanceProfile,
+      channels: {
+        talk: [
+          {
+            parameterName: 'Mouth',
+            components: [{ source: 'value', invert: false }],
+          },
+        ],
+        blink: [
+          {
+            parameterName: 'Blink',
+            components: [{ source: 'value', invert: false }],
+          },
+        ],
+        gaze: [
+          {
+            parameterName: 'GazeX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'GazeY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+        head: [
+          {
+            parameterName: 'HeadX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'HeadY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+        body: [
+          {
+            parameterName: 'BodyX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'BodyY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+      },
+    };
+    const performance = new PassengerPerformanceController(
+      session,
+      performanceProfile,
+    );
+    performance.applyCue('guarded');
+    const performanceCueApplied = 'guarded';
 
     const performanceValues = Object.fromEntries(
       session
