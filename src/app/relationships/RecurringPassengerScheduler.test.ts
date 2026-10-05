@@ -41,18 +41,19 @@ describe('RecurringPassengerScheduler', () => {
       'underground-clinic-rider',
     );
 
-    expect(
-      harness.scheduler.evaluate(passengerId, {
+    const initialEligibility = harness.scheduler.evaluate(
+      passengerId,
+      {
         day: 1,
         minuteOfDay: 20 * 60,
-      }),
-    ).toMatchObject({
-      eligible: false,
-      reasons: expect.arrayContaining([
-        'completed-rides',
-        'fact-required:fact:underground-clinic-window',
-      ]),
-    });
+      },
+    );
+
+    expect(initialEligibility.eligible).toBe(false);
+    expect(initialEligibility.reasons).toContain('completed-rides');
+    expect(initialEligibility.reasons).toContain(
+      'fact-required:fact:underground-clinic-window',
+    );
 
     harness.relationships.recordCompletedRide(
       entityId('ride', 'recurring-first'),
@@ -66,18 +67,17 @@ describe('RecurringPassengerScheduler', () => {
       entityId('fact', 'underground-clinic-window'),
     );
 
-    expect(
-      harness.scheduler.evaluate(passengerId, {
+    const earlyEligibility = harness.scheduler.evaluate(
+      passengerId,
+      {
         day: 2,
         minuteOfDay: 1 * 60,
-      }),
-    ).toMatchObject({
-      eligible: false,
-      reasons: expect.arrayContaining([
-        'cooldown',
-        'daily-window',
-      ]),
-    });
+      },
+    );
+
+    expect(earlyEligibility.eligible).toBe(false);
+    expect(earlyEligibility.reasons).toContain('cooldown');
+    expect(earlyEligibility.reasons).toContain('daily-window');
 
     expect(
       harness.scheduler.evaluate(passengerId, {
