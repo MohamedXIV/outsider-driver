@@ -88,7 +88,7 @@ Currently exact mappings include:
 
 - `normal` → premultiplied Porter-Duff;
 - `screen` → screen mode;
-- `linear-dodge` → the same source/destination factors used by the current Inochi legacy renderer.
+- `linear-dodge` → Babylon additive `ONE + ONE` (`ALPHA_ONEONE`), matching the current Inochi legacy renderer.
 
 Other modes fail loudly rather than being approximated under a similar-sounding Babylon constant.
 
@@ -110,12 +110,11 @@ Unit/runtime validation covers:
 - soft-mask alpha/dodge/nesting/edge coverage;
 - Babylon seat placement, geometry, UV/UV2, material state, ordering, unsupported-state failures, and disposal.
 
-The production browser smoke additionally:
+The production browser smoke has two complementary proofs:
 
-- provisions the digest-verified official WASM runtime;
-- loads a valid generated Inochi puppet through the real runtime;
-- extracts a real draw frame;
-- renders that frame through Babylon inside the real TaxiScene passenger seat;
-- reports the live draw-state/blend summary.
+- a tiny generated puppet exercises deterministic semantic performance parameters and the stylized lighting bridge through the real official WASM runtime;
+- the pinned upstream Inochi2D `examples/ada-static.inx` puppet is the real-puppet acceptance fixture for the rendering bridge.
 
-Small generated/pinned fixtures exercise production architecture. They are not a separate demo/vertical-slice renderer.
+The Ada proof is digest-pinned by its upstream Git blob identity. It must load through official WASM, produce a non-empty real draw frame, and render successfully beneath the real TaxiScene passenger-seat anchor. The probe reports live draw states, blend modes, mask depth, and composite depth so renderer support is driven by observed puppet requirements rather than speculative complexity.
+
+A generated fixture can verify narrow contracts, but it is not a substitute for the real upstream puppet acceptance gate for #21. None of these fixtures create a parallel demo renderer; all pass through the same production runtime/session/Babylon bridge.
