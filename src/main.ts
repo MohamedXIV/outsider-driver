@@ -2,42 +2,17 @@ import './styles.css';
 import { GameApplication } from './app/GameApplication';
 import { BrowserAccessibilityPreferencesPersistence } from './app/preferences/BrowserAccessibilityPreferencesPersistence';
 import { AccessibilityPreferencesStore } from './domain/preferences/AccessibilityPreferencesState';
+import { detectBrowserRuntimeSupport } from './platform/BrowserRuntimeSupport';
 import { BabylonRenderingRuntime } from './rendering/BabylonRenderingRuntime';
+import type { BabylonRenderingRuntime as BabylonRenderingRuntimeType } from './rendering/BabylonRenderingRuntime';
 import { createGameSurface } from './ui/createGameSurface';
+import { createUnsupportedBrowserSurface } from './ui/createUnsupportedBrowserSurface';
 
 const root = document.querySelector<HTMLElement>('#app');
 
 if (root === null) {
   throw new Error('Application root #app was not found.');
 }
-
-const preferencesPersistence =
-  new BrowserAccessibilityPreferencesPersistence();
-const preferences = new AccessibilityPreferencesStore(
-  preferencesPersistence.load(),
-);
-const stopPreferencePersistence = preferences.subscribe(
-  (state) => {
-    preferencesPersistence.save(state);
-  },
-);
-const surface = createGameSurface(root, preferences);
-const rendering = new BabylonRenderingRuntime(
-  surface.canvas,
-  preferences,
-);
-const application = new GameApplication(rendering);
-
-application.start();
-
-if (import.meta.hot !== undefined) {
-  import.meta.hot.dispose(() => {
-    application.dispose();
-    stopPreferencePersistence();
-    surface.dispose();
-  });
-}
-
 
 type InochiProbeState =
   | { readonly status: 'pending' }
@@ -76,15 +51,13 @@ async function runRequestedInochiProbe(): Promise<void> {
   } catch (error) {
     publishInochiProbeState({
       status: 'failure',
-      error: error instanceof Error
-        ? error.message
-        : String(error),
+      error:
+        error instanceof Error
+          ? error.message
+          : String(error),
     });
   }
 }
-
-void runRequestedInochiProbe();
-
 
 type PersonalSpaceProbeState =
   | { readonly status: 'pending' }
@@ -100,10 +73,16 @@ type PersonalSpaceProbeState =
 function publishPersonalSpaceProbeState(
   state: PersonalSpaceProbeState,
 ): void {
-  Reflect.set(window, '__outsiderDriverPersonalSpaceProbe', state);
+  Reflect.set(
+    window,
+    '__outsiderDriverPersonalSpaceProbe',
+    state,
+  );
 }
 
-async function runRequestedPersonalSpaceProbe(): Promise<void> {
+async function runRequestedPersonalSpaceProbe(
+  rendering: BabylonRenderingRuntimeType,
+): Promise<void> {
   const requested = new URLSearchParams(window.location.search)
     .get('spaceProbe');
 
@@ -136,4 +115,50 @@ async function runRequestedPersonalSpaceProbe(): Promise<void> {
   }
 }
 
-void runRequestedPersonalSpaceProbe();
+function bootstrapSupportedGame(
+  applicationRoot: HTMLElement,
+): () => void {
+  const preferencesPersistence =
+    new BrowserAccessibilityPreferencesPersistence();
+  const preferences = new AccessibilityPreferencesStore(
+    preferencesPersistence.load(),
+  );
+  const stopPreferencePersistence = preferences.subscribe(
+    (state) => {
+      preferencesPersistence.save(state);
+    },
+  );
+  const surface = createGameSurface(
+    applicationRoot,
+    preferences,
+  );
+  const rendering = new BabylonRenderingRuntime(
+    surface.canvas,
+    preferences,
+  );
+  const application = new GameApplication(rendering);
+
+  application.start();
+  void runRequestedInochiProbe();
+  void runRequestedPersonalSpaceProbe(rendering);
+
+  return (): void => {
+    application.dispose();
+    stopPreferencePersistence();
+    surface.dispose();
+  };
+}
+
+const compatibility = detectBrowserRuntimeSupport();
+const disposeApplication = compatibility.supported
+  ? bootstrapSupportedGame(root)
+  : createUnsupportedBrowserSurface(
+      root,
+      compatibility,
+    ).dispose;
+
+if (import.meta.hot !== undefined) {
+  import.meta.hot.dispose(() => {
+    disposeApplication();
+  });
+}
