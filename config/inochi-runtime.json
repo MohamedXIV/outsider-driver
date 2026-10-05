@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "sourceRepository": "Inochi2D/inochi2d",
   "upstreamTag": "nightly",
   "assetId": 604648506,
@@ -7,6 +7,5 @@
   "assetCreatedAt": "2026-10-02T02:39:31Z",
   "sha256": "d8c0e21d109d4681e5f24b730190fa0b016e9449d094ec4901d1e0a0aa8aec6e",
   "artifactClass": "debug-fallback",
-  "fallbackReason": "The corresponding official nightly release WASM returns null from nu_realloc even for the 128-byte query scratchpad after Start-section-aware initialization. The pinned official debug artifact is required while upstream release allocator behavior is invalid.",
-  "minimumMemoryPages": 1024
+  "fallbackReason": "The corresponding release WASM returns null from nu_malloc even for the 702-byte upstream empty08.inx fixture; the pinned debug artifact is the verified production fallback until upstream release behavior is valid."
 }
