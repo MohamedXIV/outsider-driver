@@ -8,12 +8,6 @@ const EMPTY_FIXTURE = {
   outputPath: resolve('dist/__fixtures__/empty08.inx'),
 };
 
-const ADA_FIXTURE = {
-  url: 'https://raw.githubusercontent.com/Inochi2D/inochi2d/4975d247f9b946a74d18e0ba9b3e9475eb636efb/examples/ada-static.inx',
-  gitBlobSha: 'afd5f426a5785255243543949db88a8120d80109',
-  outputPath: resolve('dist/__fixtures__/ada-static.inx'),
-};
-
 const MESH_FIXTURE_PATH = resolve(
   'dist/__fixtures__/tiny-mesh08.inx',
 );
@@ -229,8 +223,8 @@ function createInp1VisualFixture(emptyBytes, includeTexture) {
   );
 }
 
-async function fetchPinnedFixture(fixture, label) {
-  const response = await fetch(fixture.url, {
+async function fetchPinnedEmptyFixture() {
+  const response = await fetch(EMPTY_FIXTURE.url, {
     redirect: 'follow',
     headers: {
       'user-agent': 'outsider-driver-browser-validation',
@@ -239,7 +233,7 @@ async function fetchPinnedFixture(fixture, label) {
 
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch pinned Inochi2D ${label} fixture: HTTP ${String(response.status)}`,
+      `Failed to fetch pinned Inochi2D empty fixture: HTTP ${String(response.status)}`,
     );
   }
 
@@ -248,9 +242,9 @@ async function fetchPinnedFixture(fixture, label) {
   );
   const blobSha = gitBlobSha(bytes);
 
-  if (blobSha !== fixture.gitBlobSha) {
+  if (blobSha !== EMPTY_FIXTURE.gitBlobSha) {
     throw new Error(
-      `Inochi2D ${label} fixture Git blob mismatch: expected ${fixture.gitBlobSha}, received ${blobSha}.`,
+      `Inochi2D empty fixture Git blob mismatch: expected ${EMPTY_FIXTURE.gitBlobSha}, received ${blobSha}.`,
     );
   }
 
@@ -258,10 +252,7 @@ async function fetchPinnedFixture(fixture, label) {
 }
 
 async function main() {
-  const [emptyBytes, adaBytes] = await Promise.all([
-    fetchPinnedFixture(EMPTY_FIXTURE, 'empty'),
-    fetchPinnedFixture(ADA_FIXTURE, 'Ada'),
-  ]);
+  const emptyBytes = await fetchPinnedEmptyFixture();
   const meshBytes = createInp1VisualFixture(
     emptyBytes,
     false,
@@ -275,14 +266,12 @@ async function main() {
     recursive: true,
   });
   await writeFile(EMPTY_FIXTURE.outputPath, emptyBytes);
-  await writeFile(ADA_FIXTURE.outputPath, adaBytes);
   await writeFile(MESH_FIXTURE_PATH, meshBytes);
   await writeFile(VISUAL_FIXTURE_PATH, visualBytes);
 
   process.stdout.write(
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
-      `pinned upstream Ada fixture (${String(adaBytes.byteLength)} bytes)`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
