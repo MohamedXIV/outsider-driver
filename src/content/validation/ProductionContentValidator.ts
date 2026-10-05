@@ -4,6 +4,10 @@ import {
   type PassengerCatalog,
 } from '../passengers/PassengerContracts';
 import {
+  validatePassengerPerformanceCatalog,
+  type PassengerPerformanceCatalog,
+} from '../passengers/PassengerPerformanceContracts';
+import {
   validateRouteExperienceCatalog,
   type RouteExperienceCatalog,
 } from '../routes/RouteExperienceContracts';
@@ -46,6 +50,11 @@ const narrativeStoryIdSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
 
+const performanceCueNameSchema = z
+  .string()
+  .regex(/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/);
+const performanceCueTagRegex = /#\s*performance:([^\s#]*)/g;
+
 const NarrativeStorySourceSchema = z
   .object({
     id: narrativeStoryIdSchema,
@@ -56,6 +65,7 @@ const NarrativeStorySourceSchema = z
 export interface ProductionContentBundleInput {
   readonly world: unknown;
   readonly passengers: unknown;
+  readonly passengerPerformance: unknown;
   readonly jobs: readonly unknown[];
   readonly routeMotion: unknown;
   readonly routeExperience: unknown;
@@ -93,6 +103,7 @@ export interface ValidatedNarrativeStory {
 export interface ValidatedProductionContent {
   readonly world: WorldContentCatalog;
   readonly passengers: PassengerCatalog;
+  readonly passengerPerformance: PassengerPerformanceCatalog;
   readonly jobs: readonly JobContract[];
   readonly routeMotion: RouteMotionCatalog;
   readonly routeExperience: RouteExperienceCatalog;
@@ -142,6 +153,62 @@ function requirePassengerNarratives(
       throw new Error(
         `${passenger.id} references missing narrative story ${passenger.data.narrativeStoryId}`,
       );
+    }
+  }
+}
+
+function performanceCueNames(source: string): readonly string[] {
+  return [...source.matchAll(performanceCueTagRegex)].map((match) =>
+    performanceCueNameSchema.parse(match[1] ?? ''),
+  );
+}
+
+function requirePassengerPerformanceNarrativeCues(
+  passengers: PassengerCatalog,
+  performance: PassengerPerformanceCatalog,
+  stories: readonly ValidatedNarrativeStory[],
+): void {
+  const storyById = new Map(
+    stories.map((story) => [story.id, story]),
+  );
+  const profileByPassengerId = new Map(
+    performance.profiles.map((profile) => [
+      profile.passengerId,
+      profile,
+    ]),
+  );
+
+  for (const passenger of passengers.passengers) {
+    const story = storyById.get(passenger.data.narrativeStoryId);
+
+    if (story === undefined) {
+      continue;
+    }
+
+    const requestedCues = performanceCueNames(story.source);
+
+    if (requestedCues.length === 0) {
+      continue;
+    }
+
+    const profile = profileByPassengerId.get(passenger.id);
+
+    if (profile === undefined) {
+      throw new Error(
+        `${passenger.id} narrative requests performance cues but has no performance profile.`,
+      );
+    }
+
+    const knownCueNames = new Set(
+      profile.cues.map((cue) => cue.name),
+    );
+
+    for (const cueName of requestedCues) {
+      if (!knownCueNames.has(cueName)) {
+        throw new Error(
+          `${passenger.id} narrative requests missing performance cue ${cueName}.`,
+        );
+      }
     }
   }
 }
@@ -215,6 +282,7 @@ export function validateProductionContent(
   const issues: ProductionContentValidationIssue[] = [];
   let world: WorldContentCatalog | undefined;
   let passengers: PassengerCatalog | undefined;
+  let passengerPerformance: PassengerPerformanceCatalog | undefined;
   let jobs: readonly JobContract[] | undefined;
   let routeMotion: RouteMotionCatalog | undefined;
   let routeExperience: RouteExperienceCatalog | undefined;
@@ -234,6 +302,17 @@ export function validateProductionContent(
     passengers = validatePassengerCatalog(input.passengers);
   } catch (error: unknown) {
     addIssue(issues, 'passengers', error);
+  }
+
+  if (passengers !== undefined) {
+    try {
+      passengerPerformance = validatePassengerPerformanceCatalog(
+        input.passengerPerformance,
+        passengers,
+      );
+    } catch (error: unknown) {
+      addIssue(issues, 'passenger-performance', error);
+    }
   }
 
   try {
@@ -309,6 +388,26 @@ export function validateProductionContent(
     }
   }
 
+  if (
+    passengers !== undefined &&
+    passengerPerformance !== undefined &&
+    narrativeStories !== undefined
+  ) {
+    try {
+      requirePassengerPerformanceNarrativeCues(
+        passengers,
+        passengerPerformance,
+        narrativeStories,
+      );
+    } catch (error: unknown) {
+      addIssue(
+        issues,
+        'passenger-performance-narrative',
+        error,
+      );
+    }
+  }
+
   try {
     const initialState = createInitialGameState();
     const envelope = gameSaveCodec.encode(
@@ -327,6 +426,7 @@ export function validateProductionContent(
   if (
     world === undefined ||
     passengers === undefined ||
+    passengerPerformance === undefined ||
     jobs === undefined ||
     routeMotion === undefined ||
     routeExperience === undefined ||
@@ -343,6 +443,7 @@ export function validateProductionContent(
   return {
     world,
     passengers,
+    passengerPerformance,
     jobs,
     routeMotion,
     routeExperience,

@@ -27,6 +27,7 @@ import {
 } from '../../content/world/WorldContracts';
 import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
 import type { NarrativeTurn } from '../../narrative/contracts/NarrativePresentation';
+import { resolvePassengerPerformanceCue } from './PassengerPerformancePresentation';
 import type {
   NarrativeEventSink,
   NarrativeQueryPort,
@@ -80,6 +81,7 @@ export interface RidePresentation {
     readonly lifecycleKind: PassengerDocument['data']['lifecycleKind'];
   };
   readonly dialogue: NarrativeTurn | null;
+  readonly performanceCue: string | null;
   readonly pausedRouteEvent: RouteGameplayEvent | null;
   readonly routeProgress: number | null;
   readonly canDropOff: boolean;
@@ -491,6 +493,7 @@ export class PassengerRideOrchestrator {
         phase: this.#session.phase,
         passenger,
         dialogue: null,
+        performanceCue: null,
         pausedRouteEvent: null,
         routeProgress: null,
         canDropOff: false,
@@ -502,6 +505,7 @@ export class PassengerRideOrchestrator {
         phase: this.#session.phase,
         passenger,
         dialogue: null,
+        performanceCue: null,
         pausedRouteEvent: null,
         routeProgress: 1,
         canDropOff: false,
@@ -514,6 +518,9 @@ export class PassengerRideOrchestrator {
       phase: this.#session.phase,
       passenger,
       dialogue: this.#session.dialogue,
+      performanceCue: resolvePassengerPerformanceCue(
+        this.#session.dialogue,
+      ),
       pausedRouteEvent: routeFlow.getPausedEvent(),
       routeProgress: routeFlow.getSnapshot().route.routeProgress,
       canDropOff: this.#session.phase === 'dropoff-ready',

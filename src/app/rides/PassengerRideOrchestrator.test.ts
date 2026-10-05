@@ -158,6 +158,7 @@ describe('PassengerRideOrchestrator', () => {
     const pickup = ride.pickup(pickupAt);
 
     expect(pickup.phase).toBe('active');
+    expect(pickup.performanceCue).toBe('guarded');
     expect(pickup.dialogue?.choices).toHaveLength(2);
     expect(ride.getRideContract()).toMatchObject({
       status: 'active',
@@ -172,6 +173,7 @@ describe('PassengerRideOrchestrator', () => {
     ]);
 
     const afterChoice = ride.chooseDialogue(0);
+    expect(afterChoice.performanceCue).toBe('firm');
     expect(afterChoice.dialogue?.ended).toBe(true);
     expect(harness.narrativeEvents.at(-1)).toEqual({
       type: 'city-attention.adjust',
@@ -318,6 +320,7 @@ describe('PassengerRideOrchestrator', () => {
     const restoredPresentation = restored.getPresentation();
 
     expect(restoredPresentation.phase).toBe('active');
+    expect(restoredPresentation.performanceCue).toBe('guarded');
     expect(restoredPresentation.dialogue?.choices).toHaveLength(2);
     expect(restoredPresentation.pausedRouteEvent?.type).toBe(
       'route.checkpoint',

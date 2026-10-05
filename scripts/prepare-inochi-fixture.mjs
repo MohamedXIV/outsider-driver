@@ -110,6 +110,46 @@ function createVisualPayload(emptyBytes, includeTexture) {
   payload.meta.name = 'Outsider Driver CI Visual Puppet';
   payload.meta.rigger = 'Outsider Driver';
   payload.meta.artist = 'Outsider Driver';
+  payload.param = [
+    {
+      uuid: 4100000001,
+      name: 'Mouth',
+      is_vec2: false,
+      min: 0,
+      max: 1,
+      defaults: 0,
+      axis_points: [0, 1],
+      bindings: [],
+    },
+    {
+      uuid: 4100000002,
+      name: 'Blink',
+      is_vec2: false,
+      min: 0,
+      max: 1,
+      defaults: 0,
+      axis_points: [0, 1],
+      bindings: [],
+    },
+    ...[
+      ['GazeX', 4100000003],
+      ['GazeY', 4100000004],
+      ['HeadX', 4100000005],
+      ['HeadY', 4100000006],
+      ['BodyX', 4100000007],
+      ['BodyY', 4100000008],
+      ['Mood', 4100000009],
+    ].map(([name, uuid]) => ({
+      uuid,
+      name,
+      is_vec2: false,
+      min: -1,
+      max: 1,
+      defaults: 0,
+      axis_points: [-1, 0, 1],
+      bindings: [],
+    })),
+  ];
   root.children = [
     {
       uuid: 2976579761,

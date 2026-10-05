@@ -6,12 +6,17 @@ import { InochiPuppetSession } from './InochiPuppetSession';
 import { compileInochiRenderProgram } from './InochiRenderProgram';
 import { InochiWasmBindings } from './InochiWasmBindings';
 import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
+import { PassengerPerformanceController } from './PassengerPerformanceController';
+import { PassengerLightingBridge } from './PassengerLighting';
 
 export interface InochiBrowserProbeSummary {
   readonly puppetName: string;
   readonly puppetAuthor: string;
   readonly parameterCount: number;
   readonly parameterExercised: string | null;
+  readonly performanceCueApplied: string | null;
+  readonly performanceValues: Readonly<Record<string, readonly number[]>>;
+  readonly lightingApplied: boolean;
   readonly vertexCount: number;
   readonly indexCount: number;
   readonly textureCount: number;
@@ -134,6 +139,71 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       parameterExercised = firstParameter.name;
     }
 
+    const basePerformanceProfile =
+      productionContent.passengerPerformance.profiles[0];
+    const performanceProfile = {
+      ...basePerformanceProfile,
+      channels: {
+        talk: [
+          {
+            parameterName: 'Mouth',
+            components: [{ source: 'value', invert: false }],
+          },
+        ],
+        blink: [
+          {
+            parameterName: 'Blink',
+            components: [{ source: 'value', invert: false }],
+          },
+        ],
+        gaze: [
+          {
+            parameterName: 'GazeX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'GazeY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+        head: [
+          {
+            parameterName: 'HeadX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'HeadY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+        body: [
+          {
+            parameterName: 'BodyX',
+            components: [{ source: 'x', invert: false }],
+          },
+          {
+            parameterName: 'BodyY',
+            components: [{ source: 'y', invert: false }],
+          },
+        ],
+      },
+    };
+    const performance = new PassengerPerformanceController(
+      session,
+      performanceProfile,
+    );
+    performance.applyCue('guarded');
+    const performanceCueApplied = 'guarded';
+
+    const performanceValues = Object.fromEntries(
+      session
+        .listParameters()
+        .map((parameter) => [
+          parameter.name,
+          [...parameter.value],
+        ]),
+    );
+
     reportStage('frame-start');
     const frame = session.frame(1 / 60);
     reportStage('frame-built');
@@ -147,6 +217,27 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxi.scene,
       taxi.anchors.passengerSeat,
     );
+    const lighting = new PassengerLightingBridge(
+      taxi,
+      renderer,
+    );
+    lighting.sync({
+      darkness: 0.15,
+      accents: [
+        {
+          kind: 'neon',
+          color: [0.15, 0.45, 1],
+          intensity: 0.7,
+          direction: [-0.4, 0.1, 1],
+        },
+        {
+          kind: 'headlights',
+          color: [1, 0.9, 0.7],
+          intensity: 0.5,
+          direction: [0.3, -0.1, 1],
+        },
+      ],
+    });
     reportStage('renderer-created');
 
     try {
@@ -164,6 +255,9 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       puppetAuthor: session.author,
       parameterCount: parameters.length,
       parameterExercised,
+      performanceCueApplied,
+      performanceValues,
+      lightingApplied: true,
       vertexCount: frame.vertices.length,
       indexCount: frame.indices.length,
       textureCount: frame.textures.length,

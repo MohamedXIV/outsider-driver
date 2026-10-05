@@ -46,7 +46,15 @@ For Part and AnimatedPart commands the bridge decodes the current `PartVars` lay
 
 The current base passenger shader follows the Inochi reference albedo equation: sampled albedo × authored opacity × active soft mask, followed by screen tint and tint.
 
-Emission and bump attachments are intentionally owned by the Phase 5 lighting/material task (#22). If those attachments arrive before that pipeline exists, #21 fails loudly instead of dropping them silently.
+The passenger lighting/material bridge now consumes the official texture usage order:
+
+- slot 0: albedo;
+- slot 1: emissive;
+- slot 2: bump map.
+
+Albedo and emissive are supported. Emission uses the authored `emissionStrength` from Part variables.
+
+Bump maps remain fail-closed until their exact reference-lighting semantics are implemented; the renderer never silently treats them as a generic Babylon normal map.
 
 ## Soft masks
 

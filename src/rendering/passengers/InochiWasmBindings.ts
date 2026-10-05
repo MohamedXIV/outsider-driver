@@ -406,34 +406,21 @@ export class InochiWasmBindings
       );
     }
 
-    const valuesPointer = this.#exports.nu_malloc(
+    const valuesPointer = this.#getCountPointer();
+    const view = new DataView(
+      this.#exports.memory.buffer,
+      valuesPointer,
       dimensions * 4,
     );
 
-    if (valuesPointer === 0) {
-      throw new Error(
-        'Inochi2D could not allocate parameter scratch memory.',
-      );
-    }
+    values.forEach((value, index) => {
+      view.setFloat32(index * 4, value, true);
+    });
 
-    try {
-      const view = new DataView(
-        this.#exports.memory.buffer,
-        valuesPointer,
-        dimensions * 4,
-      );
-
-      values.forEach((value, index) => {
-        view.setFloat32(index * 4, value, true);
-      });
-
-      this.#exports.in_parameter_set_value(
-        parameterPointer,
-        valuesPointer,
-      );
-    } finally {
-      this.#exports.nu_free(valuesPointer);
-    }
+    this.#exports.in_parameter_set_value(
+      parameterPointer,
+      valuesPointer,
+    );
   }
 
   public getTexturePointers(
