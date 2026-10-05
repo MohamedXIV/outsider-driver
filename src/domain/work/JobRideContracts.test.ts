@@ -149,6 +149,31 @@ describe('JobContract', () => {
     ).toContain('relationship:human-attitude-maximum');
   });
 
+  it('fails relationship-gated jobs when no relationship context is supplied', () => {
+    const relationshipJob = {
+      ...jobFixture,
+      id: 'job:relationship-context-required',
+      relationshipRequirements: {
+        minimumCompletedRides: 0,
+        minimumHumanAttitude: -100,
+      },
+    } as const;
+
+    expect(
+      evaluateJobEligibility(relationshipJob, {
+        officialStanding: 10,
+        undergroundAccess: 0,
+        coverIdentityMatches: () => true,
+      }),
+    ).toEqual({
+      eligible: false,
+      reasons: [
+        'relationship:completed-rides',
+        'relationship:human-attitude-minimum',
+      ],
+    });
+  });
+
   it('makes underground access and risk first-class rather than cosmetic', () => {
     const underground = {
       ...jobFixture,

@@ -152,8 +152,8 @@ export interface WorkEligibilityContext {
     passengerId: PassengerId,
     dimension: 'trust' | 'affection',
   ): number | null;
-  getHumanAttitude?(passengerId: PassengerId): number;
-  getCompletedRideCount?(passengerId: PassengerId): number;
+  getHumanAttitude?(passengerId: PassengerId): number | null;
+  getCompletedRideCount?(passengerId: PassengerId): number | null;
 }
 
 export interface WorkEligibilityResult {
@@ -207,6 +207,7 @@ export function evaluateJobEligibility(
 
     if (
       completedRideCount === undefined ||
+      completedRideCount === null ||
       completedRideCount < relationship.minimumCompletedRides
     ) {
       reasons.push('relationship:completed-rides');
@@ -249,6 +250,8 @@ export function evaluateJobEligibility(
       relationship.minimumHumanAttitude !== undefined &&
       (
         humanAttitude === undefined ||
+        humanAttitude === null ||
+        humanAttitude === null ||
         humanAttitude < relationship.minimumHumanAttitude
       )
     ) {

@@ -49,9 +49,9 @@ export function createWorkEligibilityContext(
         : null;
     },
     getHumanAttitude: (passengerId) =>
-      relationships?.getHumanAttitude(passengerId) ?? 0,
+      relationships?.getHumanAttitude(passengerId) ?? null,
     getCompletedRideCount: (passengerId) =>
-      relationships?.getCompletedRideCount(passengerId) ?? 0,
+      relationships?.getCompletedRideCount(passengerId) ?? null,
   };
 }
 
