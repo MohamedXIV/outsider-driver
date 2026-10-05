@@ -32,6 +32,10 @@ import {
   type RadioCatalog,
 } from '../radio/RadioContracts';
 import {
+  validatePersonalSpaceCatalog,
+  type PersonalSpaceCatalog,
+} from '../spaces/PersonalSpaceContracts';
+import {
   JobContractSchema,
   validateJobReferences,
   type JobContract,
@@ -71,6 +75,7 @@ export interface ProductionContentBundleInput {
   readonly routeExperience: unknown;
   readonly translator: unknown;
   readonly radio: unknown;
+  readonly personalSpaces: unknown;
   readonly narrativeStories: readonly unknown[];
   readonly taxiScene: unknown;
 }
@@ -109,6 +114,7 @@ export interface ValidatedProductionContent {
   readonly routeExperience: RouteExperienceCatalog;
   readonly translator: TranslatorCatalog;
   readonly radio: RadioCatalog;
+  readonly personalSpaces: PersonalSpaceCatalog;
   readonly narrativeStories: readonly ValidatedNarrativeStory[];
   readonly taxiScene: TaxiSceneDefinition;
 }
@@ -288,6 +294,7 @@ export function validateProductionContent(
   let routeExperience: RouteExperienceCatalog | undefined;
   let translator: TranslatorCatalog | undefined;
   let radio: RadioCatalog | undefined;
+  let personalSpaces: PersonalSpaceCatalog | undefined;
   let narrativeStories: readonly ValidatedNarrativeStory[] | undefined;
   let taxiScene: TaxiSceneDefinition | undefined;
 
@@ -319,6 +326,14 @@ export function validateProductionContent(
     translator = validateTranslatorCatalog(input.translator);
   } catch (error: unknown) {
     addIssue(issues, 'translator', error);
+  }
+
+  try {
+    personalSpaces = validatePersonalSpaceCatalog(
+      input.personalSpaces,
+    );
+  } catch (error: unknown) {
+    addIssue(issues, 'personal-spaces', error);
   }
 
   try {
@@ -432,6 +447,7 @@ export function validateProductionContent(
     routeExperience === undefined ||
     translator === undefined ||
     radio === undefined ||
+    personalSpaces === undefined ||
     narrativeStories === undefined ||
     taxiScene === undefined
   ) {
@@ -449,6 +465,7 @@ export function validateProductionContent(
     routeExperience,
     translator,
     radio,
+    personalSpaces,
     narrativeStories,
     taxiScene,
   };
