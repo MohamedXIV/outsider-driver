@@ -98,7 +98,7 @@ export async function runInochiBrowserProbe(
     bindings = await InochiWasmBindings.create();
     reportStage('wasm-created');
 
-    const runtime = new OfficialInochiRuntimeAdapter(bindings);
+    let runtime = new OfficialInochiRuntimeAdapter(bindings);
     const realAda = fixture === 'ada';
 
     reportStage('empty-load-start');
@@ -111,6 +111,15 @@ export async function runInochiBrowserProbe(
     );
     emptySession.dispose();
     reportStage('empty-loaded');
+
+    if (realAda) {
+      bindings.dispose();
+      bindings = null;
+      reportStage('ada-wasm-create-start');
+      bindings = await InochiWasmBindings.create();
+      runtime = new OfficialInochiRuntimeAdapter(bindings);
+      reportStage('ada-wasm-created');
+    }
 
     if (!realAda) {
       reportStage('mesh-load-start');
