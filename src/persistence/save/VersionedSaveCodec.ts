@@ -40,8 +40,11 @@ export interface VersionedSaveCodecConfig<TCurrent> {
 }
 
 export class SaveVersionError extends Error {
-  public constructor(message: string) {
-    super(message);
+  public constructor(
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
     this.name = 'SaveVersionError';
   }
 }
