@@ -65,7 +65,14 @@ The initial room provides:
 - collidable bed/terminal/shelf/walls/floor;
 - persistent message-indicator flag.
 
-#27 should build upgrades, maintenance, possessions, and messages on these anchors/state hooks instead of introducing parallel scenes or menu-only replacements.
+Upgrades, maintenance, possessions, and messages now use these anchors/state hooks instead of introducing parallel scenes or menu-only replacements.
+
+`PersonalSpacePersistenceProjection` maps authoritative personal state to the existing presentation flags:
+
+- maintenance attention -> garage inspection light;
+- unread messages -> home message indicator.
+
+Those flags remain presentation projections only. Upgrade capabilities, item ownership, taxi condition, and message read state are queried from `PersonalPersistenceStateStore`.
 
 ## Movement scope
 
