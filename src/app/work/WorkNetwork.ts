@@ -10,6 +10,8 @@ import {
 } from '../../domain/time/GameTime';
 import type { EconomyStateStore } from '../../domain/economy/EconomyState';
 import type { SocialStealthStateStore } from '../../domain/social/SocialStealthState';
+import type { PersonalPersistenceStateStore } from '../../domain/personal/PersonalPersistenceState';
+import { entityIdSchema } from '../../domain/ids/EntityId';
 
 export interface WorkNetworkEntry {
   readonly job: JobContract;
@@ -19,12 +21,18 @@ export interface WorkNetworkEntry {
 export function createWorkEligibilityContext(
   economy: EconomyStateStore,
   social: SocialStealthStateStore | null,
+  personal: PersonalPersistenceStateStore | null = null,
 ): WorkEligibilityContext {
   return {
     officialStanding: economy.getOfficialStanding(),
     undergroundAccess: economy.getUndergroundAccess(),
+    taxiCondition: personal?.getTaxiCondition(),
     coverIdentityMatches: (key, value) =>
       social?.coverIdentityMatches(key, value) ?? false,
+    hasTaxiCapability: (capability) =>
+      personal?.hasTaxiCapability(capability) ?? false,
+    hasItem: (itemId) =>
+      personal?.hasItem(entityIdSchema('item').parse(itemId)) ?? false,
   };
 }
 
