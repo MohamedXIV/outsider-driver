@@ -236,11 +236,14 @@ export class InochiWasmBindings
       );
     }
 
-    // Match the official Inochi2D TypeScript wrapper exactly: the
-    // module's WASM Start section is not a substitute for the exported
-    // library initialization call. Initialize the library after
-    // instantiation, then allocate the wrapper-style query scratchpad.
-    exports.in_init();
+    // A WASM Start section has already executed before instantiate()
+    // returns. Re-running in_init() would execute the module constructors
+    // twice and can corrupt allocator/global state. Keep the explicit call
+    // only for compatible modules that do not carry a Start section.
+    if (!hasWasmStartSection(bytes)) {
+      exports.in_init();
+    }
+
     return new InochiWasmBindings(exports);
   }
 
