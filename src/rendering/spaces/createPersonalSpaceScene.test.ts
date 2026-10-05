@@ -96,7 +96,7 @@ describe('createPersonalSpaceScene', () => {
     );
 
     const touchInput =
-      handle.camera.inputs.attached['touch'];
+      handle.camera.inputs.attached.touch;
 
     expect(touchInput).toBeInstanceOf(
       FreeCameraTouchInput,
