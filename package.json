@@ -16,9 +16,10 @@
     "test:watch": "vitest",
     "test:browser": "npm run fixture:inochi && playwright test",
     "build": "npm run runtime:prepare && npm run typecheck && vite build",
-    "check": "npm run lint && npm run content:check && npm run test && npm run build",
+    "check": "npm run lint && npm run lock:emit && npm run content:check && npm run test && npm run build",
     "runtime:prepare": "node scripts/prepare-inochi-runtime.mjs",
-    "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs"
+    "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs",
+    "lock:emit": "node scripts/emit-package-lock.mjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",
