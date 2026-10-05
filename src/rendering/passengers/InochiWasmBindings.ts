@@ -360,6 +360,17 @@ export class InochiWasmBindings
 
     if (dataPointer === 0) {
       const memoryBytesAfter = this.#exports.memory.buffer.byteLength;
+      let hostGrowthProbe: string;
+
+      try {
+        const previousPages = this.#exports.memory.grow(1);
+        hostGrowthProbe =
+          `JS memory.grow(1) succeeded from page ${String(previousPages)} to ${String(previousPages + 1)}.`;
+      } catch (error) {
+        hostGrowthProbe =
+          `JS memory.grow(1) failed: ${error instanceof Error ? error.message : String(error)}.`;
+      }
+
       throw new Error(
         [
           `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
@@ -371,6 +382,7 @@ export class InochiWasmBindings
                 `WASM declared minimum pages: ${String(this.#memoryLimits.minimumPages)}.`,
                 `WASM declared maximum pages: ${this.#memoryLimits.maximumPages === null ? 'unbounded' : String(this.#memoryLimits.maximumPages)}.`,
               ].join(' '),
+          hostGrowthProbe,
         ].join(' '),
       );
     }
