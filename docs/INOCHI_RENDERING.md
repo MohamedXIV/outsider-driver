@@ -88,7 +88,7 @@ Currently exact mappings include:
 
 - `normal` → premultiplied Porter-Duff;
 - `screen` → screen mode;
-- `linear-dodge` → the same source/destination factors used by the current Inochi legacy renderer.
+- `linear-dodge` → Babylon additive `ONE + ONE` (`ALPHA_ONEONE`), matching the current Inochi legacy renderer.
 
 Other modes fail loudly rather than being approximated under a similar-sounding Babylon constant.
 

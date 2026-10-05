@@ -175,6 +175,8 @@ test('real tiny Inochi2D puppet loads through verified WASM and reaches TaxiScen
   expect(summary.lightingApplied).toBe(true);
   expect(typeof summary.taxiPassengerSeatAnchor).toBe('string');
   expect(summary.taxiRenderAttempted).toBe(true);
+  expect(summary.taxiRenderSucceeded).toBe(true);
+  expect(summary.taxiRenderError).toBeNull();
 });
 
 

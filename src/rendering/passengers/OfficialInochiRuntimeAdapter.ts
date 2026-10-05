@@ -295,9 +295,19 @@ export class OfficialInochiRuntimeAdapter
   }
 
   public loadPuppet(data: ArrayBuffer): InochiPuppetRuntimeHandle {
-    return new OfficialInochiPuppetHandle(
-      this.#bindings,
-      this.#bindings.loadPuppet(data),
-    );
+    const puppetPointer = this.#bindings.loadPuppet(data);
+
+    try {
+      return new OfficialInochiPuppetHandle(
+        this.#bindings,
+        puppetPointer,
+      );
+    } catch (error) {
+      if (Number.isInteger(puppetPointer) && puppetPointer > 0) {
+        this.#bindings.freePuppet(puppetPointer);
+      }
+
+      throw error;
+    }
   }
 }
