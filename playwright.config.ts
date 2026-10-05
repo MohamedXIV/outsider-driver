@@ -28,14 +28,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         browserName: 'firefox',
-        launchOptions: {
-          firefoxUserPrefs: {
-            'webgl.disabled': false,
-            'webgl.force-enabled': true,
-            'gfx.webrender.all': true,
-            'layers.acceleration.force-enabled': true,
-          },
-        },
       },
     },
     {
