@@ -9,6 +9,10 @@ import {
   createInitialRadioState,
 } from '../../domain/radio/RadioState';
 import {
+  RelationshipStateSchema,
+  createInitialRelationshipState,
+} from '../../domain/relationships/RelationshipState';
+import {
   PersonalSpaceStateSchema,
   createInitialPersonalSpaceState,
 } from '../../domain/spaces/PersonalSpaceState';
@@ -23,7 +27,7 @@ import {
 } from '../../domain/translator/TranslatorState';
 import { VersionedSaveCodec } from './VersionedSaveCodec';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 8 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 9 as const;
 
 export const GameStateV1Schema = z.object({}).strict();
 
@@ -90,11 +94,24 @@ export const GameStateV8Schema = z
   })
   .strict();
 
-export type GameState = z.infer<typeof GameStateV8Schema>;
+export const GameStateV9Schema = z
+  .object({
+    rideSession: RideSessionSaveSchema.nullable(),
+    socialState: SocialStealthStateSchema.nullable(),
+    translatorState: TranslatorStateSchema,
+    economyState: EconomyStateSchema,
+    radioState: RadioStateSchema,
+    personalSpaceState: PersonalSpaceStateSchema,
+    personalPersistenceState: PersonalPersistenceStateSchema,
+    relationshipState: RelationshipStateSchema,
+  })
+  .strict();
+
+export type GameState = z.infer<typeof GameStateV9Schema>;
 
 export const gameSaveCodec = new VersionedSaveCodec({
   currentVersion: CURRENT_SAVE_SCHEMA_VERSION,
-  currentSchema: GameStateV8Schema,
+  currentSchema: GameStateV9Schema,
   historicalVersions: [
     {
       version: 1,
@@ -123,6 +140,10 @@ export const gameSaveCodec = new VersionedSaveCodec({
     {
       version: 7,
       schema: GameStateV7Schema,
+    },
+    {
+      version: 8,
+      schema: GameStateV8Schema,
     },
   ],
   migrations: [
@@ -210,11 +231,23 @@ export const gameSaveCodec = new VersionedSaveCodec({
         };
       },
     },
+    {
+      fromVersion: 8,
+      toVersion: 9,
+      migrate: (state) => {
+        const v8 = GameStateV8Schema.parse(state);
+
+        return {
+          ...v8,
+          relationshipState: createInitialRelationshipState(),
+        };
+      },
+    },
   ],
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV8Schema.parse({
+  return GameStateV9Schema.parse({
     rideSession: null,
     socialState: null,
     translatorState: createInitialTranslatorState(),
@@ -223,5 +256,6 @@ export function createInitialGameState(): GameState {
     personalSpaceState: createInitialPersonalSpaceState(),
     personalPersistenceState:
       createInitialPersonalPersistenceState(),
+    relationshipState: createInitialRelationshipState(),
   });
 }

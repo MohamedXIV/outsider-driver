@@ -22,6 +22,7 @@ describe('production content validation', () => {
     expect(validated.translator.packs).toHaveLength(2);
     expect(validated.radio.stations).toHaveLength(3);
     expect(validated.radio.broadcasts).toHaveLength(3);
+    expect(validated.relationships.profiles).toHaveLength(2);
     expect(validated.personalSpaces.spaces.map((space) => space.id)).toEqual([
       'personal-space:garage',
       'personal-space:home',
@@ -274,6 +275,32 @@ describe('production content validation', () => {
 
     expect(() => validateProductionContent(broken)).toThrow(
       /references unknown passenger passenger:missing-callback-rider/,
+    );
+  });
+
+  it('rejects a recurring passenger without an authored recurrence policy', () => {
+    const broken = {
+      ...productionContent,
+      relationships: {
+        ...productionContent.relationships,
+        profiles: productionContent.relationships.profiles.map(
+          (profile) =>
+            profile.passengerId ===
+            'passenger:underground-clinic-rider'
+              ? {
+                  passengerId: profile.passengerId,
+                  trust: profile.trust,
+                  affection: profile.affection,
+                  initialHumanAttitude:
+                    profile.initialHumanAttitude,
+                }
+              : profile,
+        ),
+      },
+    };
+
+    expect(() => validateProductionContent(broken)).toThrow(
+      /requires an authored recurrence policy/,
     );
   });
 

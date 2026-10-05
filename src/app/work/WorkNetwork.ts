@@ -11,6 +11,7 @@ import {
 import type { EconomyStateStore } from '../../domain/economy/EconomyState';
 import type { SocialStealthStateStore } from '../../domain/social/SocialStealthState';
 import type { PersonalPersistenceStateStore } from '../../domain/personal/PersonalPersistenceState';
+import type { RelationshipStateStore } from '../../domain/relationships/RelationshipState';
 import { entityIdSchema } from '../../domain/ids/EntityId';
 
 export interface WorkNetworkEntry {
@@ -22,6 +23,7 @@ export function createWorkEligibilityContext(
   economy: EconomyStateStore,
   social: SocialStealthStateStore | null,
   personal: PersonalPersistenceStateStore | null = null,
+  relationships: RelationshipStateStore | null = null,
 ): WorkEligibilityContext {
   return {
     officialStanding: economy.getOfficialStanding(),
@@ -37,6 +39,19 @@ export function createWorkEligibilityContext(
       personal?.hasTaxiCapability(capability) ?? false,
     hasItem: (itemId) =>
       personal?.hasItem(entityIdSchema('item').parse(itemId)) ?? false,
+    getRelationshipMetric: (passengerId, dimension) => {
+      if (relationships === null) {
+        return null;
+      }
+
+      return relationships.hasDimension(passengerId, dimension)
+        ? relationships.getMetric(passengerId, dimension)
+        : null;
+    },
+    getHumanAttitude: (passengerId) =>
+      relationships?.getHumanAttitude(passengerId) ?? null,
+    getCompletedRideCount: (passengerId) =>
+      relationships?.getCompletedRideCount(passengerId) ?? null,
   };
 }
 

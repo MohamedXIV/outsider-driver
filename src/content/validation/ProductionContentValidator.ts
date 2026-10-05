@@ -8,6 +8,10 @@ import {
   type PassengerPerformanceCatalog,
 } from '../passengers/PassengerPerformanceContracts';
 import {
+  validateRelationshipCatalog,
+  type RelationshipCatalog,
+} from '../relationships/RelationshipContracts';
+import {
   validateRouteExperienceCatalog,
   type RouteExperienceCatalog,
 } from '../routes/RouteExperienceContracts';
@@ -74,6 +78,7 @@ export interface ProductionContentBundleInput {
   readonly world: unknown;
   readonly passengers: unknown;
   readonly passengerPerformance: unknown;
+  readonly relationships: unknown;
   readonly jobs: readonly unknown[];
   readonly routeMotion: unknown;
   readonly routeExperience: unknown;
@@ -114,6 +119,7 @@ export interface ValidatedProductionContent {
   readonly world: WorldContentCatalog;
   readonly passengers: PassengerCatalog;
   readonly passengerPerformance: PassengerPerformanceCatalog;
+  readonly relationships: RelationshipCatalog;
   readonly jobs: readonly JobContract[];
   readonly routeMotion: RouteMotionCatalog;
   readonly routeExperience: RouteExperienceCatalog;
@@ -295,6 +301,7 @@ export function validateProductionContent(
   let world: WorldContentCatalog | undefined;
   let passengers: PassengerCatalog | undefined;
   let passengerPerformance: PassengerPerformanceCatalog | undefined;
+  let relationships: RelationshipCatalog | undefined;
   let jobs: readonly JobContract[] | undefined;
   let routeMotion: RouteMotionCatalog | undefined;
   let routeExperience: RouteExperienceCatalog | undefined;
@@ -319,6 +326,15 @@ export function validateProductionContent(
   }
 
   if (passengers !== undefined) {
+    try {
+      relationships = validateRelationshipCatalog(
+        input.relationships,
+        passengers,
+      );
+    } catch (error: unknown) {
+      addIssue(issues, 'relationships', error);
+    }
+
     try {
       passengerPerformance = validatePassengerPerformanceCatalog(
         input.passengerPerformance,
@@ -460,6 +476,7 @@ export function validateProductionContent(
     world === undefined ||
     passengers === undefined ||
     passengerPerformance === undefined ||
+    relationships === undefined ||
     jobs === undefined ||
     routeMotion === undefined ||
     routeExperience === undefined ||
@@ -479,6 +496,7 @@ export function validateProductionContent(
     world,
     passengers,
     passengerPerformance,
+    relationships,
     jobs,
     routeMotion,
     routeExperience,

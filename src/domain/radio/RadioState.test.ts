@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { productionContent } from '../../content/production/ProductionContent';
 import { validateProductionContent } from '../../content/validation/ProductionContentValidator';
 import { createInitialEconomyState } from '../economy/EconomyState';
+import { createInitialRelationshipState } from '../relationships/RelationshipState';
 import { createInitialPersonalSpaceState } from '../spaces/PersonalSpaceState';
 import { createInitialPersonalPersistenceState } from '../personal/PersonalPersistenceState';
 import { entityId } from '../ids/EntityId';
@@ -69,7 +70,8 @@ describe('RadioStateStore', () => {
         economyState: createInitialEconomyState(),
         radioState: state.exportState(),
         personalSpaceState: createInitialPersonalSpaceState(),
-      personalPersistenceState: createInitialPersonalPersistenceState(),
+        personalPersistenceState: createInitialPersonalPersistenceState(),
+        relationshipState: createInitialRelationshipState(),
       },
       '2026-10-04T13:10:00.000Z',
     );

@@ -96,6 +96,28 @@ export const WorkPersonalRequirementsSchema = z
   })
   .strict();
 
+export const WorkRelationshipRequirementsSchema = z
+  .object({
+    minimumCompletedRides: z.number().int().nonnegative(),
+    minimumTrust: boundedProgressSchema.optional(),
+    minimumAffection: boundedProgressSchema.optional(),
+    minimumHumanAttitude: z.number().min(-100).max(100).optional(),
+    maximumHumanAttitude: z.number().min(-100).max(100).optional(),
+  })
+  .strict()
+  .refine(
+    (requirements) =>
+      requirements.minimumHumanAttitude === undefined ||
+      requirements.maximumHumanAttitude === undefined ||
+      requirements.minimumHumanAttitude <=
+        requirements.maximumHumanAttitude,
+    {
+      message:
+        'Minimum human attitude cannot exceed maximum human attitude.',
+      path: ['maximumHumanAttitude'],
+    },
+  );
+
 export const JobContractSchema = z
   .object({
     id: entityIdSchema('job'),
@@ -109,6 +131,8 @@ export const JobContractSchema = z
     expenses: ExpenseTermsSchema,
     completionEffects: WorkCompletionEffectsSchema,
     personalRequirements: WorkPersonalRequirementsSchema.optional(),
+    relationshipRequirements:
+      WorkRelationshipRequirementsSchema.optional(),
   })
   .strict();
 
@@ -124,6 +148,12 @@ export interface WorkEligibilityContext {
   coverIdentityMatches(key: string, value: string): boolean;
   hasTaxiCapability?(capability: string): boolean;
   hasItem?(itemId: string): boolean;
+  getRelationshipMetric?(
+    passengerId: PassengerId,
+    dimension: 'trust' | 'affection',
+  ): number | null;
+  getHumanAttitude?(passengerId: PassengerId): number | null;
+  getCompletedRideCount?(passengerId: PassengerId): number | null;
 }
 
 export interface WorkEligibilityResult {
@@ -167,6 +197,76 @@ export function evaluateJobEligibility(
     job.source.minimumUndergroundAccess
   ) {
     reasons.push('underground-access');
+  }
+
+  const relationship = job.relationshipRequirements;
+
+  if (relationship !== undefined) {
+    const completedRideCount =
+      context.getCompletedRideCount?.(job.passengerId);
+
+    if (
+      completedRideCount === undefined ||
+      completedRideCount === null ||
+      completedRideCount < relationship.minimumCompletedRides
+    ) {
+      reasons.push('relationship:completed-rides');
+    }
+
+    if (relationship.minimumTrust !== undefined) {
+      const trust = context.getRelationshipMetric?.(
+        job.passengerId,
+        'trust',
+      );
+
+      if (
+        trust === undefined ||
+        trust === null ||
+        trust < relationship.minimumTrust
+      ) {
+        reasons.push('relationship:trust');
+      }
+    }
+
+    if (relationship.minimumAffection !== undefined) {
+      const affection = context.getRelationshipMetric?.(
+        job.passengerId,
+        'affection',
+      );
+
+      if (
+        affection === undefined ||
+        affection === null ||
+        affection < relationship.minimumAffection
+      ) {
+        reasons.push('relationship:affection');
+      }
+    }
+
+    const humanAttitude =
+      context.getHumanAttitude?.(job.passengerId);
+
+    if (
+      relationship.minimumHumanAttitude !== undefined &&
+      (
+        humanAttitude === undefined ||
+        humanAttitude === null ||
+        humanAttitude < relationship.minimumHumanAttitude
+      )
+    ) {
+      reasons.push('relationship:human-attitude-minimum');
+    }
+
+    if (
+      relationship.maximumHumanAttitude !== undefined &&
+      (
+        humanAttitude === undefined ||
+        humanAttitude === null ||
+        humanAttitude > relationship.maximumHumanAttitude
+      )
+    ) {
+      reasons.push('relationship:human-attitude-maximum');
+    }
   }
 
   const personal = job.personalRequirements;

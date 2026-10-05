@@ -9,6 +9,7 @@ import {
   TranslationVocabularyKeySchema,
 } from '../content/translator/TranslatorContracts';
 import { TranslationRequirementSchema } from '../domain/translator/TranslatorRuntime';
+import { RelationshipDimensionSchema } from '../content/relationships/RelationshipContracts';
 import {
   ClaimAudienceSchema,
   ClaimValueSchema,
@@ -239,6 +240,58 @@ export class InkNarrativeRuntime {
       },
     );
 
+    this.#story.BindExternalFunction(
+      'GAME_RELATIONSHIP',
+      (passengerId: unknown, dimension: unknown) => {
+        const relationships = this.#queries.relationships;
+
+        if (relationships === undefined) {
+          throw new Error(
+            'Narrative requested relationship state, but no relationship query adapter is configured.',
+          );
+        }
+
+        return relationships.getRelationshipMetric(
+          entityIdSchema('passenger').parse(passengerId),
+          RelationshipDimensionSchema.parse(dimension),
+        );
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_HUMAN_ATTITUDE',
+      (passengerId: unknown) => {
+        const relationships = this.#queries.relationships;
+
+        if (relationships === undefined) {
+          throw new Error(
+            'Narrative requested human-attitude state, but no relationship query adapter is configured.',
+          );
+        }
+
+        return relationships.getHumanAttitude(
+          entityIdSchema('passenger').parse(passengerId),
+        );
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_COMPLETED_RIDES_WITH',
+      (passengerId: unknown) => {
+        const relationships = this.#queries.relationships;
+
+        if (relationships === undefined) {
+          throw new Error(
+            'Narrative requested relationship ride history, but no relationship query adapter is configured.',
+          );
+        }
+
+        return relationships.getCompletedRideCount(
+          entityIdSchema('passenger').parse(passengerId),
+        );
+      },
+    );
+
     this.#story.BindExternalFunction('GAME_HAS_FACT', (factId: unknown) =>
       this.#queries.hasFact(entityIdSchema('fact').parse(factId)),
     );
@@ -348,6 +401,46 @@ export class InkNarrativeRuntime {
         this.#events.emit(
           NarrativeDomainEventSchema.parse({
             type: 'city-attention.adjust',
+            delta: adjustmentSchema.parse(delta),
+            reason: reasonSchema.parse(reason),
+          }),
+        );
+        return 0;
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_ADJUST_RELATIONSHIP',
+      (
+        passengerId: unknown,
+        dimension: unknown,
+        delta: unknown,
+        reason: unknown,
+      ) => {
+        this.#events.emit(
+          NarrativeDomainEventSchema.parse({
+            type: 'relationship.adjust',
+            passengerId,
+            dimension: RelationshipDimensionSchema.parse(dimension),
+            delta: adjustmentSchema.parse(delta),
+            reason: reasonSchema.parse(reason),
+          }),
+        );
+        return 0;
+      },
+    );
+
+    this.#story.BindExternalFunction(
+      'GAME_ADJUST_HUMAN_ATTITUDE',
+      (
+        passengerId: unknown,
+        delta: unknown,
+        reason: unknown,
+      ) => {
+        this.#events.emit(
+          NarrativeDomainEventSchema.parse({
+            type: 'human-attitude.adjust',
+            passengerId,
             delta: adjustmentSchema.parse(delta),
             reason: reasonSchema.parse(reason),
           }),
