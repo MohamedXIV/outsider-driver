@@ -7,7 +7,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "npm run runtime:prepare && vite",
+    "dev": "npm run runtime:prepare && npm run build:metadata && vite",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -15,10 +15,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:browser": "npm run fixture:inochi && playwright test",
-    "build": "npm run runtime:prepare && npm run typecheck && vite build",
-    "check": "npm run lint && npm run content:check && npm run test && npm run build",
+    "build": "npm run runtime:prepare && npm run build:metadata && npm run typecheck && vite build",
+    "check": "npm run lock:verify && npm run lint && npm run content:check && npm run test && npm run build",
     "runtime:prepare": "node scripts/prepare-inochi-runtime.mjs",
-    "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs"
+    "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs",
+    "build:metadata": "node scripts/write-build-metadata.mjs",
+    "lock:verify": "node scripts/verify-package-lock.mjs"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",

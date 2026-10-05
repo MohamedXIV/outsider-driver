@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const manifest = JSON.parse(
+  await readFile(resolve('config/inochi-runtime.json'), 'utf8'),
+);
 const RUNTIME_ARCHIVE_URL =
-  'https://github.com/Inochi2D/inochi2d/releases/download/nightly/inochi2d-wasm-debug.tar';
-const RUNTIME_ARCHIVE_SHA256 =
-  'd8c0e21d109d4681e5f24b730190fa0b016e9449d094ec4901d1e0a0aa8aec6e';
+  `https://api.github.com/repos/Inochi2D/inochi2d/releases/assets/${String(manifest.assetId)}`;
 const OUTPUT_PATH = resolve(
   'public/vendor/inochi2d/inochi2d.wasm',
 );
@@ -84,13 +85,26 @@ async function main() {
   const response = await fetch(RUNTIME_ARCHIVE_URL, {
     redirect: 'follow',
     headers: {
+      accept: 'application/octet-stream',
       'user-agent': 'outsider-driver-build',
+      'x-github-api-version': '2022-11-28',
     },
   });
 
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch Inochi2D runtime archive: HTTP ${String(response.status)}`,
+      `Failed to fetch Inochi2D runtime asset ${String(manifest.assetId)}: HTTP ${String(response.status)}`,
+    );
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (
+    contentType.includes('application/json') ||
+    contentType.includes('application/vnd.github+json')
+  ) {
+    throw new Error(
+      'Pinned Inochi2D asset endpoint returned metadata instead of binary bytes.',
     );
   }
 
@@ -99,9 +113,9 @@ async function main() {
     .update(archive)
     .digest('hex');
 
-  if (digest !== RUNTIME_ARCHIVE_SHA256) {
+  if (digest !== manifest.sha256) {
     throw new Error(
-      `Inochi2D runtime digest mismatch: expected ${RUNTIME_ARCHIVE_SHA256}, received ${digest}.`,
+      `Inochi2D runtime digest mismatch: expected ${manifest.sha256}, received ${digest}.`,
     );
   }
 
@@ -113,7 +127,7 @@ async function main() {
   await writeFile(OUTPUT_PATH, wasm.bytes);
 
   process.stdout.write(
-    `Prepared pinned official Inochi2D debug runtime ${wasm.name} (${String(wasm.bytes.byteLength)} bytes). The debug artifact is used because the current nightly release WASM returns null from nu_malloc even for a 702-byte fixture; large asset uploads use JS-owned WASM scratch instead of walloc.\n`,
+    `Prepared immutable Inochi2D asset ${String(manifest.assetId)} / ${wasm.name} (${String(wasm.bytes.byteLength)} bytes). ${manifest.fallbackReason}\n`,
   );
 }
 
