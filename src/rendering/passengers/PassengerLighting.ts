@@ -162,7 +162,7 @@ function aggregateAccents(
   const safeIntensity = Math.max(totalIntensity, 1e-8);
   const accentDirection =
     direction.lengthSquared() <= 1e-8
-      ? ([0, 0, 1] as const)
+      ? colorTuple(0, 0, 1)
       : normalizedDirection([
           direction.x,
           direction.y,
