@@ -8,6 +8,8 @@ Every pull request must pass the repository CI checks. A Vercel preview is usefu
 
 Canonical CI installs dependencies with `npm ci` from the committed `package-lock.json`. A package manifest / lockfile mismatch is therefore a hard failure before verification begins. `npm run lock:verify` also checks the repository-visible root dependency contract without network access.
 
+Production build size and startup regression limits are defined in `config/performance-budgets.json` and documented in `docs/PERFORMANCE_BUDGETS.md`. `npm run check` builds the production output and runs the deterministic budget gate before browser smoke.
+
 The browser compatibility suite runs Playwright against the output of `npm run build` served by `vite preview`.
 
 The supported matrix is defined in `docs/BROWSER_SUPPORT.md` and covers desktop Chromium, Firefox, WebKit, plus a compact touch Chromium profile.
