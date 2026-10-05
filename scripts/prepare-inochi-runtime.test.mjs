@@ -70,7 +70,7 @@ describe('raiseDefinedWasmMemoryMinimum', () => {
   it('rejects a configured minimum above the declared maximum', () => {
     const source = wasmBytes(
       0x05,
-      0x06,
+      0x05,
       0x01,
       0x01,
       0x13,
