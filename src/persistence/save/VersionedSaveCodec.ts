@@ -106,7 +106,16 @@ export class VersionedSaveCodec<TCurrent> {
   }
 
   public decode(input: unknown): SaveEnvelope<TCurrent> {
-    const envelope = SaveEnvelopeSchema.parse(input);
+    let envelope: z.infer<typeof SaveEnvelopeSchema>;
+
+    try {
+      envelope = SaveEnvelopeSchema.parse(input);
+    } catch (error: unknown) {
+      throw new SaveVersionError(
+        `Save envelope is invalid: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
 
     if (envelope.schemaVersion > this.#currentVersion) {
       throw new SaveVersionError(
@@ -143,7 +152,17 @@ export class VersionedSaveCodec<TCurrent> {
   }
 
   public deserialize(serialized: string): SaveEnvelope<TCurrent> {
-    const parsed: unknown = JSON.parse(serialized) as unknown;
+    let parsed: unknown;
+
+    try {
+      parsed = JSON.parse(serialized) as unknown;
+    } catch (error: unknown) {
+      throw new SaveVersionError(
+        'Save data is not valid JSON.',
+        { cause: error },
+      );
+    }
+
     return this.decode(parsed);
   }
 
@@ -168,6 +187,13 @@ export class VersionedSaveCodec<TCurrent> {
       );
     }
 
-    return schema.parse(state);
+    try {
+      return schema.parse(state);
+    } catch (error: unknown) {
+      throw new SaveVersionError(
+        `Save state for version ${versionLabel(version)} is invalid: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
   }
 }
