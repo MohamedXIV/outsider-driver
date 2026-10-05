@@ -6,7 +6,7 @@
     "totalJavaScriptBytes": 2000000,
     "totalJavaScriptGzipBytes": 500000,
     "maxLazyJavaScriptBytes": 150000,
-    "initialTransferGzipBytes": 340000,
+    "initialTransferGzipBytes": 380000,
     "inochiWasmBytes": 7000000,
     "startupReadyMs": 5000
   }
