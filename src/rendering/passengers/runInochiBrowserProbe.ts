@@ -207,9 +207,6 @@ async function runPinnedAdaProbe(
       taxiRenderError = errorMessage(error);
     }
 
-    const realPuppet = await runPinnedAdaProbe(taxi);
-    reportStage('ada-acceptance-complete');
-
     return {
       puppetName: session.name,
       puppetAuthor: session.author,
@@ -235,7 +232,6 @@ async function runPinnedAdaProbe(
       taxiRenderAttempted: true,
       taxiRenderSucceeded,
       taxiRenderError,
-      realPuppet,
     };
   } finally {
     renderer?.dispose();
@@ -437,6 +433,9 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxiRenderError = errorMessage(error);
     }
 
+    const realPuppet = await runPinnedAdaProbe(taxi);
+    reportStage('ada-acceptance-complete');
+
     return {
       puppetName: session.name,
       puppetAuthor: session.author,
@@ -464,6 +463,7 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxiRenderAttempted: true,
       taxiRenderSucceeded,
       taxiRenderError,
+      realPuppet,
     };
   } finally {
     renderer?.dispose();
