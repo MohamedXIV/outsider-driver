@@ -70,43 +70,6 @@ interface InochiWasmExports extends WebAssembly.Exports {
 }
 
 const WASM_START_SECTION_ID = 8;
-const WASM_PAGE_BYTES = 65_536;
-
-export interface InochiWasmStagingRegion {
-  readonly pointer: number;
-  readonly capacity: number;
-}
-
-export function reserveUnmanagedWasmStaging(
-  memory: WebAssembly.Memory,
-  byteLength: number,
-): InochiWasmStagingRegion {
-  if (!Number.isSafeInteger(byteLength) || byteLength <= 0) {
-    throw new Error(
-      `Invalid Inochi WASM staging byte length: ${String(byteLength)}.`,
-    );
-  }
-
-  const pages = Math.ceil(byteLength / WASM_PAGE_BYTES);
-  let previousPages: number;
-
-  try {
-    previousPages = memory.grow(pages);
-  } catch (error) {
-    const detail =
-      error instanceof Error ? `: ${error.message}` : '';
-
-    throw new Error(
-      `Inochi2D could not reserve ${String(byteLength)} bytes of unmanaged WASM staging memory${detail}`,
-      { cause: error },
-    );
-  }
-
-  return {
-    pointer: previousPages * WASM_PAGE_BYTES,
-    capacity: pages * WASM_PAGE_BYTES,
-  };
-}
 
 function readUnsignedLeb128(
   bytes: Uint8Array,
@@ -241,8 +204,6 @@ export class InochiWasmBindings
 {
   readonly #exports: InochiWasmExports;
   #countPointer = 0;
-  #stagingPointer: number | null = null;
-  #stagingCapacity = 0;
   #disposed = false;
 
   private constructor(exports: InochiWasmExports) {
@@ -258,6 +219,7 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
+    const startRunsAutomatically = hasWasmStartSection(bytes);
     const instantiated = await WebAssembly.instantiate(
       bytes,
       createWasiImports(),
@@ -275,11 +237,15 @@ export class InochiWasmBindings
       );
     }
 
-    // Match the official Inochi2D TypeScript wrapper exactly: the
-    // module's WASM Start section is not a substitute for the exported
-    // library initialization call. Initialize the library after
-    // instantiation, then allocate the wrapper-style query scratchpad.
-    exports.in_init();
+    // The pinned executable WASM contains a Start section whose entry is
+    // in_init. WebAssembly runs that Start function during instantiation.
+    // Calling in_init a second time reruns __wasm_call_ctors and can
+    // corrupt allocator/global state. Keep an explicit fallback for a
+    // future reactor-style artifact without a Start section.
+    if (!startRunsAutomatically) {
+      exports.in_init();
+    }
+
     return new InochiWasmBindings(exports);
   }
 
@@ -292,39 +258,27 @@ export class InochiWasmBindings
 
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
 
-    if (dataPointer !== 0) {
-      try {
-        new Uint8Array(
-          this.#exports.memory.buffer,
-          dataPointer,
-          data.byteLength,
-        ).set(new Uint8Array(data));
-
-        return this.#exports.in_puppet_load_from_memory(
-          dataPointer,
-          data.byteLength,
-          0,
-        );
-      } finally {
-        this.#exports.nu_free(dataPointer);
-      }
+    if (dataPointer === 0) {
+      throw new Error(
+        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
+      );
     }
 
-    const stagingPointer = this.#getPuppetInputStaging(
-      data.byteLength,
-    );
+    try {
+      new Uint8Array(
+        this.#exports.memory.buffer,
+        dataPointer,
+        data.byteLength,
+      ).set(new Uint8Array(data));
 
-    new Uint8Array(
-      this.#exports.memory.buffer,
-      stagingPointer,
-      data.byteLength,
-    ).set(new Uint8Array(data));
-
-    return this.#exports.in_puppet_load_from_memory(
-      stagingPointer,
-      data.byteLength,
-      0,
-    );
+      return this.#exports.in_puppet_load_from_memory(
+        dataPointer,
+        data.byteLength,
+        0,
+      );
+    } finally {
+      this.#exports.nu_free(dataPointer);
+    }
   }
 
   public freePuppet(puppetPointer: number): void {
@@ -593,30 +547,6 @@ export class InochiWasmBindings
     }
 
     this.#disposed = true;
-  }
-
-  #getPuppetInputStaging(byteLength: number): number {
-    if (
-      this.#stagingPointer !== null &&
-      this.#stagingCapacity >= byteLength
-    ) {
-      return this.#stagingPointer;
-    }
-
-    // The official WASM allocator is initialized by #getCountPointer()
-    // before any puppet load reaches this path. Growing memory here
-    // reserves pages beyond walloc's tracked heap. Upstream
-    // in_puppet_load_from_memory borrows caller storage through a
-    // MemoryStream and calls take() before destroying that stream, so
-    // these bytes do not need to be owned or freed by nu_malloc.
-    const staging = reserveUnmanagedWasmStaging(
-      this.#exports.memory,
-      byteLength,
-    );
-
-    this.#stagingPointer = staging.pointer;
-    this.#stagingCapacity = staging.capacity;
-    return staging.pointer;
   }
 
   #parameterDimensions(parameterPointer: number): number {
