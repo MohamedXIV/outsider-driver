@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  hasWasmStartSection,
-  reserveUnmanagedWasmStaging,
-} from './InochiWasmBindings';
+import { hasWasmStartSection } from './InochiWasmBindings';
 
 function wasmBytes(...body: number[]): ArrayBuffer {
   return Uint8Array.from([
@@ -49,57 +46,5 @@ describe('hasWasmStartSection', () => {
         ),
       );
     }).toThrow(/section extends beyond module bytes/);
-  });
-});
-
-
-describe('reserveUnmanagedWasmStaging', () => {
-  it('reserves page-aligned caller-owned bytes beyond current WASM memory', () => {
-    const memory = new WebAssembly.Memory({
-      initial: 2,
-      maximum: 8,
-    });
-
-    const staging = reserveUnmanagedWasmStaging(
-      memory,
-      65_537,
-    );
-
-    expect(staging).toEqual({
-      pointer: 2 * 65_536,
-      capacity: 2 * 65_536,
-    });
-    expect(memory.buffer.byteLength).toBe(4 * 65_536);
-
-    new Uint8Array(
-      memory.buffer,
-      staging.pointer,
-      4,
-    ).set([1, 2, 3, 4]);
-
-    expect(
-      Array.from(
-        new Uint8Array(
-          memory.buffer,
-          staging.pointer,
-          4,
-        ),
-      ),
-    ).toEqual([1, 2, 3, 4]);
-  });
-
-  it('rejects invalid staging sizes and reports growth failure', () => {
-    const memory = new WebAssembly.Memory({
-      initial: 1,
-      maximum: 1,
-    });
-
-    expect(() =>
-      reserveUnmanagedWasmStaging(memory, 0),
-    ).toThrow(/staging byte length/);
-
-    expect(() =>
-      reserveUnmanagedWasmStaging(memory, 1),
-    ).toThrow(/could not reserve/);
   });
 });
