@@ -70,6 +70,39 @@ interface InochiWasmExports extends WebAssembly.Exports {
 }
 
 const WASM_START_SECTION_ID = 8;
+const WASM_PAGE_BYTES = 65_536;
+
+export interface InochiWasmStagingRegion {
+  readonly pointer: number;
+  readonly capacity: number;
+}
+
+export function reserveUnmanagedWasmStaging(
+  memory: WebAssembly.Memory,
+  byteLength: number,
+): InochiWasmStagingRegion {
+  if (!Number.isSafeInteger(byteLength) || byteLength <= 0) {
+    throw new Error(
+      `Invalid Inochi WASM staging byte length: ${String(byteLength)}.`,
+    );
+  }
+
+  const pages = Math.ceil(byteLength / WASM_PAGE_BYTES);
+
+  try {
+    const previousPages = memory.grow(pages);
+
+    return {
+      pointer: previousPages * WASM_PAGE_BYTES,
+      capacity: pages * WASM_PAGE_BYTES,
+    };
+  } catch (error) {
+    throw new Error(
+      `Inochi2D could not reserve ${String(byteLength)} bytes of unmanaged WASM staging memory.`,
+      { cause: error },
+    );
+  }
+}
 
 function readUnsignedLeb128(
   bytes: Uint8Array,
@@ -204,6 +237,8 @@ export class InochiWasmBindings
 {
   readonly #exports: InochiWasmExports;
   #countPointer = 0;
+  #stagingPointer: number | null = null;
+  #stagingCapacity = 0;
   #disposed = false;
 
   private constructor(exports: InochiWasmExports) {
@@ -258,27 +293,39 @@ export class InochiWasmBindings
 
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
 
-    if (dataPointer === 0) {
-      throw new Error(
-        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
-      );
+    if (dataPointer !== 0) {
+      try {
+        new Uint8Array(
+          this.#exports.memory.buffer,
+          dataPointer,
+          data.byteLength,
+        ).set(new Uint8Array(data));
+
+        return this.#exports.in_puppet_load_from_memory(
+          dataPointer,
+          data.byteLength,
+          0,
+        );
+      } finally {
+        this.#exports.nu_free(dataPointer);
+      }
     }
 
-    try {
-      new Uint8Array(
-        this.#exports.memory.buffer,
-        dataPointer,
-        data.byteLength,
-      ).set(new Uint8Array(data));
+    const stagingPointer = this.#getPuppetInputStaging(
+      data.byteLength,
+    );
 
-      return this.#exports.in_puppet_load_from_memory(
-        dataPointer,
-        data.byteLength,
-        0,
-      );
-    } finally {
-      this.#exports.nu_free(dataPointer);
-    }
+    new Uint8Array(
+      this.#exports.memory.buffer,
+      stagingPointer,
+      data.byteLength,
+    ).set(new Uint8Array(data));
+
+    return this.#exports.in_puppet_load_from_memory(
+      stagingPointer,
+      data.byteLength,
+      0,
+    );
   }
 
   public freePuppet(puppetPointer: number): void {
@@ -547,6 +594,38 @@ export class InochiWasmBindings
     }
 
     this.#disposed = true;
+  }
+
+  #getPuppetInputStaging(byteLength: number): number {
+    if (
+      this.#stagingPointer !== null &&
+      this.#stagingCapacity >= byteLength
+    ) {
+      return this.#stagingPointer;
+    }
+
+    if (this.#countPointer === 0) {
+      throw new Error(
+        'Inochi2D allocator must be initialized before reserving puppet staging memory.',
+      );
+    }
+
+    // #getCountPointer() initializes walloc before this method can run.
+    // Growing memory afterwards creates pages beyond walloc's tracked
+    // heap. Subsequent walloc growth starts after these pages, so the
+    // borrowed input region cannot overlap allocator-owned blocks.
+    //
+    // Upstream in_puppet_load_from_memory wraps caller bytes in a
+    // MemoryStream and calls take() before destroying the stream; it
+    // therefore borrows this input synchronously and does not nu_free it.
+    const staging = reserveUnmanagedWasmStaging(
+      this.#exports.memory,
+      byteLength,
+    );
+
+    this.#stagingPointer = staging.pointer;
+    this.#stagingCapacity = staging.capacity;
+    return staging.pointer;
   }
 
   #parameterDimensions(parameterPointer: number): number {
