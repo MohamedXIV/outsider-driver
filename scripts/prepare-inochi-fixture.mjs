@@ -472,6 +472,63 @@ function reduceRealRigPayload(sourcePayload, emptyBytes) {
   };
 }
 
+function collectReferencedTextureSlots(node, textureCount) {
+  const slots = new Set();
+
+  function visit(current) {
+    if (
+      typeof current !== 'object' ||
+      current === null ||
+      Array.isArray(current)
+    ) {
+      return;
+    }
+
+    if (Array.isArray(current.textures)) {
+      for (const slot of current.textures) {
+        if (
+          Number.isInteger(slot) &&
+          slot >= 0 &&
+          slot < textureCount
+        ) {
+          slots.add(slot);
+        }
+      }
+    }
+
+    if (Array.isArray(current.children)) {
+      for (const child of current.children) {
+        visit(child);
+      }
+    }
+  }
+
+  visit(node);
+  return [...slots].sort((a, b) => a - b);
+}
+
+function remapReferencedTextureSlots(node, slotMap) {
+  if (
+    typeof node !== 'object' ||
+    node === null ||
+    Array.isArray(node)
+  ) {
+    return;
+  }
+
+  if (Array.isArray(node.textures)) {
+    node.textures = node.textures.map((slot) =>
+      slotMap.has(slot) ? slotMap.get(slot) : slot,
+    );
+  }
+
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      remapReferencedTextureSlots(child, slotMap);
+    }
+  }
+}
+
 function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
   if (readInp1Tag(sourceBytes, 0) !== 'TRNSRTS\0') {
     throw new Error(
@@ -491,9 +548,6 @@ function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
     ),
   );
   const reduced = reduceRealRigPayload(sourcePayload, emptyBytes);
-  const reducedPayloadBytes = new TextEncoder().encode(
-    JSON.stringify(reduced.payload),
-  );
 
   if (
     readInp1Tag(sourceBytes, textureSectionOffset) !==
@@ -505,26 +559,59 @@ function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
   }
 
   let offset = textureSectionOffset + 8;
-  const textureCount = readUint32be(sourceBytes, offset);
+  const sourceTextureCount = readUint32be(sourceBytes, offset);
   offset += 4;
 
-  if (textureCount === 0) {
+  if (sourceTextureCount === 0) {
     throw new Error(
       'Pinned official real-rig fixture unexpectedly contains no textures.',
     );
   }
 
+  const referencedTextureSlots =
+    collectReferencedTextureSlots(
+      reduced.payload.nodes,
+      sourceTextureCount,
+    );
+
+  if (referencedTextureSlots.length === 0) {
+    throw new Error(
+      'Reduced official real rig unexpectedly references no texture slots.',
+    );
+  }
+
+  const slotMap = new Map(
+    referencedTextureSlots.map((slot, index) => [
+      slot,
+      index,
+    ]),
+  );
+  remapReferencedTextureSlots(
+    reduced.payload.nodes,
+    slotMap,
+  );
+
+  const reducedPayloadBytes = new TextEncoder().encode(
+    JSON.stringify(reduced.payload),
+  );
   const replacementTexture = createTinyTga();
   const replacementParts = [
     new TextEncoder().encode('TRNSRTS\0'),
     uint32be(reducedPayloadBytes.byteLength),
     reducedPayloadBytes,
     new TextEncoder().encode('TEX_SECT'),
-    uint32be(textureCount),
+    uint32be(referencedTextureSlots.length),
   ];
+  const referencedTextureSet =
+    new Set(referencedTextureSlots);
   let originalTextureBytes = 0;
+  let sourceTextureBytes = 0;
 
-  for (let index = 0; index < textureCount; index += 1) {
+  for (
+    let index = 0;
+    index < sourceTextureCount;
+    index += 1
+  ) {
     const dataLength = readUint32be(sourceBytes, offset);
     offset += 4;
 
@@ -543,14 +630,18 @@ function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
       );
     }
 
-    originalTextureBytes += dataLength;
-    offset = dataEnd;
+    sourceTextureBytes += dataLength;
 
-    replacementParts.push(
-      uint32be(replacementTexture.byteLength),
-      Uint8Array.of(1),
-      replacementTexture,
-    );
+    if (referencedTextureSet.has(index)) {
+      originalTextureBytes += dataLength;
+      replacementParts.push(
+        uint32be(replacementTexture.byteLength),
+        Uint8Array.of(1),
+        replacementTexture,
+      );
+    }
+
+    offset = dataEnd;
   }
 
   const suffix = sourceBytes.subarray(offset);
@@ -566,8 +657,11 @@ function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
 
   return {
     bytes: concatBytes(...replacementParts, suffix),
-    textureCount,
+    textureCount: referencedTextureSlots.length,
+    sourceTextureCount,
+    referencedTextureSlots,
     originalTextureBytes,
+    sourceTextureBytes,
     payloadLength,
     reducedPayloadLength: reducedPayloadBytes.byteLength,
     sourceNodeCount: reduced.sourceNodeCount,
@@ -832,22 +926,10 @@ async function main() {
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
       `pinned official Aka real rig (${String(realRigBytes.byteLength)} bytes; ${REAL_RIG_FIXTURE.source})`,
-      `Aka rig-smoke fixture (${String(realRigSmoke.bytes.byteLength)} bytes; payload ${String(realRigSmoke.payloadLength)} -> ${String(realRigSmoke.reducedPayloadLength)} bytes; nodes ${String(realRigSmoke.sourceNodeCount)} -> ${String(realRigSmoke.selectedNodeCount)}; parameter ${realRigSmoke.selectedParameterName}; part ${realRigSmoke.selectedPartName}; ${String(realRigSmoke.textureCount)} texture slots normalized from ${String(realRigSmoke.originalTextureBytes)} source texture bytes)`,
+      `Aka rig-smoke fixture (${String(realRigSmoke.bytes.byteLength)} bytes; payload ${String(realRigSmoke.payloadLength)} -> ${String(realRigSmoke.reducedPayloadLength)} bytes; nodes ${String(realRigSmoke.sourceNodeCount)} -> ${String(realRigSmoke.selectedNodeCount)}; parameter ${realRigSmoke.selectedParameterName}; part ${realRigSmoke.selectedPartName}; texture slots ${realRigSmoke.referencedTextureSlots.join(',')} -> 0..${String(realRigSmoke.textureCount - 1)} (${String(realRigSmoke.textureCount)} of ${String(realRigSmoke.sourceTextureCount)} source slots; ${String(realRigSmoke.originalTextureBytes)} of ${String(realRigSmoke.sourceTextureBytes)} source texture bytes represented))`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
-  );
-
-  process.stdout.write(
-    `OFFICIAL_RIG_DIAGNOSTIC ${new TextDecoder().decode(
-      realRigSmoke.bytes.subarray(
-        12,
-        12 + readUint32be(realRigSmoke.bytes, 8),
-      ),
-    )}\n`,
-  );
-  throw new Error(
-    'Temporary official-rig diagnostic stop before browser installation.',
   );
 }
 
