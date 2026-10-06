@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:browser": "npm run fixture:inochi && playwright test",
-    "build": "npm run runtime:prepare && npm run build:metadata && npm run typecheck && vite build",
+    "build": "node scripts/prepare-inochi-fixture.mjs && npm run runtime:prepare && npm run build:metadata && npm run typecheck && vite build",
     "check": "npm run lock:verify && npm run lint && npm run content:check && npm run save:compat && npm run test && npm run build && npm run budget:check",
     "runtime:prepare": "node scripts/prepare-inochi-runtime.mjs",
     "fixture:inochi": "node scripts/prepare-inochi-fixture.mjs",
