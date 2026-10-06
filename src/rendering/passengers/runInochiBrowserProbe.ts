@@ -130,8 +130,8 @@ async function runPinnedAdaProbe(
     reportStage('ada-runtime-reused');
     reportStage('ada-load-start');
     session = await InochiPuppetSession.load(runtime, {
-      id: 'inochi2d-upstream-ada-static',
-      load: () => loadFixture('/__fixtures__/ada-static.inx'),
+      id: 'inochi2d-upstream-ada-rig-smoke',
+      load: () => loadFixture('/__fixtures__/ada-rig-smoke.inx'),
     });
     reportStage('ada-loaded');
 

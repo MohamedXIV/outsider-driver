@@ -12,6 +12,9 @@ const ADA_FIXTURE = {
   url: 'https://raw.githubusercontent.com/Inochi2D/inochi2d/4975d247f9b946a74d18e0ba9b3e9475eb636efb/examples/ada-static.inx',
   gitBlobSha: 'afd5f426a5785255243543949db88a8120d80109',
   outputPath: resolve('dist/__fixtures__/ada-static.inx'),
+  rigSmokeOutputPath: resolve(
+    'dist/__fixtures__/ada-rig-smoke.inx',
+  ),
 };
 
 const MESH_FIXTURE_PATH = resolve(
@@ -72,6 +75,116 @@ function createTinyTga() {
   ]);
 
   return concatBytes(header, bgraPixels);
+}
+
+function readInp1Tag(bytes, offset) {
+  if (offset + 8 > bytes.byteLength) {
+    throw new Error(
+      `INP1 section tag exceeds fixture bounds at ${String(offset)}.`,
+    );
+  }
+
+  return new TextDecoder().decode(
+    bytes.subarray(offset, offset + 8),
+  );
+}
+
+function readUint32be(bytes, offset) {
+  if (offset + 4 > bytes.byteLength) {
+    throw new Error(
+      `INP1 uint32 exceeds fixture bounds at ${String(offset)}.`,
+    );
+  }
+
+  return new DataView(
+    bytes.buffer,
+    bytes.byteOffset + offset,
+    4,
+  ).getUint32(0, false);
+}
+
+function createAdaRigSmokeFixture(adaBytes) {
+  if (readInp1Tag(adaBytes, 0) !== 'TRNSRTS\0') {
+    throw new Error(
+      'Pinned Ada fixture is not an INP1 container.',
+    );
+  }
+
+  const payloadLength = readUint32be(adaBytes, 8);
+  const textureSectionOffset = 12 + payloadLength;
+
+  if (
+    readInp1Tag(adaBytes, textureSectionOffset) !==
+    'TEX_SECT'
+  ) {
+    throw new Error(
+      'Pinned Ada fixture does not expose the expected INP1 texture section after its payload.',
+    );
+  }
+
+  let offset = textureSectionOffset + 8;
+  const textureCount = readUint32be(adaBytes, offset);
+  offset += 4;
+
+  if (textureCount === 0) {
+    throw new Error(
+      'Pinned Ada fixture unexpectedly contains no textures.',
+    );
+  }
+
+  const replacementTexture = createTinyTga();
+  const replacementParts = [
+    adaBytes.subarray(0, textureSectionOffset),
+    new TextEncoder().encode('TEX_SECT'),
+    uint32be(textureCount),
+  ];
+  let originalTextureBytes = 0;
+
+  for (let index = 0; index < textureCount; index += 1) {
+    const dataLength = readUint32be(adaBytes, offset);
+    offset += 4;
+
+    if (offset >= adaBytes.byteLength) {
+      throw new Error(
+        `Pinned Ada texture ${String(index)} is missing its encoding byte.`,
+      );
+    }
+
+    offset += 1;
+    const dataEnd = offset + dataLength;
+
+    if (dataEnd > adaBytes.byteLength) {
+      throw new Error(
+        `Pinned Ada texture ${String(index)} exceeds fixture bounds.`,
+      );
+    }
+
+    originalTextureBytes += dataLength;
+    offset = dataEnd;
+
+    replacementParts.push(
+      uint32be(replacementTexture.byteLength),
+      Uint8Array.of(1),
+      replacementTexture,
+    );
+  }
+
+  const suffix = adaBytes.subarray(offset);
+
+  if (
+    suffix.byteLength > 0 &&
+    readInp1Tag(suffix, 0) !== 'EXT_SECT'
+  ) {
+    throw new Error(
+      'Pinned Ada fixture has an unexpected section after TEX_SECT.',
+    );
+  }
+
+  return {
+    bytes: concatBytes(...replacementParts, suffix),
+    textureCount,
+    originalTextureBytes,
+  };
 }
 
 function parseEmptyPayload(bytes) {
@@ -270,12 +383,17 @@ async function main() {
     emptyBytes,
     true,
   );
+  const adaRigSmoke = createAdaRigSmokeFixture(adaBytes);
 
   await mkdir(dirname(EMPTY_FIXTURE.outputPath), {
     recursive: true,
   });
   await writeFile(EMPTY_FIXTURE.outputPath, emptyBytes);
   await writeFile(ADA_FIXTURE.outputPath, adaBytes);
+  await writeFile(
+    ADA_FIXTURE.rigSmokeOutputPath,
+    adaRigSmoke.bytes,
+  );
   await writeFile(MESH_FIXTURE_PATH, meshBytes);
   await writeFile(VISUAL_FIXTURE_PATH, visualBytes);
 
@@ -283,6 +401,7 @@ async function main() {
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
       `pinned upstream Ada fixture (${String(adaBytes.byteLength)} bytes)`,
+      `Ada rig-smoke fixture (${String(adaRigSmoke.bytes.byteLength)} bytes; ${String(adaRigSmoke.textureCount)} texture slots normalized from ${String(adaRigSmoke.originalTextureBytes)} source texture bytes)`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
