@@ -9,6 +9,28 @@ import { OfficialInochiRuntimeAdapter } from './OfficialInochiRuntimeAdapter';
 import { PassengerPerformanceController } from './PassengerPerformanceController';
 import { PassengerLightingBridge } from './PassengerLighting';
 
+export interface InochiRealPuppetProbeSummary {
+  readonly sourceModel: string;
+  readonly puppetName: string;
+  readonly puppetAuthor: string;
+  readonly parameterCount: number;
+  readonly parameterExercised: string | null;
+  readonly parameterValueChanged: boolean;
+  readonly vertexCount: number;
+  readonly indexCount: number;
+  readonly textureCount: number;
+  readonly commandCount: number;
+  readonly drawStates: readonly string[];
+  readonly blendModes: readonly string[];
+  readonly maskLayerCount: number;
+  readonly maximumMaskDepth: number;
+  readonly maximumCompositeDepth: number;
+  readonly taxiPassengerSeatAnchor: string;
+  readonly taxiRenderAttempted: boolean;
+  readonly taxiRenderSucceeded: boolean;
+  readonly taxiRenderError: string | null;
+}
+
 export interface InochiBrowserProbeSummary {
   readonly puppetName: string;
   readonly puppetAuthor: string;
@@ -30,6 +52,7 @@ export interface InochiBrowserProbeSummary {
   readonly taxiRenderAttempted: boolean;
   readonly taxiRenderSucceeded: boolean;
   readonly taxiRenderError: string | null;
+  readonly realPuppet: InochiRealPuppetProbeSummary;
 }
 
 function errorMessage(error: unknown): string {
@@ -55,6 +78,163 @@ async function loadFixture(url: string): Promise<ArrayBuffer> {
   }
 
   return response.arrayBuffer();
+}
+
+
+function changedParameterValue(
+  lowerBounds: readonly number[],
+  upperBounds: readonly number[],
+  current: readonly number[],
+): readonly number[] | null {
+  if (
+    lowerBounds.length !== upperBounds.length ||
+    current.length !== lowerBounds.length
+  ) {
+    return null;
+  }
+
+  const next = current.map((value, index) => {
+    const lower = lowerBounds[index];
+    const upper = upperBounds[index];
+
+    if (
+      lower === undefined ||
+      upper === undefined ||
+      !Number.isFinite(lower) ||
+      !Number.isFinite(upper) ||
+      upper <= lower
+    ) {
+      return value;
+    }
+
+    return Math.abs(value - lower) > 1e-5
+      ? lower
+      : upper;
+  });
+
+  return next.some(
+    (value, index) =>
+      Math.abs(value - (current[index] ?? value)) > 1e-5,
+  )
+    ? next
+    : null;
+}
+
+async function runPinnedRealRigProbe(
+  taxi: ReturnType<typeof createTaxiScene>,
+  runtime: OfficialInochiRuntimeAdapter,
+): Promise<InochiRealPuppetProbeSummary> {
+  let session: InochiPuppetSession | null = null;
+  let renderer: BabylonInochiPassengerRenderer | null = null;
+
+  try {
+    reportStage('real-rig-runtime-reused');
+    reportStage('real-rig-load-start');
+    session = await InochiPuppetSession.load(runtime, {
+      id: 'inochi2d-official-aka-rig-smoke',
+      load: () => loadFixture('/__fixtures__/aka-rig-smoke.inx'),
+    });
+    reportStage('real-rig-loaded');
+
+    const parameters = session.listParameters();
+    let parameterExercised: string | null = null;
+    let parameterValueChanged = false;
+
+    for (const parameter of parameters) {
+      const next = changedParameterValue(
+        parameter.lowerBounds,
+        parameter.upperBounds,
+        parameter.value,
+      );
+
+      if (next === null) {
+        continue;
+      }
+
+      session.setParameter(parameter.name, next);
+      parameterExercised = parameter.name;
+      parameterValueChanged = true;
+      break;
+    }
+
+    reportStage('real-rig-frame-start');
+    const frame = session.frame(1 / 60);
+    reportStage('real-rig-frame-built');
+
+    const program = compileInochiRenderProgram(frame);
+    reportStage('real-rig-render-program-built');
+
+    renderer = new BabylonInochiPassengerRenderer(
+      taxi.scene,
+      taxi.anchors.passengerSeat,
+    );
+    const lighting = new PassengerLightingBridge(
+      taxi,
+      renderer,
+    );
+    lighting.sync({
+      darkness: 0.15,
+      accents: [
+        {
+          kind: 'neon',
+          color: [0.15, 0.45, 1],
+          intensity: 0.7,
+          direction: [-0.4, 0.1, 1],
+        },
+        {
+          kind: 'headlights',
+          color: [1, 0.9, 0.7],
+          intensity: 0.5,
+          direction: [0.3, -0.1, 1],
+        },
+      ],
+    });
+
+    let taxiRenderSucceeded = false;
+    let taxiRenderError: string | null = null;
+
+    try {
+      reportStage('real-rig-babylon-render-start');
+      renderer.render(frame);
+      taxi.scene.render();
+      taxiRenderSucceeded = true;
+      reportStage('real-rig-babylon-render-complete');
+    } catch (error) {
+      taxiRenderError = errorMessage(error);
+    }
+
+    return {
+      sourceModel:
+        'Inochi2D/example-models@cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
+      puppetName: session.name,
+      puppetAuthor: session.author,
+      parameterCount: parameters.length,
+      parameterExercised,
+      parameterValueChanged,
+      vertexCount: frame.vertices.length,
+      indexCount: frame.indices.length,
+      textureCount: frame.textures.length,
+      commandCount: frame.commands.length,
+      drawStates: [
+        ...new Set(frame.commands.map((command) => command.state)),
+      ],
+      blendModes: [
+        ...new Set(
+          frame.commands.map((command) => command.blendMode),
+        ),
+      ],
+      maskLayerCount: program.maskLayerCount,
+      maximumMaskDepth: program.maximumMaskDepth,
+      maximumCompositeDepth: program.maximumCompositeDepth,
+      taxiPassengerSeatAnchor: taxi.anchors.passengerSeat.name,
+      taxiRenderAttempted: true,
+      taxiRenderSucceeded,
+      taxiRenderError,
+    };
+  } finally {
+    renderer?.dispose();
+    session?.dispose();
+  }
 }
 
 export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary> {
@@ -250,7 +430,7 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxiRenderError = errorMessage(error);
     }
 
-    return {
+    const baselineSummary = {
       puppetName: session.name,
       puppetAuthor: session.author,
       parameterCount: parameters.length,
@@ -277,6 +457,20 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxiRenderAttempted: true,
       taxiRenderSucceeded,
       taxiRenderError,
+    };
+
+    renderer.dispose();
+    renderer = null;
+    session.dispose();
+    session = null;
+    reportStage('baseline-released');
+
+    const realPuppet = await runPinnedRealRigProbe(taxi, runtime);
+    reportStage('real-rig-acceptance-complete');
+
+    return {
+      ...baselineSummary,
+      realPuppet,
     };
   } finally {
     renderer?.dispose();

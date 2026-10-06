@@ -8,6 +8,16 @@ const EMPTY_FIXTURE = {
   outputPath: resolve('dist/__fixtures__/empty08.inx'),
 };
 
+const REAL_RIG_FIXTURE = {
+  source: 'Inochi2D/example-models@cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
+  url: 'https://media.githubusercontent.com/media/Inochi2D/example-models/cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
+  sha256: 'dbf82ffb86d1c761bca883ad37ec1c47487a447f8104290b459ce60aaee81e0f',
+  byteLength: 17_731_911,
+  rigSmokeOutputPath: resolve(
+    'dist/__fixtures__/aka-rig-smoke.inx',
+  ),
+};
+
 const MESH_FIXTURE_PATH = resolve(
   'dist/__fixtures__/tiny-mesh08.inx',
 );
@@ -66,6 +76,588 @@ function createTinyTga() {
   ]);
 
   return concatBytes(header, bgraPixels);
+}
+
+function readInp1Tag(bytes, offset) {
+  if (offset + 8 > bytes.byteLength) {
+    throw new Error(
+      `INP1 section tag exceeds fixture bounds at ${String(offset)}.`,
+    );
+  }
+
+  return new TextDecoder().decode(
+    bytes.subarray(offset, offset + 8),
+  );
+}
+
+function readUint32be(bytes, offset) {
+  if (offset + 4 > bytes.byteLength) {
+    throw new Error(
+      `INP1 uint32 exceeds fixture bounds at ${String(offset)}.`,
+    );
+  }
+
+  return new DataView(
+    bytes.buffer,
+    bytes.byteOffset + offset,
+    4,
+  ).getUint32(0, false);
+}
+
+function nodeGuid(node) {
+  if (
+    typeof node !== 'object' ||
+    node === null ||
+    Array.isArray(node)
+  ) {
+    return null;
+  }
+
+  const value = node.guid ?? node.uuid;
+
+  return typeof value === 'string' ||
+    typeof value === 'number'
+    ? String(value)
+    : null;
+}
+
+function collectNodeIndex(root) {
+  const entries = [];
+  const byGuid = new Map();
+
+  function visit(node, parent = null) {
+    if (
+      typeof node !== 'object' ||
+      node === null ||
+      Array.isArray(node)
+    ) {
+      return;
+    }
+
+    const entry = { node, parent };
+    entries.push(entry);
+
+    const guid = nodeGuid(node);
+
+    if (guid !== null) {
+      if (byGuid.has(guid)) {
+        throw new Error(
+          `Pinned official real rig contains duplicate node GUID ${guid}.`,
+        );
+      }
+
+      byGuid.set(guid, entry);
+    }
+
+    if (Array.isArray(node.children)) {
+      for (const child of node.children) {
+        visit(child, entry);
+      }
+    }
+  }
+
+  visit(root);
+  return { entries, byGuid };
+}
+
+function collectReferencedNodes(value, byGuid) {
+  const refs = new Set();
+  const visited = new Set();
+
+  function visit(current) {
+    if (
+      current === null ||
+      current === undefined
+    ) {
+      return;
+    }
+
+    if (
+      typeof current === 'string' ||
+      typeof current === 'number'
+    ) {
+      const match = byGuid.get(String(current));
+
+      if (match !== undefined) {
+        refs.add(match);
+      }
+
+      return;
+    }
+
+    if (
+      typeof current !== 'object' ||
+      visited.has(current)
+    ) {
+      return;
+    }
+
+    visited.add(current);
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        visit(item);
+      }
+      return;
+    }
+
+    for (const [childKey, childValue] of Object.entries(current)) {
+      if (
+        childKey === 'children' ||
+        childKey === 'guid' ||
+        childKey === 'uuid'
+      ) {
+        continue;
+      }
+
+      visit(childValue);
+    }
+  }
+
+  visit(value);
+  return refs;
+}
+
+function isRenderablePart(node) {
+  if (
+    typeof node !== 'object' ||
+    node === null ||
+    Array.isArray(node) ||
+    node.type !== 'Part'
+  ) {
+    return false;
+  }
+
+  const mesh = node.mesh;
+
+  return (
+    typeof mesh === 'object' &&
+    mesh !== null &&
+    !Array.isArray(mesh) &&
+    Array.isArray(mesh.verts) &&
+    mesh.verts.length >= 6 &&
+    Array.isArray(mesh.indices) &&
+    mesh.indices.length >= 3
+  );
+}
+
+function legacyParameterFromOfficial(parameter) {
+  const sourceIsVec2 =
+    parameter.is_vec2 === true ||
+    parameter.type === '2d' ||
+    (
+      Array.isArray(parameter.min) &&
+      parameter.min.length === 2
+    );
+
+  const lower = sourceIsVec2
+    ? (
+        Array.isArray(parameter.min) &&
+        typeof parameter.min[0] === 'number'
+          ? parameter.min[0]
+          : -1
+      )
+    : (
+        typeof parameter.min === 'number'
+          ? parameter.min
+          : 0
+      );
+  const upper = sourceIsVec2
+    ? (
+        Array.isArray(parameter.max) &&
+        typeof parameter.max[0] === 'number'
+          ? parameter.max[0]
+          : 1
+      )
+    : (
+        typeof parameter.max === 'number'
+          ? parameter.max
+          : 1
+      );
+  const defaults = sourceIsVec2
+    ? (
+        Array.isArray(parameter.defaults) &&
+        typeof parameter.defaults[0] === 'number'
+          ? parameter.defaults[0]
+          : lower
+      )
+    : (
+        typeof parameter.defaults === 'number'
+          ? parameter.defaults
+          : lower
+      );
+
+  return {
+    uuid: parameter.uuid ?? parameter.guid,
+    name:
+      typeof parameter.name === 'string'
+        ? parameter.name
+        : 'Official Parameter',
+    is_vec2: false,
+    min: lower,
+    max: upper,
+    defaults,
+    axis_points: [lower, upper],
+    bindings: [],
+  };
+}
+
+function reduceRealRigPayload(sourcePayload, emptyBytes) {
+  const sourceRoot = sourcePayload.nodes;
+
+  if (
+    typeof sourceRoot !== 'object' ||
+    sourceRoot === null ||
+    Array.isArray(sourceRoot)
+  ) {
+    throw new Error(
+      'Pinned official real rig has no root node object.',
+    );
+  }
+
+  const { entries, byGuid } =
+    collectNodeIndex(sourceRoot);
+  const renderableEntries = entries.filter(({ node }) =>
+    isRenderablePart(node),
+  );
+  const parameters = Array.isArray(sourcePayload.param)
+    ? sourcePayload.param
+    : [];
+
+  if (renderableEntries.length === 0) {
+    throw new Error(
+      'Pinned official real rig contains no renderable Part node.',
+    );
+  }
+
+  if (parameters.length === 0) {
+    throw new Error(
+      'Pinned official real rig contains no parameters.',
+    );
+  }
+
+  let selectedPart = renderableEntries[0];
+  let selectedParameter = parameters[0];
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const parameter of parameters) {
+    const refs = collectReferencedNodes(
+      parameter,
+      byGuid,
+    );
+    const linkedParts = renderableEntries.filter((entry) =>
+      refs.has(entry),
+    );
+
+    if (
+      linkedParts.length > 0 &&
+      refs.size < bestScore
+    ) {
+      selectedPart = linkedParts[0];
+      selectedParameter = parameter;
+      bestScore = refs.size;
+    }
+  }
+
+  const base = parseEmptyPayload(emptyBytes);
+  const baseRoot = base.nodes;
+
+  if (
+    typeof baseRoot !== 'object' ||
+    baseRoot === null ||
+    Array.isArray(baseRoot)
+  ) {
+    throw new Error(
+      'Pinned empty Inochi fixture has no root node object.',
+    );
+  }
+
+  const sourcePart = selectedPart.node;
+  const reducedPart = {
+    uuid:
+      sourcePart.uuid ??
+      sourcePart.guid ??
+      4200000001,
+    name:
+      typeof sourcePart.name === 'string'
+        ? sourcePart.name
+        : 'Official Aka Part',
+    type: 'Part',
+    enabled:
+      typeof sourcePart.enabled === 'boolean'
+        ? sourcePart.enabled
+        : true,
+    zsort: 0,
+    transform:
+      typeof sourcePart.transform === 'object' &&
+      sourcePart.transform !== null
+        ? sourcePart.transform
+        : {
+            trans: [0, 0, 0],
+            rot: [0, 0, 0],
+            scale: [1, 1],
+          },
+    lockToRoot:
+      sourcePart.lockToRoot === true,
+    mesh: {
+      verts: sourcePart.mesh.verts,
+      uvs: sourcePart.mesh.uvs,
+      indices: sourcePart.mesh.indices,
+    },
+    textures: Array.isArray(sourcePart.textures)
+      ? sourcePart.textures
+      : [],
+    blend_mode: 0,
+    tint: Array.isArray(sourcePart.tint)
+      ? sourcePart.tint
+      : [1, 1, 1],
+    screenTint: Array.isArray(sourcePart.screenTint)
+      ? sourcePart.screenTint
+      : [0, 0, 0],
+    emissionStrength:
+      typeof sourcePart.emissionStrength === 'number'
+        ? sourcePart.emissionStrength
+        : 1,
+    opacity:
+      typeof sourcePart.opacity === 'number'
+        ? sourcePart.opacity
+        : 1,
+    children: [],
+  };
+
+  base.meta = {
+    ...(base.meta ?? {}),
+    name: 'Aka Browser Proof',
+    rigger:
+      typeof sourcePayload.meta?.rigger === 'string'
+        ? sourcePayload.meta.rigger
+        : 'seagetch',
+    artist:
+      typeof sourcePayload.meta?.artist === 'string'
+        ? sourcePayload.meta.artist
+        : 'seagetch',
+  };
+  baseRoot.children = [reducedPart];
+  base.param = [
+    legacyParameterFromOfficial(selectedParameter),
+  ];
+  delete base.animation;
+  delete base.animations;
+
+  return {
+    payload: base,
+    sourceNodeCount: entries.length,
+    selectedNodeCount: 2,
+    sourceParameterCount: parameters.length,
+    selectedParameterName:
+      typeof selectedParameter.name === 'string'
+        ? selectedParameter.name
+        : '',
+    selectedPartName:
+      typeof sourcePart.name === 'string'
+        ? sourcePart.name
+        : '',
+  };
+}
+
+function collectReferencedTextureSlots(node, textureCount) {
+  const slots = new Set();
+
+  function visit(current) {
+    if (
+      typeof current !== 'object' ||
+      current === null ||
+      Array.isArray(current)
+    ) {
+      return;
+    }
+
+    if (Array.isArray(current.textures)) {
+      for (const slot of current.textures) {
+        if (
+          Number.isInteger(slot) &&
+          slot >= 0 &&
+          slot < textureCount
+        ) {
+          slots.add(slot);
+        }
+      }
+    }
+
+    if (Array.isArray(current.children)) {
+      for (const child of current.children) {
+        visit(child);
+      }
+    }
+  }
+
+  visit(node);
+  return [...slots].sort((a, b) => a - b);
+}
+
+function remapReferencedTextureSlots(node, slotMap) {
+  if (
+    typeof node !== 'object' ||
+    node === null ||
+    Array.isArray(node)
+  ) {
+    return;
+  }
+
+  if (Array.isArray(node.textures)) {
+    node.textures = node.textures.map((slot) =>
+      slotMap.has(slot) ? slotMap.get(slot) : slot,
+    );
+  }
+
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      remapReferencedTextureSlots(child, slotMap);
+    }
+  }
+}
+
+function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
+  if (readInp1Tag(sourceBytes, 0) !== 'TRNSRTS\0') {
+    throw new Error(
+      'Pinned official real-rig fixture is not an INP1 container.',
+    );
+  }
+
+  const payloadLength = readUint32be(sourceBytes, 8);
+  const payloadStart = 12;
+  const textureSectionOffset = payloadStart + payloadLength;
+  const sourcePayload = JSON.parse(
+    new TextDecoder().decode(
+      sourceBytes.subarray(
+        payloadStart,
+        textureSectionOffset,
+      ),
+    ),
+  );
+  const reduced = reduceRealRigPayload(sourcePayload, emptyBytes);
+
+  if (
+    readInp1Tag(sourceBytes, textureSectionOffset) !==
+    'TEX_SECT'
+  ) {
+    throw new Error(
+      'Pinned official real-rig fixture does not expose the expected INP1 texture section after its payload.',
+    );
+  }
+
+  let offset = textureSectionOffset + 8;
+  const sourceTextureCount = readUint32be(sourceBytes, offset);
+  offset += 4;
+
+  if (sourceTextureCount === 0) {
+    throw new Error(
+      'Pinned official real-rig fixture unexpectedly contains no textures.',
+    );
+  }
+
+  const referencedTextureSlots =
+    collectReferencedTextureSlots(
+      reduced.payload.nodes,
+      sourceTextureCount,
+    );
+
+  if (referencedTextureSlots.length === 0) {
+    throw new Error(
+      'Reduced official real rig unexpectedly references no texture slots.',
+    );
+  }
+
+  const slotMap = new Map(
+    referencedTextureSlots.map((slot, index) => [
+      slot,
+      index,
+    ]),
+  );
+  remapReferencedTextureSlots(
+    reduced.payload.nodes,
+    slotMap,
+  );
+
+  const reducedPayloadBytes = new TextEncoder().encode(
+    JSON.stringify(reduced.payload),
+  );
+  const replacementTexture = createTinyTga();
+  const replacementParts = [
+    new TextEncoder().encode('TRNSRTS\0'),
+    uint32be(reducedPayloadBytes.byteLength),
+    reducedPayloadBytes,
+    new TextEncoder().encode('TEX_SECT'),
+    uint32be(referencedTextureSlots.length),
+  ];
+  const referencedTextureSet =
+    new Set(referencedTextureSlots);
+  let originalTextureBytes = 0;
+  let sourceTextureBytes = 0;
+
+  for (
+    let index = 0;
+    index < sourceTextureCount;
+    index += 1
+  ) {
+    const dataLength = readUint32be(sourceBytes, offset);
+    offset += 4;
+
+    if (offset >= sourceBytes.byteLength) {
+      throw new Error(
+        `Pinned real-rig texture ${String(index)} is missing its encoding byte.`,
+      );
+    }
+
+    offset += 1;
+    const dataEnd = offset + dataLength;
+
+    if (dataEnd > sourceBytes.byteLength) {
+      throw new Error(
+        `Pinned real-rig texture ${String(index)} exceeds fixture bounds.`,
+      );
+    }
+
+    sourceTextureBytes += dataLength;
+
+    if (referencedTextureSet.has(index)) {
+      originalTextureBytes += dataLength;
+      replacementParts.push(
+        uint32be(replacementTexture.byteLength),
+        Uint8Array.of(1),
+        replacementTexture,
+      );
+    }
+
+    offset = dataEnd;
+  }
+
+  const suffix = sourceBytes.subarray(offset);
+
+  if (
+    suffix.byteLength > 0 &&
+    readInp1Tag(suffix, 0) !== 'EXT_SECT'
+  ) {
+    throw new Error(
+      'Pinned official real-rig fixture has an unexpected section after TEX_SECT.',
+    );
+  }
+
+  return {
+    bytes: concatBytes(...replacementParts, suffix),
+    textureCount: referencedTextureSlots.length,
+    sourceTextureCount,
+    referencedTextureSlots,
+    originalTextureBytes,
+    sourceTextureBytes,
+    payloadLength,
+    reducedPayloadLength: reducedPayloadBytes.byteLength,
+    sourceNodeCount: reduced.sourceNodeCount,
+    selectedNodeCount: reduced.selectedNodeCount,
+    sourceParameterCount: reduced.sourceParameterCount,
+    selectedParameterName: reduced.selectedParameterName,
+    selectedPartName: reduced.selectedPartName,
+  };
 }
 
 function parseEmptyPayload(bytes) {
@@ -223,8 +815,8 @@ function createInp1VisualFixture(emptyBytes, includeTexture) {
   );
 }
 
-async function fetchPinnedEmptyFixture() {
-  const response = await fetch(EMPTY_FIXTURE.url, {
+async function fetchPinnedFixture(fixture, label) {
+  const response = await fetch(fixture.url, {
     redirect: 'follow',
     headers: {
       'user-agent': 'outsider-driver-browser-validation',
@@ -233,7 +825,7 @@ async function fetchPinnedEmptyFixture() {
 
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch pinned Inochi2D empty fixture: HTTP ${String(response.status)}`,
+      `Failed to fetch pinned Inochi2D ${label} fixture: HTTP ${String(response.status)}`,
     );
   }
 
@@ -242,9 +834,46 @@ async function fetchPinnedEmptyFixture() {
   );
   const blobSha = gitBlobSha(bytes);
 
-  if (blobSha !== EMPTY_FIXTURE.gitBlobSha) {
+  if (blobSha !== fixture.gitBlobSha) {
     throw new Error(
-      `Inochi2D empty fixture Git blob mismatch: expected ${EMPTY_FIXTURE.gitBlobSha}, received ${blobSha}.`,
+      `Inochi2D ${label} fixture Git blob mismatch: expected ${fixture.gitBlobSha}, received ${blobSha}.`,
+    );
+  }
+
+  return bytes;
+}
+
+async function fetchPinnedSha256Fixture(fixture, label) {
+  const response = await fetch(fixture.url, {
+    redirect: 'follow',
+    headers: {
+      'user-agent': 'outsider-driver-browser-validation',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch pinned Inochi2D ${label} fixture: HTTP ${String(response.status)}`,
+    );
+  }
+
+  const bytes = new Uint8Array(
+    await response.arrayBuffer(),
+  );
+
+  if (bytes.byteLength !== fixture.byteLength) {
+    throw new Error(
+      `Inochi2D ${label} fixture size mismatch: expected ${String(fixture.byteLength)}, received ${String(bytes.byteLength)}.`,
+    );
+  }
+
+  const digest = createHash('sha256')
+    .update(bytes)
+    .digest('hex');
+
+  if (digest !== fixture.sha256) {
+    throw new Error(
+      `Inochi2D ${label} fixture SHA-256 mismatch: expected ${fixture.sha256}, received ${digest}.`,
     );
   }
 
@@ -252,7 +881,13 @@ async function fetchPinnedEmptyFixture() {
 }
 
 async function main() {
-  const emptyBytes = await fetchPinnedEmptyFixture();
+  const [emptyBytes, realRigBytes] = await Promise.all([
+    fetchPinnedFixture(EMPTY_FIXTURE, 'empty'),
+    fetchPinnedSha256Fixture(
+      REAL_RIG_FIXTURE,
+      'official Aka real rig',
+    ),
+  ]);
   const meshBytes = createInp1VisualFixture(
     emptyBytes,
     false,
@@ -261,17 +896,25 @@ async function main() {
     emptyBytes,
     true,
   );
+  const realRigSmoke =
+    createRealRigSmokeFixture(realRigBytes, emptyBytes);
 
   await mkdir(dirname(EMPTY_FIXTURE.outputPath), {
     recursive: true,
   });
   await writeFile(EMPTY_FIXTURE.outputPath, emptyBytes);
+  await writeFile(
+    REAL_RIG_FIXTURE.rigSmokeOutputPath,
+    realRigSmoke.bytes,
+  );
   await writeFile(MESH_FIXTURE_PATH, meshBytes);
   await writeFile(VISUAL_FIXTURE_PATH, visualBytes);
 
   process.stdout.write(
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
+      `pinned official Aka real rig (${String(realRigBytes.byteLength)} bytes; ${REAL_RIG_FIXTURE.source})`,
+      `Aka rig-smoke fixture (${String(realRigSmoke.bytes.byteLength)} bytes; payload ${String(realRigSmoke.payloadLength)} -> ${String(realRigSmoke.reducedPayloadLength)} bytes; nodes ${String(realRigSmoke.sourceNodeCount)} -> ${String(realRigSmoke.selectedNodeCount)}; parameter ${realRigSmoke.selectedParameterName}; part ${realRigSmoke.selectedPartName}; texture slots ${realRigSmoke.referencedTextureSlots.join(',')} -> 0..${String(realRigSmoke.textureCount - 1)} (${String(realRigSmoke.textureCount)} of ${String(realRigSmoke.sourceTextureCount)} source slots; ${String(realRigSmoke.originalTextureBytes)} of ${String(realRigSmoke.sourceTextureBytes)} source texture bytes represented))`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),

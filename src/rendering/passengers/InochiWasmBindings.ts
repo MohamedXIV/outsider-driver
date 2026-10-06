@@ -70,6 +70,77 @@ interface InochiWasmExports extends WebAssembly.Exports {
 }
 
 const WASM_START_SECTION_ID = 8;
+const WASM_PAGE_BYTES = 65_536;
+const DEFAULT_WASM_MEMORY_FLOOR_PAGES = 2_048;
+
+export function growWasmMemoryToMinimumPages(
+  memory: WebAssembly.Memory,
+  minimumPages: number,
+): number {
+  if (
+    !Number.isSafeInteger(minimumPages) ||
+    minimumPages <= 0 ||
+    minimumPages > 65_536
+  ) {
+    throw new Error(
+      `Invalid Inochi WASM minimum memory page count: ${String(minimumPages)}.`,
+    );
+  }
+
+  const currentPages =
+    memory.buffer.byteLength / WASM_PAGE_BYTES;
+
+  if (!Number.isInteger(currentPages)) {
+    throw new Error(
+      'Inochi WASM memory byte length is not page-aligned.',
+    );
+  }
+
+  if (currentPages < minimumPages) {
+    try {
+      memory.grow(minimumPages - currentPages);
+    } catch (error) {
+      throw new Error(
+        `Inochi2D could not grow WASM memory from ${String(currentPages)} to ${String(minimumPages)} pages.`,
+        { cause: error },
+      );
+    }
+  }
+
+  return memory.buffer.byteLength / WASM_PAGE_BYTES;
+}
+
+export interface InochiWasmStagingRegion {
+  readonly pointer: number;
+  readonly capacity: number;
+}
+
+export function reserveUnmanagedWasmStaging(
+  memory: WebAssembly.Memory,
+  byteLength: number,
+): InochiWasmStagingRegion {
+  if (!Number.isSafeInteger(byteLength) || byteLength <= 0) {
+    throw new Error(
+      `Invalid Inochi WASM staging byte length: ${String(byteLength)}.`,
+    );
+  }
+
+  const pages = Math.ceil(byteLength / WASM_PAGE_BYTES);
+
+  try {
+    const previousPages = memory.grow(pages);
+
+    return {
+      pointer: previousPages * WASM_PAGE_BYTES,
+      capacity: pages * WASM_PAGE_BYTES,
+    };
+  } catch (error) {
+    throw new Error(
+      `Inochi2D could not reserve ${String(byteLength)} bytes of unmanaged WASM staging memory.`,
+      { cause: error },
+    );
+  }
+}
 
 function readUnsignedLeb128(
   bytes: Uint8Array,
@@ -150,6 +221,63 @@ export function hasWasmStartSection(buffer: ArrayBuffer): boolean {
   return false;
 }
 
+
+export function stripWasmStartSection(
+  buffer: ArrayBuffer,
+): ArrayBuffer {
+  const bytes = new Uint8Array(buffer);
+
+  if (
+    bytes.length < 8 ||
+    bytes[0] !== 0x00 ||
+    bytes[1] !== 0x61 ||
+    bytes[2] !== 0x73 ||
+    bytes[3] !== 0x6d ||
+    bytes[4] !== 0x01 ||
+    bytes[5] !== 0x00 ||
+    bytes[6] !== 0x00 ||
+    bytes[7] !== 0x00
+  ) {
+    throw new Error('Invalid WebAssembly module header.');
+  }
+
+  let offset = 8;
+
+  while (offset < bytes.length) {
+    const sectionStart = offset;
+    const sectionId = bytes[offset];
+
+    if (sectionId === undefined) {
+      break;
+    }
+
+    offset += 1;
+    const size = readUnsignedLeb128(bytes, offset);
+    const payloadStart = size.nextOffset;
+    const sectionEnd = payloadStart + size.value;
+
+    if (sectionEnd > bytes.length) {
+      throw new Error('WASM section extends beyond module bytes.');
+    }
+
+    if (sectionId === WASM_START_SECTION_ID) {
+      const result = new Uint8Array(
+        bytes.length - (sectionEnd - sectionStart),
+      );
+      result.set(bytes.subarray(0, sectionStart), 0);
+      result.set(
+        bytes.subarray(sectionEnd),
+        sectionStart,
+      );
+      return result.buffer;
+    }
+
+    offset = sectionEnd;
+  }
+
+  return bytes.slice().buffer;
+}
+
 function createWasiImports(): WebAssembly.Imports {
   return {
     env: {
@@ -204,11 +332,13 @@ export class InochiWasmBindings
 {
   readonly #exports: InochiWasmExports;
   #countPointer = 0;
+  #allocatorTouched = false;
+  #stagingPointer: number | null = null;
+  #stagingCapacity = 0;
   #disposed = false;
 
   private constructor(exports: InochiWasmExports) {
     this.#exports = exports;
-    this.#getCountPointer();
   }
 
   public static async create(
@@ -219,8 +349,12 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
+    const hasStart = hasWasmStartSection(bytes);
+    const instantiationBytes = hasStart
+      ? stripWasmStartSection(bytes)
+      : bytes;
     const instantiated = await WebAssembly.instantiate(
-      bytes,
+      instantiationBytes,
       createWasiImports(),
     );
     const exports = instantiated.instance
@@ -236,11 +370,18 @@ export class InochiWasmBindings
       );
     }
 
-    // Match the official Inochi2D TypeScript wrapper exactly: the
-    // module's WASM Start section is not a substitute for the exported
-    // library initialization call. Initialize the library after
-    // instantiation, then allocate the wrapper-style query scratchpad.
+    // The official executable artifact wires in_init into the WASM
+    // Start section. Strip that section before instantiation so its
+    // constructors cannot initialize walloc against the artifact's
+    // small initial memory. Grow first, then invoke in_init exactly once
+    // ourselves. A future reactor-style artifact without a Start
+    // section follows the same explicit initialization path.
+    growWasmMemoryToMinimumPages(
+      exports.memory,
+      DEFAULT_WASM_MEMORY_FLOOR_PAGES,
+    );
     exports.in_init();
+
     return new InochiWasmBindings(exports);
   }
 
@@ -252,28 +393,41 @@ export class InochiWasmBindings
     }
 
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
+    this.#allocatorTouched = true;
 
-    if (dataPointer === 0) {
-      throw new Error(
-        `Inochi2D could not allocate ${String(data.byteLength)} bytes for a puppet asset using the official heap allocator.`,
-      );
+    if (dataPointer !== 0) {
+      try {
+        new Uint8Array(
+          this.#exports.memory.buffer,
+          dataPointer,
+          data.byteLength,
+        ).set(new Uint8Array(data));
+
+        return this.#exports.in_puppet_load_from_memory(
+          dataPointer,
+          data.byteLength,
+          0,
+        );
+      } finally {
+        this.#exports.nu_free(dataPointer);
+      }
     }
 
-    try {
-      new Uint8Array(
-        this.#exports.memory.buffer,
-        dataPointer,
-        data.byteLength,
-      ).set(new Uint8Array(data));
+    const stagingPointer = this.#getPuppetInputStaging(
+      data.byteLength,
+    );
 
-      return this.#exports.in_puppet_load_from_memory(
-        dataPointer,
-        data.byteLength,
-        0,
-      );
-    } finally {
-      this.#exports.nu_free(dataPointer);
-    }
+    new Uint8Array(
+      this.#exports.memory.buffer,
+      stagingPointer,
+      data.byteLength,
+    ).set(new Uint8Array(data));
+
+    return this.#exports.in_puppet_load_from_memory(
+      stagingPointer,
+      data.byteLength,
+      0,
+    );
   }
 
   public freePuppet(puppetPointer: number): void {
@@ -544,6 +698,38 @@ export class InochiWasmBindings
     this.#disposed = true;
   }
 
+  #getPuppetInputStaging(byteLength: number): number {
+    if (
+      this.#stagingPointer !== null &&
+      this.#stagingCapacity >= byteLength
+    ) {
+      return this.#stagingPointer;
+    }
+
+    if (!this.#allocatorTouched) {
+      throw new Error(
+        'Inochi2D allocator must be touched before reserving puppet staging memory.',
+      );
+    }
+
+    // loadPuppet() touches walloc before this method can run.
+    // Growing memory afterwards creates pages beyond walloc's tracked
+    // heap. Subsequent walloc growth starts after these pages, so the
+    // borrowed input region cannot overlap allocator-owned blocks.
+    //
+    // Upstream in_puppet_load_from_memory wraps caller bytes in a
+    // MemoryStream and calls take() before destroying the stream; it
+    // therefore borrows this input synchronously and does not nu_free it.
+    const staging = reserveUnmanagedWasmStaging(
+      this.#exports.memory,
+      byteLength,
+    );
+
+    this.#stagingPointer = staging.pointer;
+    this.#stagingCapacity = staging.capacity;
+    return staging.pointer;
+  }
+
   #parameterDimensions(parameterPointer: number): number {
     const dimensions =
       this.#exports.in_parameter_get_dimensions(
@@ -569,6 +755,7 @@ export class InochiWasmBindings
     }
 
     const pointer = this.#exports.nu_realloc(0, 128);
+    this.#allocatorTouched = true;
 
     if (pointer === 0) {
       throw new Error(
