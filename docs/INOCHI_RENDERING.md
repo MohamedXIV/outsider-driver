@@ -4,11 +4,11 @@ Important passenger puppets are rendered through the official Inochi2D WebAssemb
 
 ## Runtime supply
 
-`npm run runtime:prepare` downloads the pinned official Inochi2D WASM release archive and verifies its SHA-256 digest before extracting the runtime to the generated public vendor directory.
+`npm run runtime:prepare` downloads the pinned official Inochi2D nightly WASM artifact and verifies its SHA-256 digest before extracting the runtime to the generated public vendor directory. The current production pin uses the verified debug artifact as a fallback because the matching release artifact returns null from `nu_malloc` even for the 128-byte query scratchpad.
 
 The binary is not committed to Git. The BSD-2-Clause license is distributed in `public/third-party/Inochi2D-LICENSE.txt`.
 
-Build/dev commands prepare the runtime automatically. A changed upstream nightly artifact with a different digest fails the build rather than silently changing renderer behavior.
+Build/dev commands prepare the runtime automatically. A changed upstream nightly artifact with a different digest fails the build rather than silently changing renderer behavior. The executable WASM Start section is deferred so memory can be prepared first, then `in_init()` is called exactly once; one runtime instance is reused across puppet lifecycles.
 
 ## Boundary layers
 
@@ -113,9 +113,11 @@ Unit/runtime validation covers:
 The production browser smoke additionally:
 
 - provisions the digest-verified official WASM runtime;
-- loads a valid generated Inochi puppet through the real runtime;
-- extracts a real draw frame;
-- renders that frame through Babylon inside the real TaxiScene passenger seat;
-- reports the live draw-state/blend summary.
+- loads the generated semantic puppet through the real runtime for parameter/performance-channel coverage;
+- derives a deterministic browser proof from the pinned official `Inochi2D/example-models` Aka asset while retaining authored mesh/UV/index data and the `Eye:: Right:: Move` parameter identity/range;
+- compacts the single referenced Aka texture slot and normalizes legacy-only fields that the current WASM loader cannot consume safely once the Part is isolated;
+- loads that authored-asset derivative through the same reused runtime;
+- mutates its parameter, extracts a real draw frame, and renders it through Babylon at `taxi-anchor-passenger-seat`;
+- reports the live draw-state/blend summary and requires `taxiRenderSucceeded === true` with no render error.
 
-Small generated/pinned fixtures exercise production architecture. They are not a separate demo/vertical-slice renderer.
+The full legacy v0.7 Aka rig is not claimed to render unchanged in the current WASM runtime. The verified boundary is deterministic authored-asset preprocessing → Inochi runtime → normalized draw frame → Babylon TaxiScene. Small generated/pinned fixtures exercise production architecture; they are not a separate demo/vertical-slice renderer.
