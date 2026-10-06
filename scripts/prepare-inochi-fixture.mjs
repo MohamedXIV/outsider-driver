@@ -104,6 +104,301 @@ function readUint32be(bytes, offset) {
   ).getUint32(0, false);
 }
 
+function nodeGuid(node) {
+  if (
+    typeof node !== 'object' ||
+    node === null ||
+    Array.isArray(node)
+  ) {
+    return null;
+  }
+
+  const value = node.guid ?? node.uuid;
+
+  return typeof value === 'string' ||
+    typeof value === 'number'
+    ? String(value)
+    : null;
+}
+
+function collectNodeIndex(root) {
+  const entries = [];
+  const byGuid = new Map();
+
+  function visit(node, parent = null) {
+    if (
+      typeof node !== 'object' ||
+      node === null ||
+      Array.isArray(node)
+    ) {
+      return;
+    }
+
+    const entry = { node, parent };
+    entries.push(entry);
+
+    const guid = nodeGuid(node);
+
+    if (guid !== null) {
+      if (byGuid.has(guid)) {
+        throw new Error(
+          `Pinned official real rig contains duplicate node GUID ${guid}.`,
+        );
+      }
+
+      byGuid.set(guid, entry);
+    }
+
+    if (Array.isArray(node.children)) {
+      for (const child of node.children) {
+        visit(child, entry);
+      }
+    }
+  }
+
+  visit(root);
+  return { entries, byGuid };
+}
+
+function collectReferencedNodes(value, byGuid) {
+  const refs = new Set();
+  const visited = new Set();
+
+  function visit(current, key = '') {
+    if (
+      current === null ||
+      current === undefined
+    ) {
+      return;
+    }
+
+    if (
+      typeof current === 'string' ||
+      typeof current === 'number'
+    ) {
+      const match = byGuid.get(String(current));
+
+      if (match !== undefined) {
+        refs.add(match);
+      }
+
+      return;
+    }
+
+    if (
+      typeof current !== 'object' ||
+      visited.has(current)
+    ) {
+      return;
+    }
+
+    visited.add(current);
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        visit(item);
+      }
+      return;
+    }
+
+    for (const [childKey, childValue] of Object.entries(current)) {
+      if (
+        childKey === 'children' ||
+        childKey === 'guid' ||
+        childKey === 'uuid'
+      ) {
+        continue;
+      }
+
+      visit(childValue, childKey);
+    }
+  }
+
+  visit(value);
+  return refs;
+}
+
+function isRenderablePart(node) {
+  if (
+    typeof node !== 'object' ||
+    node === null ||
+    Array.isArray(node) ||
+    node.type !== 'Part'
+  ) {
+    return false;
+  }
+
+  const mesh = node.mesh;
+
+  return (
+    typeof mesh === 'object' &&
+    mesh !== null &&
+    !Array.isArray(mesh) &&
+    Array.isArray(mesh.verts) &&
+    mesh.verts.length >= 6 &&
+    Array.isArray(mesh.indices) &&
+    mesh.indices.length >= 3
+  );
+}
+
+function reduceRealRigPayload(sourcePayload) {
+  const root = sourcePayload.nodes;
+
+  if (
+    typeof root !== 'object' ||
+    root === null ||
+    Array.isArray(root)
+  ) {
+    throw new Error(
+      'Pinned official real rig has no root node object.',
+    );
+  }
+
+  const { entries, byGuid } = collectNodeIndex(root);
+  const renderableEntries = entries.filter(({ node }) =>
+    isRenderablePart(node),
+  );
+  const parameters = Array.isArray(sourcePayload.param)
+    ? sourcePayload.param
+    : [];
+
+  if (renderableEntries.length === 0) {
+    throw new Error(
+      'Pinned official real rig contains no renderable Part node.',
+    );
+  }
+
+  if (parameters.length === 0) {
+    throw new Error(
+      'Pinned official real rig contains no parameters.',
+    );
+  }
+
+  let selectedPart = renderableEntries[0];
+  let selectedParameter = parameters[0];
+  let selectedParameterRefs =
+    collectReferencedNodes(selectedParameter, byGuid);
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const parameter of parameters) {
+    const refs = collectReferencedNodes(parameter, byGuid);
+    const linkedParts = renderableEntries.filter((entry) =>
+      refs.has(entry),
+    );
+
+    if (
+      linkedParts.length > 0 &&
+      refs.size < bestScore
+    ) {
+      selectedPart = linkedParts[0];
+      selectedParameter = parameter;
+      selectedParameterRefs = refs;
+      bestScore = refs.size;
+    }
+  }
+
+  const selected = new Set();
+
+  function includePath(entry) {
+    let current = entry;
+
+    while (current !== null) {
+      selected.add(current);
+      current = current.parent;
+    }
+  }
+
+  includePath(selectedPart);
+
+  for (const entry of selectedParameterRefs) {
+    includePath(entry);
+  }
+
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+
+    for (const entry of [...selected]) {
+      for (const dependency of collectReferencedNodes(
+        entry.node,
+        byGuid,
+      )) {
+        if (!selected.has(dependency)) {
+          includePath(dependency);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  function cloneSelected(entry) {
+    const clone = {};
+
+    for (const [key, value] of Object.entries(entry.node)) {
+      if (key !== 'children') {
+        clone[key] = value;
+      }
+    }
+
+    const children = Array.isArray(entry.node.children)
+      ? entry.node.children
+      : [];
+    const keptChildren = [];
+
+    for (const child of children) {
+      const childGuid = nodeGuid(child);
+      const childEntry =
+        childGuid === null ? null : byGuid.get(childGuid);
+
+      if (
+        childEntry !== undefined &&
+        childEntry !== null &&
+        selected.has(childEntry)
+      ) {
+        keptChildren.push(cloneSelected(childEntry));
+      }
+    }
+
+    clone.children = keptChildren;
+    return clone;
+  }
+
+  const rootGuid = nodeGuid(root);
+  const rootEntry =
+    rootGuid === null ? entries[0] : byGuid.get(rootGuid);
+
+  if (rootEntry === undefined) {
+    throw new Error(
+      'Pinned official real rig root node could not be indexed.',
+    );
+  }
+
+  const reduced = {
+    ...sourcePayload,
+    nodes: cloneSelected(rootEntry),
+    param: [selectedParameter],
+  };
+
+  delete reduced.animation;
+  delete reduced.animations;
+
+  return {
+    payload: reduced,
+    sourceNodeCount: entries.length,
+    selectedNodeCount: selected.size,
+    sourceParameterCount: parameters.length,
+    selectedParameterName:
+      typeof selectedParameter.name === 'string'
+        ? selectedParameter.name
+        : '',
+    selectedPartName:
+      typeof selectedPart.node.name === 'string'
+        ? selectedPart.node.name
+        : '',
+  };
+}
+
 function createRealRigSmokeFixture(sourceBytes) {
   if (readInp1Tag(sourceBytes, 0) !== 'TRNSRTS\0') {
     throw new Error(
@@ -112,7 +407,20 @@ function createRealRigSmokeFixture(sourceBytes) {
   }
 
   const payloadLength = readUint32be(sourceBytes, 8);
-  const textureSectionOffset = 12 + payloadLength;
+  const payloadStart = 12;
+  const textureSectionOffset = payloadStart + payloadLength;
+  const sourcePayload = JSON.parse(
+    new TextDecoder().decode(
+      sourceBytes.subarray(
+        payloadStart,
+        textureSectionOffset,
+      ),
+    ),
+  );
+  const reduced = reduceRealRigPayload(sourcePayload);
+  const reducedPayloadBytes = new TextEncoder().encode(
+    JSON.stringify(reduced.payload),
+  );
 
   if (
     readInp1Tag(sourceBytes, textureSectionOffset) !==
@@ -135,7 +443,9 @@ function createRealRigSmokeFixture(sourceBytes) {
 
   const replacementTexture = createTinyTga();
   const replacementParts = [
-    sourceBytes.subarray(0, textureSectionOffset),
+    new TextEncoder().encode('TRNSRTS\0'),
+    uint32be(reducedPayloadBytes.byteLength),
+    reducedPayloadBytes,
     new TextEncoder().encode('TEX_SECT'),
     uint32be(textureCount),
   ];
@@ -186,6 +496,12 @@ function createRealRigSmokeFixture(sourceBytes) {
     textureCount,
     originalTextureBytes,
     payloadLength,
+    reducedPayloadLength: reducedPayloadBytes.byteLength,
+    sourceNodeCount: reduced.sourceNodeCount,
+    selectedNodeCount: reduced.selectedNodeCount,
+    sourceParameterCount: reduced.sourceParameterCount,
+    selectedParameterName: reduced.selectedParameterName,
+    selectedPartName: reduced.selectedPartName,
   };
 }
 
@@ -443,7 +759,7 @@ async function main() {
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
       `pinned official Aka real rig (${String(realRigBytes.byteLength)} bytes; ${REAL_RIG_FIXTURE.source})`,
-      `Aka rig-smoke fixture (${String(realRigSmoke.bytes.byteLength)} bytes; payload ${String(realRigSmoke.payloadLength)} bytes; ${String(realRigSmoke.textureCount)} texture slots normalized from ${String(realRigSmoke.originalTextureBytes)} source texture bytes)`,
+      `Aka rig-smoke fixture (${String(realRigSmoke.bytes.byteLength)} bytes; payload ${String(realRigSmoke.payloadLength)} -> ${String(realRigSmoke.reducedPayloadLength)} bytes; nodes ${String(realRigSmoke.sourceNodeCount)} -> ${String(realRigSmoke.selectedNodeCount)}; parameter ${realRigSmoke.selectedParameterName}; part ${realRigSmoke.selectedPartName}; ${String(realRigSmoke.textureCount)} texture slots normalized from ${String(realRigSmoke.originalTextureBytes)} source texture bytes)`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
