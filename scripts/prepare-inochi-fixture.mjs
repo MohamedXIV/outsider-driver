@@ -8,12 +8,13 @@ const EMPTY_FIXTURE = {
   outputPath: resolve('dist/__fixtures__/empty08.inx'),
 };
 
-const ADA_FIXTURE = {
-  url: 'https://raw.githubusercontent.com/Inochi2D/inochi2d/4975d247f9b946a74d18e0ba9b3e9475eb636efb/examples/ada-static.inx',
-  gitBlobSha: 'afd5f426a5785255243543949db88a8120d80109',
-  outputPath: resolve('dist/__fixtures__/ada-static.inx'),
+const REAL_RIG_FIXTURE = {
+  source: 'Inochi2D/example-models@cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
+  url: 'https://media.githubusercontent.com/media/Inochi2D/example-models/cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
+  sha256: 'dbf82ffb86d1c761bca883ad37ec1c47487a447f8104290b459ce60aaee81e0f',
+  byteLength: 17_731_911,
   rigSmokeOutputPath: resolve(
-    'dist/__fixtures__/ada-rig-smoke.inx',
+    'dist/__fixtures__/aka-rig-smoke.inx',
   ),
 };
 
@@ -103,59 +104,59 @@ function readUint32be(bytes, offset) {
   ).getUint32(0, false);
 }
 
-function createAdaRigSmokeFixture(adaBytes) {
-  if (readInp1Tag(adaBytes, 0) !== 'TRNSRTS\0') {
+function createRealRigSmokeFixture(sourceBytes) {
+  if (readInp1Tag(sourceBytes, 0) !== 'TRNSRTS\0') {
     throw new Error(
-      'Pinned Ada fixture is not an INP1 container.',
+      'Pinned official real-rig fixture is not an INP1 container.',
     );
   }
 
-  const payloadLength = readUint32be(adaBytes, 8);
+  const payloadLength = readUint32be(sourceBytes, 8);
   const textureSectionOffset = 12 + payloadLength;
 
   if (
-    readInp1Tag(adaBytes, textureSectionOffset) !==
+    readInp1Tag(sourceBytes, textureSectionOffset) !==
     'TEX_SECT'
   ) {
     throw new Error(
-      'Pinned Ada fixture does not expose the expected INP1 texture section after its payload.',
+      'Pinned official real-rig fixture does not expose the expected INP1 texture section after its payload.',
     );
   }
 
   let offset = textureSectionOffset + 8;
-  const textureCount = readUint32be(adaBytes, offset);
+  const textureCount = readUint32be(sourceBytes, offset);
   offset += 4;
 
   if (textureCount === 0) {
     throw new Error(
-      'Pinned Ada fixture unexpectedly contains no textures.',
+      'Pinned official real-rig fixture unexpectedly contains no textures.',
     );
   }
 
   const replacementTexture = createTinyTga();
   const replacementParts = [
-    adaBytes.subarray(0, textureSectionOffset),
+    sourceBytes.subarray(0, textureSectionOffset),
     new TextEncoder().encode('TEX_SECT'),
     uint32be(textureCount),
   ];
   let originalTextureBytes = 0;
 
   for (let index = 0; index < textureCount; index += 1) {
-    const dataLength = readUint32be(adaBytes, offset);
+    const dataLength = readUint32be(sourceBytes, offset);
     offset += 4;
 
-    if (offset >= adaBytes.byteLength) {
+    if (offset >= sourceBytes.byteLength) {
       throw new Error(
-        `Pinned Ada texture ${String(index)} is missing its encoding byte.`,
+        `Pinned real-rig texture ${String(index)} is missing its encoding byte.`,
       );
     }
 
     offset += 1;
     const dataEnd = offset + dataLength;
 
-    if (dataEnd > adaBytes.byteLength) {
+    if (dataEnd > sourceBytes.byteLength) {
       throw new Error(
-        `Pinned Ada texture ${String(index)} exceeds fixture bounds.`,
+        `Pinned real-rig texture ${String(index)} exceeds fixture bounds.`,
       );
     }
 
@@ -169,14 +170,14 @@ function createAdaRigSmokeFixture(adaBytes) {
     );
   }
 
-  const suffix = adaBytes.subarray(offset);
+  const suffix = sourceBytes.subarray(offset);
 
   if (
     suffix.byteLength > 0 &&
     readInp1Tag(suffix, 0) !== 'EXT_SECT'
   ) {
     throw new Error(
-      'Pinned Ada fixture has an unexpected section after TEX_SECT.',
+      'Pinned official real-rig fixture has an unexpected section after TEX_SECT.',
     );
   }
 
@@ -184,6 +185,7 @@ function createAdaRigSmokeFixture(adaBytes) {
     bytes: concatBytes(...replacementParts, suffix),
     textureCount,
     originalTextureBytes,
+    payloadLength,
   };
 }
 
@@ -370,10 +372,50 @@ async function fetchPinnedFixture(fixture, label) {
   return bytes;
 }
 
+async function fetchPinnedSha256Fixture(fixture, label) {
+  const response = await fetch(fixture.url, {
+    redirect: 'follow',
+    headers: {
+      'user-agent': 'outsider-driver-browser-validation',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch pinned Inochi2D ${label} fixture: HTTP ${String(response.status)}`,
+    );
+  }
+
+  const bytes = new Uint8Array(
+    await response.arrayBuffer(),
+  );
+
+  if (bytes.byteLength !== fixture.byteLength) {
+    throw new Error(
+      `Inochi2D ${label} fixture size mismatch: expected ${String(fixture.byteLength)}, received ${String(bytes.byteLength)}.`,
+    );
+  }
+
+  const digest = createHash('sha256')
+    .update(bytes)
+    .digest('hex');
+
+  if (digest !== fixture.sha256) {
+    throw new Error(
+      `Inochi2D ${label} fixture SHA-256 mismatch: expected ${fixture.sha256}, received ${digest}.`,
+    );
+  }
+
+  return bytes;
+}
+
 async function main() {
-  const [emptyBytes, adaBytes] = await Promise.all([
+  const [emptyBytes, realRigBytes] = await Promise.all([
     fetchPinnedFixture(EMPTY_FIXTURE, 'empty'),
-    fetchPinnedFixture(ADA_FIXTURE, 'Ada'),
+    fetchPinnedSha256Fixture(
+      REAL_RIG_FIXTURE,
+      'official Aka real rig',
+    ),
   ]);
   const meshBytes = createInp1VisualFixture(
     emptyBytes,
@@ -383,16 +425,16 @@ async function main() {
     emptyBytes,
     true,
   );
-  const adaRigSmoke = createAdaRigSmokeFixture(adaBytes);
+  const realRigSmoke =
+    createRealRigSmokeFixture(realRigBytes);
 
   await mkdir(dirname(EMPTY_FIXTURE.outputPath), {
     recursive: true,
   });
   await writeFile(EMPTY_FIXTURE.outputPath, emptyBytes);
-  await writeFile(ADA_FIXTURE.outputPath, adaBytes);
   await writeFile(
-    ADA_FIXTURE.rigSmokeOutputPath,
-    adaRigSmoke.bytes,
+    REAL_RIG_FIXTURE.rigSmokeOutputPath,
+    realRigSmoke.bytes,
   );
   await writeFile(MESH_FIXTURE_PATH, meshBytes);
   await writeFile(VISUAL_FIXTURE_PATH, visualBytes);
@@ -400,8 +442,8 @@ async function main() {
   process.stdout.write(
     [
       `Prepared pinned Inochi2D empty fixture (${String(emptyBytes.byteLength)} bytes)`,
-      `pinned upstream Ada fixture (${String(adaBytes.byteLength)} bytes)`,
-      `Ada rig-smoke fixture (${String(adaRigSmoke.bytes.byteLength)} bytes; ${String(adaRigSmoke.textureCount)} texture slots normalized from ${String(adaRigSmoke.originalTextureBytes)} source texture bytes)`,
+      `pinned official Aka real rig (${String(realRigBytes.byteLength)} bytes; ${REAL_RIG_FIXTURE.source})`,
+      `Aka rig-smoke fixture (${String(realRigSmoke.bytes.byteLength)} bytes; payload ${String(realRigSmoke.payloadLength)} bytes; ${String(realRigSmoke.textureCount)} texture slots normalized from ${String(realRigSmoke.originalTextureBytes)} source texture bytes)`,
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),

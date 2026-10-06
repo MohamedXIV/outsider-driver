@@ -111,7 +111,7 @@ test('production build resolves its runtime capability contract without browser 
 
   expect(browserErrors).toEqual([]);
 });
-test('verified WASM renders the baseline puppet and pinned upstream Ada rig in TaxiScene', async ({ page }, testInfo) => {
+test('verified WASM renders the baseline puppet and pinned official real rig in TaxiScene', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   test.skip(
     testInfo.project.name !== 'chromium-desktop',
@@ -260,10 +260,14 @@ test('verified WASM renders the baseline puppet and pinned upstream Ada rig in T
 
   const realPuppet = summary.realPuppet;
   console.log(
-    `Inochi pinned Ada rig probe: ${JSON.stringify(realPuppet)}`,
+    `Inochi pinned official real-rig probe: ${JSON.stringify(realPuppet)}`,
   );
 
-  expect(realPuppet.puppetName).toBe('Ada');
+  expect(realPuppet.sourceModel).toBe(
+    'Inochi2D/example-models@cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
+  );
+  expect(typeof realPuppet.puppetName).toBe('string');
+  expect(String(realPuppet.puppetName).length).toBeGreaterThan(0);
   expect(typeof realPuppet.puppetAuthor).toBe('string');
   expect(Number(realPuppet.parameterCount)).toBeGreaterThan(0);
   expect(typeof realPuppet.parameterExercised).toBe('string');

@@ -10,6 +10,7 @@ import { PassengerPerformanceController } from './PassengerPerformanceController
 import { PassengerLightingBridge } from './PassengerLighting';
 
 export interface InochiRealPuppetProbeSummary {
+  readonly sourceModel: string;
   readonly puppetName: string;
   readonly puppetAuthor: string;
   readonly parameterCount: number;
@@ -119,7 +120,7 @@ function changedParameterValue(
     : null;
 }
 
-async function runPinnedAdaProbe(
+async function runPinnedRealRigProbe(
   taxi: ReturnType<typeof createTaxiScene>,
   runtime: OfficialInochiRuntimeAdapter,
 ): Promise<InochiRealPuppetProbeSummary> {
@@ -127,13 +128,13 @@ async function runPinnedAdaProbe(
   let renderer: BabylonInochiPassengerRenderer | null = null;
 
   try {
-    reportStage('ada-runtime-reused');
-    reportStage('ada-load-start');
+    reportStage('real-rig-runtime-reused');
+    reportStage('real-rig-load-start');
     session = await InochiPuppetSession.load(runtime, {
-      id: 'inochi2d-upstream-ada-rig-smoke',
-      load: () => loadFixture('/__fixtures__/ada-rig-smoke.inx'),
+      id: 'inochi2d-official-aka-rig-smoke',
+      load: () => loadFixture('/__fixtures__/aka-rig-smoke.inx'),
     });
-    reportStage('ada-loaded');
+    reportStage('real-rig-loaded');
 
     const parameters = session.listParameters();
     let parameterExercised: string | null = null;
@@ -156,12 +157,12 @@ async function runPinnedAdaProbe(
       break;
     }
 
-    reportStage('ada-frame-start');
+    reportStage('real-rig-frame-start');
     const frame = session.frame(1 / 60);
-    reportStage('ada-frame-built');
+    reportStage('real-rig-frame-built');
 
     const program = compileInochiRenderProgram(frame);
-    reportStage('ada-render-program-built');
+    reportStage('real-rig-render-program-built');
 
     renderer = new BabylonInochiPassengerRenderer(
       taxi.scene,
@@ -193,16 +194,18 @@ async function runPinnedAdaProbe(
     let taxiRenderError: string | null = null;
 
     try {
-      reportStage('ada-babylon-render-start');
+      reportStage('real-rig-babylon-render-start');
       renderer.render(frame);
       taxi.scene.render();
       taxiRenderSucceeded = true;
-      reportStage('ada-babylon-render-complete');
+      reportStage('real-rig-babylon-render-complete');
     } catch (error) {
       taxiRenderError = errorMessage(error);
     }
 
     return {
+      sourceModel:
+        'Inochi2D/example-models@cd95dd00ddff63b1f7d2b84a19914c3c70d05945/Aka.inx',
       puppetName: session.name,
       puppetAuthor: session.author,
       parameterCount: parameters.length,
@@ -462,8 +465,8 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
     session = null;
     reportStage('baseline-released');
 
-    const realPuppet = await runPinnedAdaProbe(taxi, runtime);
-    reportStage('ada-acceptance-complete');
+    const realPuppet = await runPinnedRealRigProbe(taxi, runtime);
+    reportStage('real-rig-acceptance-complete');
 
     return {
       ...baselineSummary,
