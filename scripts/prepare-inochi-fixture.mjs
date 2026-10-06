@@ -242,7 +242,7 @@ function isRenderablePart(node) {
 }
 
 function legacyParameterFromOfficial(parameter) {
-  const isVec2 =
+  const sourceIsVec2 =
     parameter.is_vec2 === true ||
     parameter.type === '2d' ||
     (
@@ -250,70 +250,42 @@ function legacyParameterFromOfficial(parameter) {
       parameter.min.length === 2
     );
 
-  if (isVec2) {
-    const min = Array.isArray(parameter.min)
-      ? parameter.min
-      : [-1, -1];
-    const max = Array.isArray(parameter.max)
-      ? parameter.max
-      : [1, 1];
-    const defaults = Array.isArray(parameter.defaults)
-      ? parameter.defaults
-      : [0, 0];
-    const rawAxisPoints = Array.isArray(parameter.axis_points)
-      ? parameter.axis_points
-      : [
-          Array.isArray(parameter.hpoints)
-            ? parameter.hpoints
-            : [min[0], max[0]],
-          Array.isArray(parameter.vpoints)
-            ? parameter.vpoints
-            : [min[1], max[1]],
-        ];
-    const axisPoints = [0, 1].map((axis) => {
-      const raw = Array.isArray(rawAxisPoints[axis])
-        ? rawAxisPoints[axis]
-        : [];
-      const lower = min[axis] ?? 0;
-      const upper = max[axis] ?? lower + 1;
-
-      return raw.length >= 2
-        ? raw
-        : [lower, upper];
-    });
-
-    return {
-      uuid: parameter.uuid ?? parameter.guid,
-      name:
-        typeof parameter.name === 'string'
-          ? parameter.name
-          : 'Official Parameter',
-      is_vec2: true,
-      min,
-      max,
-      defaults,
-      axis_points: axisPoints,
-      bindings: [],
-    };
-  }
-
-  const min =
-    typeof parameter.min === 'number'
-      ? parameter.min
-      : 0;
-  const max =
-    typeof parameter.max === 'number'
-      ? parameter.max
-      : 1;
-  const defaults =
-    typeof parameter.defaults === 'number'
-      ? parameter.defaults
-      : min;
-  const axisPoints = Array.isArray(parameter.axis_points)
-    ? parameter.axis_points
-    : Array.isArray(parameter.points)
-      ? parameter.points
-      : [min, max];
+  const lower = sourceIsVec2
+    ? (
+        Array.isArray(parameter.min) &&
+        typeof parameter.min[0] === 'number'
+          ? parameter.min[0]
+          : -1
+      )
+    : (
+        typeof parameter.min === 'number'
+          ? parameter.min
+          : 0
+      );
+  const upper = sourceIsVec2
+    ? (
+        Array.isArray(parameter.max) &&
+        typeof parameter.max[0] === 'number'
+          ? parameter.max[0]
+          : 1
+      )
+    : (
+        typeof parameter.max === 'number'
+          ? parameter.max
+          : 1
+      );
+  const defaults = sourceIsVec2
+    ? (
+        Array.isArray(parameter.defaults) &&
+        typeof parameter.defaults[0] === 'number'
+          ? parameter.defaults[0]
+          : lower
+      )
+    : (
+        typeof parameter.defaults === 'number'
+          ? parameter.defaults
+          : lower
+      );
 
   return {
     uuid: parameter.uuid ?? parameter.guid,
@@ -322,13 +294,10 @@ function legacyParameterFromOfficial(parameter) {
         ? parameter.name
         : 'Official Parameter',
     is_vec2: false,
-    min,
-    max,
+    min: lower,
+    max: upper,
     defaults,
-    axis_points:
-      axisPoints.length >= 2
-        ? axisPoints
-        : [min, max],
+    axis_points: [lower, upper],
     bindings: [],
   };
 }
