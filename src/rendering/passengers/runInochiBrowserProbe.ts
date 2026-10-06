@@ -121,18 +121,13 @@ function changedParameterValue(
 
 async function runPinnedAdaProbe(
   taxi: ReturnType<typeof createTaxiScene>,
+  runtime: OfficialInochiRuntimeAdapter,
 ): Promise<InochiRealPuppetProbeSummary> {
-  let bindings: InochiWasmBindings | null = null;
   let session: InochiPuppetSession | null = null;
   let renderer: BabylonInochiPassengerRenderer | null = null;
 
   try {
-    reportStage('ada-wasm-create-start');
-    bindings = await InochiWasmBindings.create();
-    reportStage('ada-wasm-created');
-
-    const runtime = new OfficialInochiRuntimeAdapter(bindings);
-
+    reportStage('ada-runtime-reused');
     reportStage('ada-load-start');
     session = await InochiPuppetSession.load(runtime, {
       id: 'inochi2d-upstream-ada-static',
@@ -236,7 +231,6 @@ async function runPinnedAdaProbe(
   } finally {
     renderer?.dispose();
     session?.dispose();
-    bindings?.dispose();
   }
 }
 
@@ -433,10 +427,7 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxiRenderError = errorMessage(error);
     }
 
-    const realPuppet = await runPinnedAdaProbe(taxi);
-    reportStage('ada-acceptance-complete');
-
-    return {
+    const baselineSummary = {
       puppetName: session.name,
       puppetAuthor: session.author,
       parameterCount: parameters.length,
@@ -463,6 +454,19 @@ export async function runInochiBrowserProbe(): Promise<InochiBrowserProbeSummary
       taxiRenderAttempted: true,
       taxiRenderSucceeded,
       taxiRenderError,
+    };
+
+    renderer.dispose();
+    renderer = null;
+    session.dispose();
+    session = null;
+    reportStage('baseline-released');
+
+    const realPuppet = await runPinnedAdaProbe(taxi, runtime);
+    reportStage('ada-acceptance-complete');
+
+    return {
+      ...baselineSummary,
       realPuppet,
     };
   } finally {
