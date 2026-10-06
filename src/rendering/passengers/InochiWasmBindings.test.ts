@@ -3,6 +3,7 @@ import {
   growWasmMemoryToMinimumPages,
   hasWasmStartSection,
   reserveUnmanagedWasmStaging,
+  stripWasmStartSection,
 } from './InochiWasmBindings';
 
 function wasmBytes(...body: number[]): ArrayBuffer {
@@ -53,6 +54,44 @@ describe('hasWasmStartSection', () => {
   });
 });
 
+
+
+describe('stripWasmStartSection', () => {
+  it('removes the executable Start section without changing surrounding sections', () => {
+    const original = wasmBytes(
+      0x01, 0x01, 0x00,
+      0x08, 0x01, 0x00,
+      0x00, 0x01, 0x2a,
+    );
+
+    const stripped = stripWasmStartSection(original);
+
+    expect(hasWasmStartSection(original)).toBe(true);
+    expect(hasWasmStartSection(stripped)).toBe(false);
+    expect(Array.from(new Uint8Array(stripped))).toEqual(
+      Array.from(
+        new Uint8Array(
+          wasmBytes(
+            0x01, 0x01, 0x00,
+            0x00, 0x01, 0x2a,
+          ),
+        ),
+      ),
+    );
+  });
+
+  it('preserves a module that has no Start section', () => {
+    const original = wasmBytes(
+      0x01, 0x01, 0x00,
+    );
+
+    expect(
+      Array.from(
+        new Uint8Array(stripWasmStartSection(original)),
+      ),
+    ).toEqual(Array.from(new Uint8Array(original)));
+  });
+});
 
 describe('reserveUnmanagedWasmStaging', () => {
   it('reserves page-aligned caller-owned bytes after current memory', () => {

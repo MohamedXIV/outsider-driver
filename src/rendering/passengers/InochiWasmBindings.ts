@@ -221,6 +221,63 @@ export function hasWasmStartSection(buffer: ArrayBuffer): boolean {
   return false;
 }
 
+
+export function stripWasmStartSection(
+  buffer: ArrayBuffer,
+): ArrayBuffer {
+  const bytes = new Uint8Array(buffer);
+
+  if (
+    bytes.length < 8 ||
+    bytes[0] !== 0x00 ||
+    bytes[1] !== 0x61 ||
+    bytes[2] !== 0x73 ||
+    bytes[3] !== 0x6d ||
+    bytes[4] !== 0x01 ||
+    bytes[5] !== 0x00 ||
+    bytes[6] !== 0x00 ||
+    bytes[7] !== 0x00
+  ) {
+    throw new Error('Invalid WebAssembly module header.');
+  }
+
+  let offset = 8;
+
+  while (offset < bytes.length) {
+    const sectionStart = offset;
+    const sectionId = bytes[offset];
+
+    if (sectionId === undefined) {
+      break;
+    }
+
+    offset += 1;
+    const size = readUnsignedLeb128(bytes, offset);
+    const payloadStart = size.nextOffset;
+    const sectionEnd = payloadStart + size.value;
+
+    if (sectionEnd > bytes.length) {
+      throw new Error('WASM section extends beyond module bytes.');
+    }
+
+    if (sectionId === WASM_START_SECTION_ID) {
+      const result = new Uint8Array(
+        bytes.length - (sectionEnd - sectionStart),
+      );
+      result.set(bytes.subarray(0, sectionStart), 0);
+      result.set(
+        bytes.subarray(sectionEnd),
+        sectionStart,
+      );
+      return result.buffer;
+    }
+
+    offset = sectionEnd;
+  }
+
+  return bytes.slice().buffer;
+}
+
 function createWasiImports(): WebAssembly.Imports {
   return {
     env: {
@@ -292,9 +349,12 @@ export class InochiWasmBindings
       runtimeUrl,
     );
     const bytes = await response.arrayBuffer();
-    const startRunsAutomatically = hasWasmStartSection(bytes);
+    const hasStart = hasWasmStartSection(bytes);
+    const instantiationBytes = hasStart
+      ? stripWasmStartSection(bytes)
+      : bytes;
     const instantiated = await WebAssembly.instantiate(
-      bytes,
+      instantiationBytes,
       createWasiImports(),
     );
     const exports = instantiated.instance
@@ -310,25 +370,17 @@ export class InochiWasmBindings
       );
     }
 
-    // Give the browser runtime a production-sized linear-memory floor
-    // before this wrapper makes its first allocator call. The current
-    // WASM hookset uses walloc, whose first allocation can adopt
-    // pre-existing pages as heap capacity. This avoids forcing a large
-    // puppet asset through one late allocator growth while still keeping
-    // the official allocator as the primary ownership path.
+    // The official executable artifact wires in_init into the WASM
+    // Start section. Strip that section before instantiation so its
+    // constructors cannot initialize walloc against the artifact's
+    // small initial memory. Grow first, then invoke in_init exactly once
+    // ourselves. A future reactor-style artifact without a Start
+    // section follows the same explicit initialization path.
     growWasmMemoryToMinimumPages(
       exports.memory,
       DEFAULT_WASM_MEMORY_FLOOR_PAGES,
     );
-
-    // The pinned executable WASM contains a Start section whose entry is
-    // in_init. WebAssembly runs that Start function during instantiation.
-    // Calling in_init a second time reruns __wasm_call_ctors and can
-    // corrupt allocator/global state. Keep an explicit fallback for a
-    // future reactor-style artifact without a Start section.
-    if (!startRunsAutomatically) {
-      exports.in_init();
-    }
+    exports.in_init();
 
     return new InochiWasmBindings(exports);
   }
