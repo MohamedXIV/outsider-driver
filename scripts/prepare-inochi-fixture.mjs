@@ -260,7 +260,7 @@ function legacyParameterFromOfficial(parameter) {
     const defaults = Array.isArray(parameter.defaults)
       ? parameter.defaults
       : [0, 0];
-    const axisPoints = Array.isArray(parameter.axis_points)
+    const rawAxisPoints = Array.isArray(parameter.axis_points)
       ? parameter.axis_points
       : [
           Array.isArray(parameter.hpoints)
@@ -270,6 +270,17 @@ function legacyParameterFromOfficial(parameter) {
             ? parameter.vpoints
             : [min[1], max[1]],
         ];
+    const axisPoints = [0, 1].map((axis) => {
+      const raw = Array.isArray(rawAxisPoints[axis])
+        ? rawAxisPoints[axis]
+        : [];
+      const lower = min[axis] ?? 0;
+      const upper = max[axis] ?? lower + 1;
+
+      return raw.length >= 2
+        ? raw
+        : [lower, upper];
+    });
 
     return {
       uuid: parameter.uuid ?? parameter.guid,
@@ -407,10 +418,7 @@ function reduceRealRigPayload(sourcePayload, emptyBytes) {
       typeof sourcePart.enabled === 'boolean'
         ? sourcePart.enabled
         : true,
-    zsort:
-      typeof sourcePart.zsort === 'number'
-        ? sourcePart.zsort
-        : 0,
+    zsort: 0,
     transform:
       typeof sourcePart.transform === 'object' &&
       sourcePart.transform !== null
@@ -422,12 +430,15 @@ function reduceRealRigPayload(sourcePayload, emptyBytes) {
           },
     lockToRoot:
       sourcePart.lockToRoot === true,
-    mesh: sourcePart.mesh,
+    mesh: {
+      verts: sourcePart.mesh.verts,
+      uvs: sourcePart.mesh.uvs,
+      indices: sourcePart.mesh.indices,
+    },
     textures: Array.isArray(sourcePart.textures)
       ? sourcePart.textures
       : [],
-    blend_mode:
-      sourcePart.blend_mode ?? 0,
+    blend_mode: 0,
     tint: Array.isArray(sourcePart.tint)
       ? sourcePart.tint
       : [1, 1, 1],
@@ -447,7 +458,15 @@ function reduceRealRigPayload(sourcePayload, emptyBytes) {
 
   base.meta = {
     ...(base.meta ?? {}),
-    ...(sourcePayload.meta ?? {}),
+    name: 'Aka Browser Proof',
+    rigger:
+      typeof sourcePayload.meta?.rigger === 'string'
+        ? sourcePayload.meta.rigger
+        : 'seagetch',
+    artist:
+      typeof sourcePayload.meta?.artist === 'string'
+        ? sourcePayload.meta.artist
+        : 'seagetch',
   };
   baseRoot.children = [reducedPart];
   base.param = [
@@ -930,18 +949,6 @@ async function main() {
       `generated mesh-only fixture (${String(meshBytes.byteLength)} bytes)`,
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
-  );
-
-  process.stdout.write(
-    `OFFICIAL_RIG_DIAGNOSTIC ${new TextDecoder().decode(
-      realRigSmoke.bytes.subarray(
-        12,
-        12 + readUint32be(realRigSmoke.bytes, 8),
-      ),
-    )}\n`,
-  );
-  throw new Error(
-    'Temporary official-rig diagnostic stop before browser installation.',
   );
 }
 
