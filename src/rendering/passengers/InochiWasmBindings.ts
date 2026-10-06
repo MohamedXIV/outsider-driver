@@ -71,6 +71,44 @@ interface InochiWasmExports extends WebAssembly.Exports {
 
 const WASM_START_SECTION_ID = 8;
 const WASM_PAGE_BYTES = 65_536;
+const DEFAULT_WASM_MEMORY_FLOOR_PAGES = 2_048;
+
+export function growWasmMemoryToMinimumPages(
+  memory: WebAssembly.Memory,
+  minimumPages: number,
+): number {
+  if (
+    !Number.isSafeInteger(minimumPages) ||
+    minimumPages <= 0 ||
+    minimumPages > 65_536
+  ) {
+    throw new Error(
+      `Invalid Inochi WASM minimum memory page count: ${String(minimumPages)}.`,
+    );
+  }
+
+  const currentPages =
+    memory.buffer.byteLength / WASM_PAGE_BYTES;
+
+  if (!Number.isInteger(currentPages)) {
+    throw new Error(
+      'Inochi WASM memory byte length is not page-aligned.',
+    );
+  }
+
+  if (currentPages < minimumPages) {
+    try {
+      memory.grow(minimumPages - currentPages);
+    } catch (error) {
+      throw new Error(
+        `Inochi2D could not grow WASM memory from ${String(currentPages)} to ${String(minimumPages)} pages.`,
+        { cause: error },
+      );
+    }
+  }
+
+  return memory.buffer.byteLength / WASM_PAGE_BYTES;
+}
 
 export interface InochiWasmStagingRegion {
   readonly pointer: number;
@@ -237,13 +275,13 @@ export class InochiWasmBindings
 {
   readonly #exports: InochiWasmExports;
   #countPointer = 0;
+  #allocatorTouched = false;
   #stagingPointer: number | null = null;
   #stagingCapacity = 0;
   #disposed = false;
 
   private constructor(exports: InochiWasmExports) {
     this.#exports = exports;
-    this.#getCountPointer();
   }
 
   public static async create(
@@ -272,6 +310,17 @@ export class InochiWasmBindings
       );
     }
 
+    // Give the browser runtime a production-sized linear-memory floor
+    // before this wrapper makes its first allocator call. The current
+    // WASM hookset uses walloc, whose first allocation can adopt
+    // pre-existing pages as heap capacity. This avoids forcing a large
+    // puppet asset through one late allocator growth while still keeping
+    // the official allocator as the primary ownership path.
+    growWasmMemoryToMinimumPages(
+      exports.memory,
+      DEFAULT_WASM_MEMORY_FLOOR_PAGES,
+    );
+
     // The pinned executable WASM contains a Start section whose entry is
     // in_init. WebAssembly runs that Start function during instantiation.
     // Calling in_init a second time reruns __wasm_call_ctors and can
@@ -292,6 +341,7 @@ export class InochiWasmBindings
     }
 
     const dataPointer = this.#exports.nu_malloc(data.byteLength);
+    this.#allocatorTouched = true;
 
     if (dataPointer !== 0) {
       try {
@@ -604,13 +654,13 @@ export class InochiWasmBindings
       return this.#stagingPointer;
     }
 
-    if (this.#countPointer === 0) {
+    if (!this.#allocatorTouched) {
       throw new Error(
-        'Inochi2D allocator must be initialized before reserving puppet staging memory.',
+        'Inochi2D allocator must be touched before reserving puppet staging memory.',
       );
     }
 
-    // #getCountPointer() initializes walloc before this method can run.
+    // loadPuppet() touches walloc before this method can run.
     // Growing memory afterwards creates pages beyond walloc's tracked
     // heap. Subsequent walloc growth starts after these pages, so the
     // borrowed input region cannot overlap allocator-owned blocks.
@@ -653,6 +703,7 @@ export class InochiWasmBindings
     }
 
     const pointer = this.#exports.nu_realloc(0, 128);
+    this.#allocatorTouched = true;
 
     if (pointer === 0) {
       throw new Error(

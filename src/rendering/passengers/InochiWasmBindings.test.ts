@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  growWasmMemoryToMinimumPages,
   hasWasmStartSection,
   reserveUnmanagedWasmStaging,
 } from './InochiWasmBindings';
@@ -97,5 +98,46 @@ describe('reserveUnmanagedWasmStaging', () => {
     expect(() =>
       reserveUnmanagedWasmStaging(memory, 1),
     ).toThrow(/could not reserve/);
+  });
+});
+
+
+describe('growWasmMemoryToMinimumPages', () => {
+  it('grows exported memory to the requested page floor', () => {
+    const memory = new WebAssembly.Memory({
+      initial: 1,
+      maximum: 8,
+    });
+
+    expect(
+      growWasmMemoryToMinimumPages(memory, 4),
+    ).toBe(4);
+    expect(memory.buffer.byteLength).toBe(4 * 65_536);
+  });
+
+  it('does not shrink an already larger memory', () => {
+    const memory = new WebAssembly.Memory({
+      initial: 3,
+      maximum: 8,
+    });
+
+    expect(
+      growWasmMemoryToMinimumPages(memory, 2),
+    ).toBe(3);
+  });
+
+  it('fails closed for invalid or unsupported page floors', () => {
+    const memory = new WebAssembly.Memory({
+      initial: 1,
+      maximum: 2,
+    });
+
+    expect(() =>
+      growWasmMemoryToMinimumPages(memory, 0),
+    ).toThrow(/minimum memory page count/);
+
+    expect(() =>
+      growWasmMemoryToMinimumPages(memory, 3),
+    ).toThrow(/could not grow WASM memory/);
   });
 });
