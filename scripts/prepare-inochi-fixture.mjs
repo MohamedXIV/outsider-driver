@@ -241,20 +241,102 @@ function isRenderablePart(node) {
   );
 }
 
-function reduceRealRigPayload(sourcePayload) {
-  const root = sourcePayload.nodes;
+function legacyParameterFromOfficial(parameter) {
+  const isVec2 =
+    parameter.is_vec2 === true ||
+    parameter.type === '2d' ||
+    (
+      Array.isArray(parameter.min) &&
+      parameter.min.length === 2
+    );
+
+  if (isVec2) {
+    const min = Array.isArray(parameter.min)
+      ? parameter.min
+      : [-1, -1];
+    const max = Array.isArray(parameter.max)
+      ? parameter.max
+      : [1, 1];
+    const defaults = Array.isArray(parameter.defaults)
+      ? parameter.defaults
+      : [0, 0];
+    const axisPoints = Array.isArray(parameter.axis_points)
+      ? parameter.axis_points
+      : [
+          Array.isArray(parameter.hpoints)
+            ? parameter.hpoints
+            : [min[0], max[0]],
+          Array.isArray(parameter.vpoints)
+            ? parameter.vpoints
+            : [min[1], max[1]],
+        ];
+
+    return {
+      uuid: parameter.uuid ?? parameter.guid,
+      name:
+        typeof parameter.name === 'string'
+          ? parameter.name
+          : 'Official Parameter',
+      is_vec2: true,
+      min,
+      max,
+      defaults,
+      axis_points: axisPoints,
+      bindings: [],
+    };
+  }
+
+  const min =
+    typeof parameter.min === 'number'
+      ? parameter.min
+      : 0;
+  const max =
+    typeof parameter.max === 'number'
+      ? parameter.max
+      : 1;
+  const defaults =
+    typeof parameter.defaults === 'number'
+      ? parameter.defaults
+      : min;
+  const axisPoints = Array.isArray(parameter.axis_points)
+    ? parameter.axis_points
+    : Array.isArray(parameter.points)
+      ? parameter.points
+      : [min, max];
+
+  return {
+    uuid: parameter.uuid ?? parameter.guid,
+    name:
+      typeof parameter.name === 'string'
+        ? parameter.name
+        : 'Official Parameter',
+    is_vec2: false,
+    min,
+    max,
+    defaults,
+    axis_points:
+      axisPoints.length >= 2
+        ? axisPoints
+        : [min, max],
+    bindings: [],
+  };
+}
+
+function reduceRealRigPayload(sourcePayload, emptyBytes) {
+  const sourceRoot = sourcePayload.nodes;
 
   if (
-    typeof root !== 'object' ||
-    root === null ||
-    Array.isArray(root)
+    typeof sourceRoot !== 'object' ||
+    sourceRoot === null ||
+    Array.isArray(sourceRoot)
   ) {
     throw new Error(
       'Pinned official real rig has no root node object.',
     );
   }
 
-  const { entries, byGuid } = collectNodeIndex(root);
+  const { entries, byGuid } =
+    collectNodeIndex(sourceRoot);
   const renderableEntries = entries.filter(({ node }) =>
     isRenderablePart(node),
   );
@@ -279,7 +361,10 @@ function reduceRealRigPayload(sourcePayload) {
   let bestScore = Number.POSITIVE_INFINITY;
 
   for (const parameter of parameters) {
-    const refs = collectReferencedNodes(parameter, byGuid);
+    const refs = collectReferencedNodes(
+      parameter,
+      byGuid,
+    );
     const linkedParts = renderableEntries.filter((entry) =>
       refs.has(entry),
     );
@@ -294,93 +379,85 @@ function reduceRealRigPayload(sourcePayload) {
     }
   }
 
-  function copyKnown(source, keys) {
-    const target = {};
+  const base = parseEmptyPayload(emptyBytes);
+  const baseRoot = base.nodes;
 
-    for (const key of keys) {
-      if (Object.hasOwn(source, key)) {
-        target[key] = source[key];
-      }
-    }
-
-    return target;
+  if (
+    typeof baseRoot !== 'object' ||
+    baseRoot === null ||
+    Array.isArray(baseRoot)
+  ) {
+    throw new Error(
+      'Pinned empty Inochi fixture has no root node object.',
+    );
   }
 
-  // Keep the official Part's authored mesh/material/transform data, but
-  // detach it from the rest of Aka's legacy deformation/mask graph. The
-  // full graph currently stalls the upstream 0.8 WASM loader even after
-  // texture normalization, while an isolated Part is a valid real
-  // renderable asset for exercising our bridge.
+  const sourcePart = selectedPart.node;
   const reducedPart = {
-    ...copyKnown(selectedPart.node, [
-      'uuid',
-      'guid',
-      'name',
-      'type',
-      'enabled',
-      'zsort',
-      'transform',
-      'lockToRoot',
-      'mesh',
-      'textures',
-      'blend_mode',
-      'tint',
-      'screenTint',
-      'emissionStrength',
-      'opacity',
-    ]),
+    uuid:
+      sourcePart.uuid ??
+      sourcePart.guid ??
+      4200000001,
+    name:
+      typeof sourcePart.name === 'string'
+        ? sourcePart.name
+        : 'Official Aka Part',
+    type: 'Part',
+    enabled:
+      typeof sourcePart.enabled === 'boolean'
+        ? sourcePart.enabled
+        : true,
+    zsort:
+      typeof sourcePart.zsort === 'number'
+        ? sourcePart.zsort
+        : 0,
+    transform:
+      typeof sourcePart.transform === 'object' &&
+      sourcePart.transform !== null
+        ? sourcePart.transform
+        : {
+            trans: [0, 0, 0],
+            rot: [0, 0, 0],
+            scale: [1, 1],
+          },
+    lockToRoot:
+      sourcePart.lockToRoot === true,
+    mesh: sourcePart.mesh,
+    textures: Array.isArray(sourcePart.textures)
+      ? sourcePart.textures
+      : [],
+    blend_mode:
+      sourcePart.blend_mode ?? 0,
+    tint: Array.isArray(sourcePart.tint)
+      ? sourcePart.tint
+      : [1, 1, 1],
+    screenTint: Array.isArray(sourcePart.screenTint)
+      ? sourcePart.screenTint
+      : [0, 0, 0],
+    emissionStrength:
+      typeof sourcePart.emissionStrength === 'number'
+        ? sourcePart.emissionStrength
+        : 1,
+    opacity:
+      typeof sourcePart.opacity === 'number'
+        ? sourcePart.opacity
+        : 1,
     children: [],
   };
 
-  const reducedRoot = {
-    ...copyKnown(root, [
-      'uuid',
-      'guid',
-      'name',
-      'type',
-      'enabled',
-      'zsort',
-      'transform',
-      'lockToRoot',
-    ]),
-    children: [reducedPart],
+  base.meta = {
+    ...(base.meta ?? {}),
+    ...(sourcePayload.meta ?? {}),
   };
-
-  // Preserve a parameter selected from the official rig (prefer one that
-  // was linked to the retained Part), including its authored range and
-  // axis points. Bindings are intentionally detached because they target
-  // nodes outside this bounded smoke derivative. Parameter mutation
-  // itself still goes through the real Inochi runtime/C API.
-  const reducedParameter = {
-    ...copyKnown(selectedParameter, [
-      'uuid',
-      'guid',
-      'name',
-      'type',
-      'is_vec2',
-      'min',
-      'max',
-      'defaults',
-      'axis_points',
-      'points',
-      'hpoints',
-      'vpoints',
-      'merge_mode',
-    ]),
-    bindings: [],
-  };
-
-  const reduced = {
-    ...sourcePayload,
-    nodes: reducedRoot,
-    param: [reducedParameter],
-  };
-
-  delete reduced.animation;
-  delete reduced.animations;
+  baseRoot.children = [reducedPart];
+  base.param = [
+    legacyParameterFromOfficial(selectedParameter),
+  ];
+  delete base.animation;
+  delete base.animations;
 
   return {
-    payload: reduced,
+    payload: base,
     sourceNodeCount: entries.length,
     selectedNodeCount: 2,
     sourceParameterCount: parameters.length,
@@ -389,13 +466,13 @@ function reduceRealRigPayload(sourcePayload) {
         ? selectedParameter.name
         : '',
     selectedPartName:
-      typeof selectedPart.node.name === 'string'
-        ? selectedPart.node.name
+      typeof sourcePart.name === 'string'
+        ? sourcePart.name
         : '',
   };
 }
 
-function createRealRigSmokeFixture(sourceBytes) {
+function createRealRigSmokeFixture(sourceBytes, emptyBytes) {
   if (readInp1Tag(sourceBytes, 0) !== 'TRNSRTS\0') {
     throw new Error(
       'Pinned official real-rig fixture is not an INP1 container.',
@@ -413,7 +490,7 @@ function createRealRigSmokeFixture(sourceBytes) {
       ),
     ),
   );
-  const reduced = reduceRealRigPayload(sourcePayload);
+  const reduced = reduceRealRigPayload(sourcePayload, emptyBytes);
   const reducedPayloadBytes = new TextEncoder().encode(
     JSON.stringify(reduced.payload),
   );
@@ -738,7 +815,7 @@ async function main() {
     true,
   );
   const realRigSmoke =
-    createRealRigSmokeFixture(realRigBytes);
+    createRealRigSmokeFixture(realRigBytes, emptyBytes);
 
   await mkdir(dirname(EMPTY_FIXTURE.outputPath), {
     recursive: true,
