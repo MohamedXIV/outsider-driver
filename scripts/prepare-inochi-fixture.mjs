@@ -931,6 +931,18 @@ async function main() {
       `and TGA-backed visual fixture (${String(visualBytes.byteLength)} bytes).\n`,
     ].join(', '),
   );
+
+  process.stdout.write(
+    `OFFICIAL_RIG_DIAGNOSTIC ${new TextDecoder().decode(
+      realRigSmoke.bytes.subarray(
+        12,
+        12 + readUint32be(realRigSmoke.bytes, 8),
+      ),
+    )}\n`,
+  );
+  throw new Error(
+    'Temporary official-rig diagnostic stop before browser installation.',
+  );
 }
 
 await main();
