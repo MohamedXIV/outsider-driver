@@ -276,8 +276,6 @@ function reduceRealRigPayload(sourcePayload) {
 
   let selectedPart = renderableEntries[0];
   let selectedParameter = parameters[0];
-  let selectedParameterRefs =
-    collectReferencedNodes(selectedParameter, byGuid);
   let bestScore = Number.POSITIVE_INFINITY;
 
   for (const parameter of parameters) {
@@ -292,92 +290,90 @@ function reduceRealRigPayload(sourcePayload) {
     ) {
       selectedPart = linkedParts[0];
       selectedParameter = parameter;
-      selectedParameterRefs = refs;
       bestScore = refs.size;
     }
   }
 
-  const selected = new Set();
+  function copyKnown(source, keys) {
+    const target = {};
 
-  function includePath(entry) {
-    let current = entry;
-
-    while (current !== null) {
-      selected.add(current);
-      current = current.parent;
-    }
-  }
-
-  includePath(selectedPart);
-
-  for (const entry of selectedParameterRefs) {
-    includePath(entry);
-  }
-
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-
-    for (const entry of [...selected]) {
-      for (const dependency of collectReferencedNodes(
-        entry.node,
-        byGuid,
-      )) {
-        if (!selected.has(dependency)) {
-          includePath(dependency);
-          changed = true;
-        }
-      }
-    }
-  }
-
-  function cloneSelected(entry) {
-    const clone = {};
-
-    for (const [key, value] of Object.entries(entry.node)) {
-      if (key !== 'children') {
-        clone[key] = value;
+    for (const key of keys) {
+      if (Object.hasOwn(source, key)) {
+        target[key] = source[key];
       }
     }
 
-    const children = Array.isArray(entry.node.children)
-      ? entry.node.children
-      : [];
-    const keptChildren = [];
-
-    for (const child of children) {
-      const childGuid = nodeGuid(child);
-      const childEntry =
-        childGuid === null ? null : byGuid.get(childGuid);
-
-      if (
-        childEntry !== undefined &&
-        childEntry !== null &&
-        selected.has(childEntry)
-      ) {
-        keptChildren.push(cloneSelected(childEntry));
-      }
-    }
-
-    clone.children = keptChildren;
-    return clone;
+    return target;
   }
 
-  const rootGuid = nodeGuid(root);
-  const rootEntry =
-    rootGuid === null ? entries[0] : byGuid.get(rootGuid);
+  // Keep the official Part's authored mesh/material/transform data, but
+  // detach it from the rest of Aka's legacy deformation/mask graph. The
+  // full graph currently stalls the upstream 0.8 WASM loader even after
+  // texture normalization, while an isolated Part is a valid real
+  // renderable asset for exercising our bridge.
+  const reducedPart = {
+    ...copyKnown(selectedPart.node, [
+      'uuid',
+      'guid',
+      'name',
+      'type',
+      'enabled',
+      'zsort',
+      'transform',
+      'lockToRoot',
+      'mesh',
+      'textures',
+      'blend_mode',
+      'tint',
+      'screenTint',
+      'emissionStrength',
+      'opacity',
+    ]),
+    children: [],
+  };
 
-  if (rootEntry === undefined) {
-    throw new Error(
-      'Pinned official real rig root node could not be indexed.',
-    );
-  }
+  const reducedRoot = {
+    ...copyKnown(root, [
+      'uuid',
+      'guid',
+      'name',
+      'type',
+      'enabled',
+      'zsort',
+      'transform',
+      'lockToRoot',
+    ]),
+    children: [reducedPart],
+  };
+
+  // Preserve a parameter selected from the official rig (prefer one that
+  // was linked to the retained Part), including its authored range and
+  // axis points. Bindings are intentionally detached because they target
+  // nodes outside this bounded smoke derivative. Parameter mutation
+  // itself still goes through the real Inochi runtime/C API.
+  const reducedParameter = {
+    ...copyKnown(selectedParameter, [
+      'uuid',
+      'guid',
+      'name',
+      'type',
+      'is_vec2',
+      'min',
+      'max',
+      'defaults',
+      'axis_points',
+      'points',
+      'hpoints',
+      'vpoints',
+      'merge_mode',
+    ]),
+    bindings: [],
+  };
 
   const reduced = {
     ...sourcePayload,
-    nodes: cloneSelected(rootEntry),
-    param: [selectedParameter],
+    nodes: reducedRoot,
+    param: [reducedParameter],
   };
 
   delete reduced.animation;
@@ -386,7 +382,7 @@ function reduceRealRigPayload(sourcePayload) {
   return {
     payload: reduced,
     sourceNodeCount: entries.length,
-    selectedNodeCount: selected.size,
+    selectedNodeCount: 2,
     sourceParameterCount: parameters.length,
     selectedParameterName:
       typeof selectedParameter.name === 'string'
