@@ -164,7 +164,7 @@ function collectReferencedNodes(value, byGuid) {
   const refs = new Set();
   const visited = new Set();
 
-  function visit(current, key = '') {
+  function visit(current) {
     if (
       current === null ||
       current === undefined
@@ -210,7 +210,7 @@ function collectReferencedNodes(value, byGuid) {
         continue;
       }
 
-      visit(childValue, childKey);
+      visit(childValue);
     }
   }
 
