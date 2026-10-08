@@ -317,12 +317,12 @@ export class GameSession {
       routeExperience: productionContent.routeExperience,
       passengers: productionContent.passengers,
       narrativeStories: {
-        getInkSource: (storyId) => {
+        getCompiledInkStory: (storyId) => {
           const story = productionContent.narrativeStories.find(
             (candidate) => candidate.id === storyId,
           );
           if (story === undefined) throw new Error(`Unknown authored Ink story: ${storyId}`);
-          return story.source;
+          return story.compiled;
         },
       },
       narrativeQueries: queries,
