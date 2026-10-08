@@ -134,6 +134,24 @@ describe('production GameSession', () => {
     session.dispose();
   });
 
+  it('projects locked work with reasons but never grants it as available', () => {
+    const session = GameSession.open(persistence(new MemoryStorage()));
+    const offered = session.listWorkOffers();
+    expect(offered).toHaveLength(2);
+    const official = offered.find((x) => x.job.id === 'job:docks-official-clinic');
+    expect(official?.eligible).toBe(false);
+    expect(official?.reasons).toContain('cover:work-permit');
+    expect(session.listAvailableWork().map((x) => x.job.id)).toEqual([
+      'job:docks-underground-clinic',
+    ]);
+    if (official === undefined) throw new Error('Missing official offer');
+    official.reasons[0] = 'fabricated';
+    official.job.fare.baseCredits = 99999;
+    expect(session.listWorkOffers().find((x) => x.job.id === official.job.id)?.reasons)
+      .toContain('cover:work-permit');
+    session.dispose();
+  });
+
   it('advances and persists the authoritative world clock and uses it for job windows', () => {
     const memory = new MemoryStorage();
     const session = GameSession.open(persistence(memory));
