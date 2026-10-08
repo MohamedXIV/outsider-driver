@@ -44,6 +44,7 @@ describe('production GameSession', () => {
     expect(session.exportState()).toEqual(createInitialGameState());
     expect(session.getProjection()).toMatchObject({
       credits: 0,
+      gameTime: { day: 1, minuteOfDay: 18 * 60 },
       currentSpaceId: null,
       activeRidePhase: null,
       hasCoverIdentity: false,
@@ -117,7 +118,7 @@ describe('production GameSession', () => {
     session.dispose();
   });
 
-  it('never grants unowned translator packs or fabricated cover identities', () => {
+  it('enforces existing cover/work eligibility instead of granting fabricated permits', () => {
     const memory = new MemoryStorage();
     const session = GameSession.open(persistence(memory));
     const before = session.exportState();
@@ -127,30 +128,32 @@ describe('production GameSession', () => {
       packId: entityId('translator-pack', 'civic-basic-v1'),
     })).toThrow(/unowned/i);
     expect(session.exportState()).toEqual(before);
+    const offered = session.listAvailableWork();
+    expect(offered.some(({ job }) => job.id === 'job:docks-underground-clinic')).toBe(true);
+    expect(offered.some(({ job }) => job.id === 'job:docks-official-clinic')).toBe(false);
+    session.dispose();
+  });
 
-    session.execute({
-      type: 'identity.choose',
-      identity: {
-        id: entityId('identity', 'player-cover'),
-        displayName: 'Cover identity',
-        attributes: [
-          { key: 'work-permit', value: 'licensed-driver' },
-        ],
-      },
+  it('advances and persists the authoritative world clock and uses it for job windows', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    expect(session.listAvailableWork()).toHaveLength(1);
+
+    session.execute({ type: 'time.advance', minutes: 24 * 60 });
+    expect(session.getProjection().gameTime).toEqual({
+      day: 2, minuteOfDay: 18 * 60,
     });
-    expect(session.getProjection().hasCoverIdentity).toBe(true);
-    expect(session.listAvailableWork({ day: 1, minuteOfDay: 18 * 60 })
-      .some(({ job }) => job.id === 'job:docks-official-clinic')).toBe(true);
-    expect(() => session.execute({
-      type: 'identity.choose',
-      identity: {
-        id: entityId('identity', 'second-cover'),
-        displayName: 'Second cover',
-        attributes: [],
-      },
-    })).toThrow(/already been chosen/i);
+    expect(session.listAvailableWork()).toHaveLength(0);
 
     session.dispose();
+    const restored = GameSession.open(persistence(memory));
+    expect(restored.getProjection().gameTime).toEqual({
+      day: 2, minuteOfDay: 18 * 60,
+    });
+    expect(() => restored.execute({
+      type: 'time.advance', minutes: -1,
+    })).toThrow();
+    restored.dispose();
   });
 
   it('publishes state after successful persistence and disallows use after disposal', () => {

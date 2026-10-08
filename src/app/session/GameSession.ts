@@ -11,18 +11,16 @@ import {
 } from '../../domain/preferences/AccessibilityPreferencesState';
 import { RadioStateStore } from '../../domain/radio/RadioState';
 import { RelationshipStateStore } from '../../domain/relationships/RelationshipState';
-import {
-  CoverIdentityProfileSchema,
-  createSocialStealthState,
-  SocialStealthStateStore,
-  type CoverIdentityProfile,
-} from '../../domain/social/SocialStealthState';
+import { SocialStealthStateStore } from '../../domain/social/SocialStealthState';
 import { PersonalSpaceStateStore } from '../../domain/spaces/PersonalSpaceState';
-import type { GameTime } from '../../domain/time/GameTime';
+import {
+  advanceGameTime,
+  type GameTime,
+} from '../../domain/time/GameTime';
 import { TranslatorStateStore } from '../../domain/translator/TranslatorState';
 import { JobContractSchema } from '../../domain/work/JobRideContracts';
 import {
-  GameStateV10Schema,
+  GameStateV11Schema,
   createInitialGameState,
   type GameState,
 } from '../../persistence/save/gameSave';
@@ -37,14 +35,15 @@ export type GameSessionCommand =
   | { readonly type: 'space.enter'; readonly spaceId: PersonalSpaceId }
   | { readonly type: 'space.leave' }
   | { readonly type: 'space.set-flag'; readonly spaceId: PersonalSpaceId; readonly flagId: string; readonly value: boolean }
+  | { readonly type: 'time.advance'; readonly minutes: number }
   | { readonly type: 'radio.tune'; readonly stationId: RadioStationId }
   | { readonly type: 'radio.listen'; readonly listening: boolean }
   | { readonly type: 'translator.activate'; readonly packId: TranslatorPackId }
   | { readonly type: 'translator.deactivate'; readonly packId: TranslatorPackId }
-  | { readonly type: 'identity.choose'; readonly identity: CoverIdentityProfile }
   | { readonly type: 'preferences.update'; readonly preferences: AccessibilityPreferencesState };
 
 export interface GameSessionProjection {
+  readonly gameTime: GameTime;
   readonly credits: number;
   readonly currentSpaceId: PersonalSpaceId | null;
   readonly activeRidePhase: NonNullable<GameState['rideSession']>['phase'] | null;
@@ -102,6 +101,8 @@ function composeStores(state: GameState): Stores {
  * One authoritative session for production domain state and versioned saves.
  * UI consumers receive snapshots and issue typed commands; Babylon only presents.
  * Ride orchestration will be connected through this boundary in issue #67.
+ * Identity/permit creation requires authored validation in #65; arbitrary
+ * caller-provided cover credentials must never grant official eligibility.
  */
 export class GameSession {
   readonly #persistence: GameSessionPersistence;
@@ -127,7 +128,7 @@ export class GameSession {
     restored: boolean,
   ) {
     this.#persistence = persistence;
-    this.#state = GameStateV10Schema.parse(stateInput);
+    this.#state = GameStateV11Schema.parse(stateInput);
     this.#stores = composeStores(this.#state);
     this.#restored = restored;
   }
@@ -138,7 +139,7 @@ export class GameSession {
 
   public exportState(): GameState {
     this.#assertAlive();
-    return GameStateV10Schema.parse({
+    return GameStateV11Schema.parse({
       ...this.#state,
       economyState: this.#stores.economy.exportState(),
       personalSpaceState: this.#stores.spaces.exportState(),
@@ -153,6 +154,7 @@ export class GameSession {
   public getProjection(): GameSessionProjection {
     const state = this.exportState();
     return {
+      gameTime: state.gameTime,
       credits: state.economyState.credits,
       currentSpaceId: state.personalSpaceState.currentSpaceId,
       activeRidePhase: state.rideSession?.phase ?? null,
@@ -164,10 +166,10 @@ export class GameSession {
     };
   }
 
-  public listAvailableWork(at: GameTime) {
+  public listAvailableWork() {
     this.#assertAlive();
     return this.#work.listAvailable(
-      at,
+      this.#state.gameTime,
       createWorkEligibilityContext(
         this.#stores.economy,
         this.#stores.social,
@@ -207,6 +209,20 @@ export class GameSession {
             command.value,
           );
           break;
+        case 'time.advance':
+          // Until #67 owns route time, do not let a generic fast-forward
+          // clock drift away from the current active ride.
+          if (
+            this.#state.rideSession !== null &&
+            this.#state.rideSession.phase !== 'completed'
+          ) {
+            throw new Error('World time cannot fast-forward during an unfinished ride.');
+          }
+          this.#state = {
+            ...this.#state,
+            gameTime: advanceGameTime(this.#state.gameTime, command.minutes),
+          };
+          break;
         case 'radio.tune':
           this.#stores.radio.tune(command.stationId);
           break;
@@ -218,19 +234,6 @@ export class GameSession {
           break;
         case 'translator.deactivate':
           this.#stores.translator.deactivatePack(command.packId);
-          break;
-        case 'identity.choose':
-          if (this.#stores.social !== null) {
-            throw new Error('Cover identity has already been chosen.');
-          }
-          this.#stores = {
-            ...this.#stores,
-            social: new SocialStealthStateStore(
-              createSocialStealthState(
-                CoverIdentityProfileSchema.parse(command.identity),
-              ),
-            ),
-          };
           break;
         case 'preferences.update':
           this.#state = {

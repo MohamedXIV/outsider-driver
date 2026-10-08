@@ -87,6 +87,46 @@ describe('gameSaveCodec', () => {
     });
   });
 
+  it('migrates v10 by recovering time from ride and relationship records', () => {
+    const older = {
+      ...currentEmptyState(),
+      gameTime: undefined,
+      rideSession: {
+        phase: 'assigned' as const,
+        rideId: 'ride:older-night',
+        jobId: 'job:older-night',
+        passengerId: 'passenger:older-rider',
+        pickupLocationId: 'location:older-pickup',
+        destinationLocationId: 'location:older-destination',
+        initialRouteId: 'route:older-route',
+        acceptedAt: { day: 12, minuteOfDay: 320 },
+        narrativeStoryId: 'older.story',
+      },
+      relationshipState: {
+        schemaVersion: 1 as const,
+        entries: [{
+          passengerId: 'passenger:older-rider',
+          trust: 25,
+          affection: null,
+          humanAttitude: 0,
+          completedRideIds: ['ride:earlier'],
+          lastCompletedAt: { day: 20, minuteOfDay: 444 },
+          lastTrustReason: null,
+          lastAffectionReason: null,
+          lastHumanAttitudeReason: null,
+        }],
+      },
+    };
+    const { gameTime: _oldTime, ...v10 } = older;
+    const result = gameSaveCodec.decode({
+      schemaVersion: 10,
+      savedAt: timestamp,
+      state: v10,
+    });
+    expect(result.state.gameTime).toEqual({ day: 20, minuteOfDay: 444 });
+    expect(result.state.rideSession?.phase).toBe('assigned');
+  });
+
   it('migrates v9 by adding deterministic accessibility preferences', () => {
     expect(
       gameSaveCodec.decode({
