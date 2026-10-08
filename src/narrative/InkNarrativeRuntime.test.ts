@@ -11,6 +11,7 @@ import {
 } from './contracts/NarrativeBoundary';
 import { compileInkSource } from './compileInkSource';
 import { InkNarrativeRuntime } from './InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from './createDevelopmentInkRuntimeFromSource';
 
 function createQueries(hasFact: boolean): NarrativeQueryPort {
   return {
@@ -81,7 +82,7 @@ EXTERNAL GAME_REVEAL_FACT(fact_id)
 -> END
 `;
 
-    const runtime = InkNarrativeRuntime.fromInkSource(
+    const runtime = createDevelopmentInkRuntimeFromSource(
       source,
       createQueries(false),
       {

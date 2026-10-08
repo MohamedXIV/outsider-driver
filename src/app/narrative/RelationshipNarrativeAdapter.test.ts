@@ -6,7 +6,7 @@ import {
   SocialStealthStateStore,
   createSocialStealthState,
 } from '../../domain/social/SocialStealthState';
-import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from '../../narrative/createDevelopmentInkRuntimeFromSource';
 import { SocialStealthNarrativeAdapter } from './SocialStealthNarrativeAdapter';
 import {
   RelationshipNarrativeAdapter,
@@ -62,7 +62,7 @@ describe('RelationshipNarrativeAdapter', () => {
     );
     const relationshipAdapter =
       new RelationshipNarrativeAdapter(relationships);
-    const runtime = InkNarrativeRuntime.fromInkSource(
+    const runtime = createDevelopmentInkRuntimeFromSource(
       story,
       withRelationshipNarrativeQueries(
         social,

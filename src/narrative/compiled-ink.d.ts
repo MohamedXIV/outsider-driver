@@ -1,5 +1,7 @@
 declare module '*.ink?compiled' {
-  import type { CompiledInkStory } from './compileInkSource';
-  const story: CompiledInkStory;
+  const story: {
+    readonly json: string;
+    readonly declaredExternals: readonly string[];
+  };
   export default story;
 }
