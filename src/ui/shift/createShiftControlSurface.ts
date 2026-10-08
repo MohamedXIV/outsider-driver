@@ -109,18 +109,18 @@ export function createShiftControlSurface(
 
     actions.replaceChildren();
     if (state.location === 'home') {
-      actions.append(button('Go to garage', () => runAction(() => navigation.goToGarage())));
+      actions.append(button('Go to garage', () => { runAction(() => { navigation.goToGarage(); }); }));
     } else if (state.location === 'garage') {
       actions.append(
-        button('Enter taxi', () => runAction(() => navigation.enterTaxi())),
-        button('Return home', () => runAction(() => navigation.goHome())),
+        button('Enter taxi', () => { runAction(() => { navigation.enterTaxi(); }); }),
+        button('Return home', () => { runAction(() => { navigation.goHome(); }); }),
         button(
           state.inspectionLight ? 'Turn inspection light off' : 'Turn inspection light on',
-          () => runAction(() => navigation.setInspectionLight(!state.inspectionLight)),
+          () => { runAction(() => { navigation.setInspectionLight(!state.inspectionLight); }); },
         ),
       );
     } else {
-      actions.append(button('Return to garage', () => runAction(() => navigation.goToGarage())));
+      actions.append(button('Return to garage', () => { runAction(() => { navigation.goToGarage(); }); }));
     }
 
     offers.replaceChildren();
@@ -132,9 +132,9 @@ export function createShiftControlSurface(
         `ASSIGNED / ${ride.jobId} / ${ride.phase.toUpperCase()}`;
       offers.append(active);
       if (ride.phase === 'assigned') {
-        offers.append(button('Pick up passenger', () => runAction(() =>
+        offers.append(button('Pick up passenger', () => { runAction(() =>
           session.execute({ type: 'ride.pickup' }),
-        )));
+        ); }));
       } else {
         const presentation = session.getRidePresentation();
         if (presentation?.dialogue !== null && presentation?.dialogue !== undefined) {
@@ -145,12 +145,12 @@ export function createShiftControlSurface(
             offers.append(dialogueLine);
           }
           for (const choice of presentation.dialogue.choices) {
-            offers.append(button(choice.text, () => runAction(() =>
+            offers.append(button(choice.text, () => { runAction(() =>
               session.execute({
                 type: 'ride.choose-dialogue',
                 choiceIndex: choice.index,
               }),
-            )));
+            ); }));
           }
         }
         const progress = document.createElement('p');
@@ -166,32 +166,32 @@ export function createShiftControlSurface(
           const warning = document.createElement('p');
           warning.textContent = `Checkpoint: ${paused.checkpointId}`;
           offers.append(warning);
-          offers.append(button('Continue checkpoint', () => runAction(() =>
+          offers.append(button('Continue checkpoint', () => { runAction(() =>
             session.execute({
               type: 'ride.resolve-event',
               resolution: { type: 'continue' },
             }),
-          )));
+          ); }));
         } else if (paused?.type === 'route.decision') {
           const warning = document.createElement('p');
           warning.textContent = paused.promptKey;
           offers.append(warning);
           for (const choice of paused.choices) {
-            offers.append(button(choice.labelKey, () => runAction(() =>
+            offers.append(button(choice.labelKey, () => { runAction(() =>
               session.execute({
                 type: 'ride.resolve-event',
                 resolution: { type: 'choose', choiceId: choice.id },
               }),
-            )));
+            ); }));
           }
         } else if (presentation?.canDropOff) {
-          offers.append(button('Drop off passenger', () => runAction(() =>
+          offers.append(button('Drop off passenger', () => { runAction(() =>
             session.execute({ type: 'ride.drop-off' }),
-          )));
+          ); }));
         } else if (presentation?.phase === 'active') {
-          offers.append(button('Advance autopilot', () => runAction(() =>
+          offers.append(button('Advance autopilot', () => { runAction(() =>
             session.execute({ type: 'ride.advance', seconds: 3 }),
-          )));
+          ); }));
         }
       }
       return;
@@ -240,9 +240,9 @@ export function createShiftControlSurface(
           `Route: ${job.pickupLocationId} → ${job.destinationLocationId}.`;
         item.append(details);
         if (eligible && state.location === 'taxi') {
-          item.append(button('Accept job', () => runAction(() =>
+          item.append(button('Accept job', () => { runAction(() =>
             session.execute({ type: 'ride.accept', jobId: job.id }),
-          )));
+          ); }));
         } else if (eligible) {
           const hint = document.createElement('p');
           hint.textContent = 'Enter the taxi to accept dispatch.';

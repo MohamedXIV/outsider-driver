@@ -513,7 +513,7 @@ describe('production GameSession', () => {
       if (shouldThrow) throw new Error('broken presentation');
     });
     shouldThrow = true;
-    const errorLogger = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorLogger = vi.spyOn(console, 'error').mockImplementation(() => { return; });
     try {
       expect(() => session.execute({ type: 'radio.listen', listening: true }))
         .not.toThrow();
