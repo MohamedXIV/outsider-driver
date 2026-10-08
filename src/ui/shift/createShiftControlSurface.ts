@@ -50,7 +50,33 @@ export function createShiftControlSurface(
   const offers = document.createElement('div');
   offers.className = 'shift-work-offers';
   dispatch.append(offers);
-  panel.append(heading, status, actionError, actions, dispatch);
+  const identityForm = document.createElement('form');
+  identityForm.className = 'shift-identity';
+  const identityLabel = document.createElement('label');
+  identityLabel.textContent = 'DRIVER ALIAS / COVER';
+  identityLabel.htmlFor = 'shift-cover-name';
+  const identityInput = document.createElement('input');
+  identityInput.id = 'shift-cover-name';
+  identityInput.type = 'text';
+  identityInput.name = 'coverName';
+  identityInput.maxLength = 120;
+  identityInput.required = true;
+  identityInput.placeholder = 'Choose your driver name';
+  const identitySubmit = document.createElement('button');
+  identitySubmit.type = 'submit';
+  identitySubmit.className = 'shift-control-button';
+  identitySubmit.textContent = 'Register driver';
+  identityForm.append(identityLabel, identityInput, identitySubmit);
+  identityForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    runAction(() => {
+      session.execute({
+        type: 'identity.register',
+        displayName: identityInput.value,
+      });
+    });
+  });
+  panel.append(heading, status, actionError, identityForm, actions, dispatch);
   mount.append(panel);
 
   let selectedJobId: JobId | null = null;
@@ -72,8 +98,11 @@ export function createShiftControlSurface(
     const state = navigation.getSnapshot();
     const hours = String(Math.floor(state.gameTime.minuteOfDay / 60)).padStart(2, '0');
     const minutes = String(state.gameTime.minuteOfDay % 60).padStart(2, '0');
+    const identity = session.getProjection();
     status.textContent =
-      `${state.location.toUpperCase()} / DAY ${String(state.gameTime.day)} / ${hours}:${minutes} / ${String(state.credits)} CR`;
+      `${state.location.toUpperCase()} / DAY ${String(state.gameTime.day)} / ${hours}:${minutes} / ${String(state.credits)} CR` +
+      (identity.coverName === null ? '' : ` / ${identity.coverName}`);
+    identityForm.hidden = identity.hasCoverIdentity;
 
     actions.replaceChildren();
     if (state.location === 'home') {
@@ -97,9 +126,35 @@ export function createShiftControlSurface(
       const active = document.createElement('p');
       active.className = 'shift-work-active';
       active.textContent =
-        `ASSIGNED / ${ride.jobId} / ${ride.phase.toUpperCase()} — ` +
-        'Pickup and in-ride controls are the next integration step.';
+        `ASSIGNED / ${ride.jobId} / ${ride.phase.toUpperCase()}`;
       offers.append(active);
+      if (ride.phase === 'assigned') {
+        offers.append(button('Pick up passenger', () => runAction(() =>
+          session.execute({ type: 'ride.pickup' }),
+        )));
+      } else {
+        const presentation = session.getRidePresentation();
+        if (presentation?.dialogue !== null && presentation?.dialogue !== undefined) {
+          for (const line of presentation.dialogue.lines) {
+            const dialogueLine = document.createElement('p');
+            dialogueLine.className = 'shift-dialogue-line';
+            dialogueLine.textContent = line.text;
+            offers.append(dialogueLine);
+          }
+          for (const choice of presentation.dialogue.choices) {
+            offers.append(button(choice.text, () => runAction(() =>
+              session.execute({
+                type: 'ride.choose-dialogue',
+                choiceIndex: choice.index,
+              }),
+            )));
+          }
+        }
+        const progress = document.createElement('p');
+        progress.textContent =
+          'Route navigation / arrival integration is in progress.';
+        offers.append(progress);
+      }
       return;
     }
     const available = session.listWorkOffers();

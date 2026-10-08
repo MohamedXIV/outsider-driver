@@ -50,6 +50,17 @@ test('new shift navigates through home, garage and taxi using real persisted sta
   await expect(controls.getByText(/ASSIGNED \/ job:docks-underground-clinic/))
     .toBeVisible();
 
+  await controls.getByRole('button', { name: 'Pick up passenger' }).click();
+  await expect(controls.getByRole('alert'))
+    .toContainText(/Register your driver identity/);
+
+  await controls.getByLabel('DRIVER ALIAS / COVER').fill('Night Driver');
+  await controls.getByRole('button', { name: 'Register driver' }).click();
+  await controls.getByRole('button', { name: 'Pick up passenger' }).click();
+  await expect(controls.getByText(/Customs lights sweep every cab/)).toBeVisible();
+  await controls.getByRole('button', { name: 'Ask why.' }).click();
+  await expect(controls.getByText(/Keep moving/)).toBeVisible();
+
   await controls.getByRole('button', { name: 'Return to garage' }).click();
   await expect(controls.getByRole('alert')).toContainText(/Finish the active ride/);
   await expect(controls.locator('.shift-controls-status')).toContainText('TAXI');

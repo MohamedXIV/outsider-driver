@@ -211,6 +211,79 @@ describe('production GameSession', () => {
     restored.dispose();
   });
 
+  it('registers a player-selected alias without fabricating credentials and runs actual Ink dialogue', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+
+    expect(() => session.execute({
+      type: 'identity.register',
+      displayName: '  ',
+    })).toThrow();
+    expect(session.exportState().socialState).toBeNull();
+
+    session.execute({
+      type: 'identity.register',
+      displayName: 'Night Driver',
+    });
+    const social = session.exportState().socialState;
+    expect(social?.coverIdentity.displayName).toBe('Night Driver');
+    expect(social?.coverIdentity.attributes).toEqual([]);
+    expect(session.listAvailableWork().map((x) => x.job.id)).not.toContain(
+      'job:docks-official-clinic',
+    );
+    expect(() => session.execute({
+      type: 'identity.register',
+      displayName: 'Another Driver',
+    })).toThrow(/already registered/);
+
+    session.execute({
+      type: 'ride.accept',
+      jobId: entityId('job', 'docks-underground-clinic'),
+    });
+    session.execute({ type: 'ride.pickup' });
+    const pickedUp = session.exportState();
+    expect(pickedUp.rideSession?.phase).toBe('active');
+    expect(pickedUp.socialState?.knownFactIds).toContain(
+      'fact:docks-checkpoint-rumor',
+    );
+    expect(session.getRidePresentation()?.dialogue?.choices).toHaveLength(2);
+    session.execute({ type: 'ride.choose-dialogue', choiceIndex: 0 });
+    expect(session.exportState().socialState?.cityAttention.value).toBe(1);
+    expect(session.getRidePresentation()?.dialogue?.ended).toBe(true);
+
+    const beforeReload = session.exportState();
+    session.dispose();
+    const restored = GameSession.open(persistence(memory));
+    expect(restored.exportState()).toEqual(beforeReload);
+    expect(restored.getRidePresentation()?.dialogue?.ended).toBe(true);
+    restored.dispose();
+  });
+
+  it('never persists failed dialogue choices or replays narrative effects', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    session.execute({ type: 'identity.register', displayName: 'Cover' });
+    session.execute({
+      type: 'ride.accept',
+      jobId: entityId('job', 'docks-underground-clinic'),
+    });
+    session.execute({ type: 'ride.pickup' });
+    const baseline = session.exportState();
+    expect(() => session.execute({
+      type: 'ride.choose-dialogue',
+      choiceIndex: 999,
+    })).toThrow(/choice index/i);
+    expect(session.exportState()).toEqual(baseline);
+
+    memory.rejectWrites = true;
+    expect(() => session.execute({
+      type: 'ride.choose-dialogue',
+      choiceIndex: 0,
+    })).toThrow(/Storage quota exceeded/);
+    expect(session.exportState()).toEqual(baseline);
+    session.dispose();
+  });
+
   it('rolls back a dispatched ride if storage fails', () => {
     const memory = new MemoryStorage();
     const session = GameSession.open(persistence(memory));
