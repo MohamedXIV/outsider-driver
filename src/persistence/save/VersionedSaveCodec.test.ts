@@ -13,6 +13,7 @@ import {
 } from './VersionedSaveCodec';
 import {
   CURRENT_SAVE_SCHEMA_VERSION,
+  INITIAL_GAME_TIME,
   createInitialGameState,
   gameSaveCodec,
 } from './gameSave';
@@ -22,6 +23,7 @@ const timestamp = '2026-10-04T07:00:00.000Z';
 function currentEmptyState() {
   return {
     rideSession: null,
+    gameTime: INITIAL_GAME_TIME,
     socialState: null,
     translatorState: createInitialTranslatorState(),
     economyState: createInitialEconomyState(),
@@ -48,7 +50,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates the v1 empty production state through every version into v10', () => {
+  it('migrates the v1 empty production state through every version into v11', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -132,7 +134,7 @@ describe('gameSaveCodec', () => {
   it('rejects future saves instead of guessing how to read them', () => {
     expect(() =>
       gameSaveCodec.decode({
-        schemaVersion: 11,
+        schemaVersion: CURRENT_SAVE_SCHEMA_VERSION + 1,
         savedAt: timestamp,
         state: currentEmptyState(),
       }),

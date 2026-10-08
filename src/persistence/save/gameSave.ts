@@ -29,9 +29,21 @@ import {
   TranslatorStateSchema,
   createInitialTranslatorState,
 } from '../../domain/translator/TranslatorState';
+import {
+  compareGameTime,
+  GameTimeSchema,
+  type GameTime,
+} from '../../domain/time/GameTime';
 import { VersionedSaveCodec } from './VersionedSaveCodec';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 10 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 11 as const;
+
+// Canonical initial shift begins during the authored Docks evening window.
+// This is game-world time, never the computer's wall clock.
+export const INITIAL_GAME_TIME: GameTime = GameTimeSchema.parse({
+  day: 1,
+  minuteOfDay: 18 * 60,
+});
 
 export const GameStateV1Schema = z.object({}).strict();
 
@@ -126,11 +138,45 @@ export const GameStateV10Schema = z
   })
   .strict();
 
-export type GameState = z.infer<typeof GameStateV10Schema>;
+export const GameStateV11Schema = GameStateV10Schema.extend({
+  gameTime: GameTimeSchema,
+}).strict();
+
+export type GameState = z.infer<typeof GameStateV11Schema>;
+
+/**
+ * Historical v10 saves did not include the world's clock.
+ * Reconstruct the latest known persisted time to avoid rewinding behind
+ * active/completed rides or known relationship completions.
+ * This is a bounded migration estimate, not retroactive simulated time.
+ */
+function deriveLegacyGameTime(
+  previous: z.infer<typeof GameStateV10Schema>,
+): GameTime {
+  const observed: GameTime[] = [INITIAL_GAME_TIME];
+  const ride = previous.rideSession;
+  if (ride !== null) {
+    observed.push(ride.acceptedAt);
+    if (ride.phase !== 'assigned') {
+      observed.push(ride.startedAt);
+    }
+    if (ride.phase === 'completed') {
+      observed.push(ride.completedAt);
+    }
+  }
+  for (const entry of previous.relationshipState.entries) {
+    if (entry.lastCompletedAt !== null) {
+      observed.push(entry.lastCompletedAt);
+    }
+  }
+  return observed.reduce((latest, current) =>
+    compareGameTime(current, latest) > 0 ? current : latest,
+  );
+}
 
 export const gameSaveCodec = new VersionedSaveCodec({
   currentVersion: CURRENT_SAVE_SCHEMA_VERSION,
-  currentSchema: GameStateV10Schema,
+  currentSchema: GameStateV11Schema,
   historicalVersions: [
     {
       version: 1,
@@ -167,6 +213,10 @@ export const gameSaveCodec = new VersionedSaveCodec({
     {
       version: 9,
       schema: GameStateV9Schema,
+    },
+    {
+      version: 10,
+      schema: GameStateV10Schema,
     },
   ],
   migrations: [
@@ -279,12 +329,24 @@ export const gameSaveCodec = new VersionedSaveCodec({
         };
       },
     },
+    {
+      fromVersion: 10,
+      toVersion: 11,
+      migrate: (state) => {
+        const v10 = GameStateV10Schema.parse(state);
+        return {
+          ...v10,
+          gameTime: deriveLegacyGameTime(v10),
+        };
+      },
+    },
   ],
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV10Schema.parse({
+  return GameStateV11Schema.parse({
     rideSession: null,
+    gameTime: INITIAL_GAME_TIME,
     socialState: null,
     translatorState: createInitialTranslatorState(),
     economyState: createInitialEconomyState(),
