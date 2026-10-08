@@ -201,6 +201,32 @@ describe('production GameSession', () => {
     session.dispose();
   });
 
+  it('keeps successful commands committed even when a later observer fails', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    let notificationCount = 0;
+    let shouldThrow = false;
+    session.subscribe(() => {
+      notificationCount += 1;
+      if (shouldThrow) throw new Error('broken presentation');
+    });
+    shouldThrow = true;
+    const originalConsoleError = console.error;
+    console.error = () => {};
+    try {
+      expect(() => session.execute({ type: 'radio.listen', listening: true }))
+        .not.toThrow();
+      expect(notificationCount).toBe(2);
+      session.execute({ type: 'radio.listen', listening: false });
+      expect(notificationCount).toBe(2);
+    } finally {
+      console.error = originalConsoleError;
+    }
+    expect(memory.getItem(GAME_SAVE_STORAGE_KEY)).not.toBeNull();
+    expect(session.exportState().radioState.listening).toBe(false);
+    session.dispose();
+  });
+
   it('publishes state after successful persistence and disallows use after disposal', () => {
     const session = GameSession.open(persistence(new MemoryStorage()));
     const observed: GameState[] = [];

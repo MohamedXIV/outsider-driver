@@ -268,10 +268,17 @@ export class GameSession {
       throw error;
     }
 
-    for (const listener of this.#listeners) {
-      // Fresh state per subscriber: presentation code cannot mutate canonical
-      // memory or another subscriber's snapshot.
-      listener(this.exportState());
+    for (const listener of [...this.#listeners]) {
+      try {
+        // Fresh state per subscriber: presentation code cannot mutate canonical
+        // memory or another subscriber's snapshot.
+        listener(this.exportState());
+      } catch (error: unknown) {
+        // The durable command already succeeded. A presentation listener must
+        // never make a caller retry a command that has already been committed.
+        this.#listeners.delete(listener);
+        console.error('Game session listener failed after commit.', error);
+      }
     }
 
     // The persisted snapshot must never escape as a mutable reference into
