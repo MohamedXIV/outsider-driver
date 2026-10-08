@@ -1,5 +1,4 @@
 import source from '../narrative/foundation-passenger.ink?raw';
-import compiled from '../narrative/foundation-passenger.ink?compiled';
 import { defaultTaxiSceneDefinition } from '../presentation/defaultTaxiScene';
 import { defaultPersonalSpaceCatalog } from '../spaces/defaultPersonalSpaces';
 
@@ -792,7 +791,6 @@ export const productionContent = {
     {
       id: 'foundation-passenger',
       source,
-      compiled,
     },
   ],
   personalSpaces: defaultPersonalSpaceCatalog,
