@@ -4,6 +4,7 @@ import {
   foundationPassengerInkSource,
 } from '../content/narrative/foundationPassengerStory';
 import { entityId } from '../domain/ids/EntityId';
+import { productionContent } from '../content/production/ProductionContent';
 import {
   NarrativeDomainEventSchema,
   type NarrativeDomainEvent,
@@ -34,6 +35,24 @@ describe('Ink narrative boundary', () => {
       'GAME_REVEAL_FACT',
       'GAME_ADJUST_CITY_ATTENTION',
     ]);
+  });
+
+  it('keeps the production precompiled Ink story byte-for-byte in sync with its authored source', () => {
+    const authored = productionContent.narrativeStories.find(
+      (candidate) => candidate.id === 'foundation-passenger',
+    );
+    expect(authored).toBeDefined();
+    if (authored === undefined) throw new Error('Missing production Ink story');
+
+    expect(authored.compiled).toEqual(compileInkSource(authored.source));
+    const emitted: NarrativeDomainEvent[] = [];
+    const runtime = new InkNarrativeRuntime(
+      authored.compiled,
+      createQueries(false),
+      { emit: (event) => { emitted.push(event); } },
+    );
+    expect(runtime.continueUntilChoiceOrEnd().choices).toHaveLength(2);
+    expect(emitted.map((event) => event.type)).toContain('knowledge.reveal');
   });
 
   it('queries domain state and emits typed consequences without storing domain truth in Ink', () => {
