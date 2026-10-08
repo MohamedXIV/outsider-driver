@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GameApplication } from './GameApplication';
+import { GameSession } from './session/GameSession';
 import type { RenderingRuntimePort } from './ports/RenderingRuntimePort';
 
 class FakeRenderingRuntime implements RenderingRuntimePort {
@@ -35,6 +36,37 @@ describe('GameApplication', () => {
     application.dispose();
 
     expect(rendering.disposals).toBe(1);
+  });
+
+  it('owns and disposes the production game session', () => {
+    const rendering = new FakeRenderingRuntime();
+    const session = GameSession.open({
+      load: () => null,
+      save: () => {},
+    });
+    const application = new GameApplication(rendering, session);
+
+    expect(application.getSession()).toBe(session);
+    application.start();
+    application.dispose();
+
+    expect(() => session.exportState()).toThrow(/disposed/i);
+    expect(rendering.disposals).toBe(1);
+  });
+
+  it('still disposes its session when the renderer throws during cleanup', () => {
+    const rendering = new FakeRenderingRuntime();
+    const session = GameSession.open({ load: () => null, save: () => {} });
+    const application = new GameApplication(rendering, session);
+    application.start();
+
+    rendering.dispose = () => {
+      throw new Error('Renderer cleanup failed');
+    };
+
+    expect(() => application.dispose()).toThrow(/Renderer cleanup failed/);
+    expect(() => session.exportState()).toThrow(/disposed/i);
+    expect(() => application.start()).toThrow(/disposed/i);
   });
 
   it('refuses to restart after disposal', () => {

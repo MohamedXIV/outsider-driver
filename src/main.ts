@@ -1,5 +1,7 @@
 import './styles.css';
 import { GameApplication } from './app/GameApplication';
+import { BrowserGameSaveStorage } from './app/session/BrowserGameSaveStorage';
+import { GameSession } from './app/session/GameSession';
 import { BrowserAccessibilityPreferencesPersistence } from './app/preferences/BrowserAccessibilityPreferencesPersistence';
 import { AccessibilityPreferencesStore } from './domain/preferences/AccessibilityPreferencesState';
 import { detectBrowserRuntimeSupport } from './platform/BrowserRuntimeSupport';
@@ -118,51 +120,110 @@ async function runRequestedPersonalSpaceProbe(
 function bootstrapSupportedGame(
   applicationRoot: HTMLElement,
 ): () => void {
-  const preferencesPersistence =
-    new BrowserAccessibilityPreferencesPersistence();
-  const preferences = new AccessibilityPreferencesStore(
-    preferencesPersistence.load(),
-  );
-  const stopPreferencePersistence = preferences.subscribe(
-    (state) => {
-      preferencesPersistence.save(state);
-    },
-  );
-  const surface = createGameSurface(
-    applicationRoot,
-    preferences,
-  );
-  const rendering = new BabylonRenderingRuntime(
-    surface.canvas,
-    preferences,
-  );
-  const application = new GameApplication(rendering);
+  // Hydrate before constructing graphics; never overwrite an invalid save.
+  const session = GameSession.open(new BrowserGameSaveStorage());
+  let preferencesPersistence: BrowserAccessibilityPreferencesPersistence;
+  let preferences: AccessibilityPreferencesStore;
 
-  application.start();
-  performance.mark('outsider-driver:startup-ready');
-  void runRequestedInochiProbe();
-  void runRequestedPersonalSpaceProbe(rendering);
+  try {
+    preferencesPersistence = new BrowserAccessibilityPreferencesPersistence();
+    preferences = new AccessibilityPreferencesStore(
+      session.wasRestored()
+        ? session.exportState().accessibilityPreferences
+        : preferencesPersistence.load(),
+    );
+  } catch (error: unknown) {
+    session.dispose();
+    throw error;
+  }
+  let stopPreferencePersistence = (): void => {};
+  let surface: ReturnType<typeof createGameSurface> | null = null;
+  let rendering: BabylonRenderingRuntime | null = null;
+  let application: GameApplication | null = null;
+
+  try {
+    stopPreferencePersistence = preferences.subscribe((state) => {
+      // The session save is canonical. Keep the older preferences key
+      // synchronized for compatibility with existing installs.
+      session.execute({ type: 'preferences.update', preferences: state });
+      preferencesPersistence.save(state);
+    });
+    surface = createGameSurface(applicationRoot, preferences);
+    rendering = new BabylonRenderingRuntime(surface.canvas, preferences);
+    application = new GameApplication(rendering, session);
+    application.start();
+
+    performance.mark('outsider-driver:startup-ready');
+    void runRequestedInochiProbe();
+    void runRequestedPersonalSpaceProbe(rendering);
+  } catch (error: unknown) {
+    stopPreferencePersistence();
+    if (application !== null) {
+      application.dispose();
+    } else {
+      rendering?.dispose();
+      session.dispose();
+    }
+    surface?.dispose();
+    throw error;
+  }
+
+  if (application === null || surface === null) {
+    session.dispose();
+    throw new Error('Game bootstrap did not finish constructing its runtime.');
+  }
+
+  const activeApplication = application;
+  const activeSurface = surface;
 
   return (): void => {
-    application.dispose();
+    activeApplication.dispose();
     stopPreferencePersistence();
-    surface.dispose();
+    activeSurface.dispose();
+  };
+}
+
+function showStartupFailure(
+  applicationRoot: HTMLElement,
+  error: unknown,
+): () => void {
+  const shell = document.createElement('main');
+  shell.className = 'game-shell game-compatibility-shell';
+  const panel = document.createElement('section');
+  panel.className = 'game-compatibility-panel';
+  panel.setAttribute('role', 'alert');
+
+  const heading = document.createElement('h1');
+  heading.textContent = 'Unable to start Outsider Driver';
+  const explanation = document.createElement('p');
+  explanation.textContent =
+    'The game could not start safely. Existing save data has not been deleted. Avoid clearing site storage; keep a copy for recovery.';
+  const detail = document.createElement('p');
+  detail.textContent = error instanceof Error ? error.message : String(error);
+  panel.append(heading, explanation, detail);
+  shell.append(panel);
+  applicationRoot.replaceChildren(shell);
+
+  return (): void => {
+    applicationRoot.replaceChildren();
   };
 }
 
 const compatibility = detectBrowserRuntimeSupport();
-const disposeApplication = compatibility.supported
-  ? bootstrapSupportedGame(root)
-  : (() => {
-      const unsupported = createUnsupportedBrowserSurface(
-        root,
-        compatibility,
-      );
+let disposeApplication: () => void;
 
-      return (): void => {
-        unsupported.dispose();
-      };
-    })();
+if (!compatibility.supported) {
+  const unsupported = createUnsupportedBrowserSurface(root, compatibility);
+  disposeApplication = (): void => {
+    unsupported.dispose();
+  };
+} else {
+  try {
+    disposeApplication = bootstrapSupportedGame(root);
+  } catch (error: unknown) {
+    disposeApplication = showStartupFailure(root, error);
+  }
+}
 
 if (import.meta.hot !== undefined) {
   import.meta.hot.dispose(() => {
