@@ -1,9 +1,12 @@
 import { productionContent } from '../../content/production/ProductionContent';
 import type { PersonalSpaceDefinition } from '../../content/spaces/PersonalSpaceContracts';
-import type { PersonalSpaceId } from '../../domain/ids/EntityId';
+import {
+  entityId,
+  type PersonalSpaceId,
+} from '../../domain/ids/EntityId';
 import type { GameState } from '../../persistence/save/gameSave';
 import type { PersonalSpacePresentationPort } from '../spaces/PersonalSpaceOrchestrator';
-import { GameSession } from '../session/GameSession';
+import type { GameSession } from '../session/GameSession';
 
 export type ShiftLocation = 'home' | 'garage' | 'taxi';
 
@@ -14,8 +17,8 @@ export interface ShiftNavigationSnapshot {
   readonly inspectionLight: boolean | null;
 }
 
-const HOME = 'personal-space:home' as PersonalSpaceId;
-const GARAGE = 'personal-space:garage' as PersonalSpaceId;
+const HOME = entityId('personal-space', 'home');
+const GARAGE = entityId('personal-space', 'garage');
 
 function getSpace(spaceId: PersonalSpaceId): PersonalSpaceDefinition {
   const definition = productionContent.personalSpaces.spaces.find(

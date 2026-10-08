@@ -288,3 +288,12 @@ body {
 @media (max-width: 520px) {
   .shift-controls { left: 0.5rem; bottom: 0.5rem; width: calc(100vw - 1rem); max-height: 45dvh; }
 }
+
+.shift-control-error {
+  color: #ffe2c1;
+  border: 1px solid #cb826e;
+  padding: 0.5rem;
+  background: rgb(68 25 20 / 85%);
+  font-size: 0.83em;
+}
+.shift-control-error[hidden] { display: none; }

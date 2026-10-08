@@ -36,6 +36,10 @@ export function createShiftControlSurface(
   const status = document.createElement('p');
   status.className = 'shift-controls-status';
   status.setAttribute('aria-live', 'polite');
+  const actionError = document.createElement('p');
+  actionError.className = 'shift-control-error';
+  actionError.setAttribute('role', 'alert');
+  actionError.hidden = true;
   const actions = document.createElement('div');
   actions.className = 'shift-control-actions';
   const dispatch = document.createElement('details');
@@ -46,11 +50,22 @@ export function createShiftControlSurface(
   const offers = document.createElement('div');
   offers.className = 'shift-work-offers';
   dispatch.append(offers);
-  panel.append(heading, status, actions, dispatch);
+  panel.append(heading, status, actionError, actions, dispatch);
   mount.append(panel);
 
   let selectedJobId: JobId | null = null;
   let disposed = false;
+
+  const runAction = (action: () => void): void => {
+    actionError.hidden = true;
+    actionError.textContent = '';
+    try {
+      action();
+    } catch (error: unknown) {
+      actionError.textContent = error instanceof Error ? error.message : String(error);
+      actionError.hidden = false;
+    }
+  };
 
   const update = (): void => {
     if (disposed) return;
@@ -62,18 +77,18 @@ export function createShiftControlSurface(
 
     actions.replaceChildren();
     if (state.location === 'home') {
-      actions.append(button('Go to garage', () => navigation.goToGarage()));
+      actions.append(button('Go to garage', () => runAction(() => navigation.goToGarage())));
     } else if (state.location === 'garage') {
       actions.append(
-        button('Enter taxi', () => navigation.enterTaxi()),
-        button('Return home', () => navigation.goHome()),
+        button('Enter taxi', () => runAction(() => navigation.enterTaxi())),
+        button('Return home', () => runAction(() => navigation.goHome())),
         button(
           state.inspectionLight ? 'Turn inspection light off' : 'Turn inspection light on',
-          () => navigation.setInspectionLight(!state.inspectionLight),
+          () => runAction(() => navigation.setInspectionLight(!state.inspectionLight)),
         ),
       );
     } else {
-      actions.append(button('Return to garage', () => navigation.goToGarage()));
+      actions.append(button('Return to garage', () => runAction(() => navigation.goToGarage())));
     }
 
     offers.replaceChildren();
