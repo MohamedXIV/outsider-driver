@@ -17,7 +17,11 @@ import {
 } from '../../domain/preferences/AccessibilityPreferencesState';
 import { RadioStateStore } from '../../domain/radio/RadioState';
 import { RelationshipStateStore } from '../../domain/relationships/RelationshipState';
-import { SocialStealthStateStore } from '../../domain/social/SocialStealthState';
+import {
+  SocialStealthStateStore,
+  createSocialStealthState,
+  CoverIdentityProfileSchema,
+} from '../../domain/social/SocialStealthState';
 import { PersonalSpaceStateStore } from '../../domain/spaces/PersonalSpaceState';
 import {
   advanceGameTime,
@@ -26,9 +30,19 @@ import {
 import { TranslatorStateStore } from '../../domain/translator/TranslatorState';
 import { JobContractSchema } from '../../domain/work/JobRideContracts';
 import { TranslatorRuntime } from '../../domain/translator/TranslatorRuntime';
-import { PassengerRideOrchestrator } from '../rides/PassengerRideOrchestrator';
+import {
+  PassengerRideOrchestrator,
+  type PassengerRideDependencies,
+  type RidePresentation,
+} from '../rides/PassengerRideOrchestrator';
+import { EconomyRideCompletionAdapter } from '../work/EconomyRideCompletionAdapter';
+import { RelationshipRideCompletionAdapter } from '../relationships/RelationshipRideCompletionAdapter';
 import { SocialStealthNarrativeAdapter } from '../narrative/SocialStealthNarrativeAdapter';
-import { RelationshipNarrativeAdapter, withRelationshipNarrativeQueries } from '../narrative/RelationshipNarrativeAdapter';
+import {
+  RelationshipNarrativeAdapter,
+  withRelationshipNarrativeQueries,
+  withRelationshipNarrativeEvents,
+} from '../narrative/RelationshipNarrativeAdapter';
 import { PersonalPersistenceNarrativeAdapter, withPersonalPersistenceNarrativeQueries } from '../narrative/PersonalPersistenceNarrativeAdapter';
 import { TranslatorNarrativeAdapter, withTranslatorNarrativeQueries } from '../narrative/TranslatorNarrativeAdapter';
 import type { NarrativeQueryPort } from '../../narrative/contracts/NarrativeBoundary';
@@ -50,6 +64,9 @@ export type GameSessionCommand =
   | { readonly type: 'space.set-flag'; readonly spaceId: PersonalSpaceId; readonly flagId: string; readonly value: boolean }
   | { readonly type: 'time.advance'; readonly minutes: number }
   | { readonly type: 'ride.accept'; readonly jobId: JobId }
+  | { readonly type: 'ride.pickup' }
+  | { readonly type: 'ride.choose-dialogue'; readonly choiceIndex: number }
+  | { readonly type: 'identity.register'; readonly displayName: string }
   | { readonly type: 'radio.tune'; readonly stationId: RadioStationId }
   | { readonly type: 'radio.listen'; readonly listening: boolean }
   | { readonly type: 'translator.activate'; readonly packId: TranslatorPackId }
@@ -62,6 +79,7 @@ export interface GameSessionProjection {
   readonly currentSpaceId: PersonalSpaceId | null;
   readonly activeRidePhase: NonNullable<GameState['rideSession']>['phase'] | null;
   readonly hasCoverIdentity: boolean;
+  readonly coverName: string | null;
   readonly tunedRadioStationId: RadioStationId | null;
   readonly radioListening: boolean;
   readonly ownedTranslatorPackCount: number;
@@ -173,6 +191,7 @@ export class GameSession {
       currentSpaceId: state.personalSpaceState.currentSpaceId,
       activeRidePhase: state.rideSession?.phase ?? null,
       hasCoverIdentity: state.socialState !== null,
+      coverName: state.socialState?.coverIdentity.displayName ?? null,
       tunedRadioStationId: state.radioState.tunedStationId,
       radioListening: state.radioState.listening,
       ownedTranslatorPackCount: state.translatorState.ownedPackIds.length,
@@ -239,6 +258,19 @@ export class GameSession {
       throw new Error('A ride has already used this dispatch identity; advance world time.');
     }
 
+    const ride = PassengerRideOrchestrator.acceptJob(
+      job,
+      rideId,
+      this.#state.gameTime,
+      this.#rideDependencies(),
+    );
+    this.#state = {
+      ...this.#state,
+      rideSession: ride.getSessionSave(),
+    };
+  }
+
+  #rideDependencies(): PassengerRideDependencies {
     const social = this.#stores.social === null
       ? null
       : new SocialStealthNarrativeAdapter(this.#stores.social);
@@ -258,46 +290,99 @@ export class GameSession {
       ),
       new TranslatorNarrativeAdapter(new TranslatorRuntime(this.#stores.translator)),
     );
-    const ride = PassengerRideOrchestrator.acceptJob(
-      job,
-      rideId,
-      this.#state.gameTime,
-      {
-        world: productionContent.world,
-        motionCatalog: productionContent.routeMotion,
-        routeExperience: productionContent.routeExperience,
-        passengers: productionContent.passengers,
-        narrativeStories: {
-          getInkSource: (storyId) => {
-            const story = productionContent.narrativeStories.find(
-              (candidate) => candidate.id === storyId,
-            );
-            if (story === undefined) throw new Error(`Unknown authored Ink story: ${storyId}`);
-            return story.source;
-          },
-        },
-        narrativeQueries: queries,
-        // An assigned ride never emits events. Pickup/completion will get
-        // canonical transaction-bound event and settlement sinks in the
-        // next #67 slice; fail closed if invoked before then.
-        narrativeEvents: {
-          emit: () => { throw new Error('Ride narrative mutation boundary is not connected.'); },
-        },
-        completion: {
-          commit: () => { throw new Error('Ride settlement boundary is not connected.'); },
-        },
-        workEligibility: createWorkEligibilityContext(
-          this.#stores.economy,
-          this.#stores.social,
-          this.#stores.personal,
-          this.#stores.relationships,
-        ),
-        autopilot: { gameMinutesPerRealSecond: 2 },
-      },
+    const economyCompletion = new EconomyRideCompletionAdapter(
+      this.#stores.economy,
+      this.#work,
     );
-    this.#state = {
-      ...this.#state,
-      rideSession: ride.getSessionSave(),
+    const relationshipCompletion = new RelationshipRideCompletionAdapter(
+      this.#stores.relationships,
+    );
+    const narrativeEvents = withRelationshipNarrativeEvents(
+      social ?? {
+        emit: () => {
+          throw new Error('Register a player identity before beginning narrative events.');
+        },
+      },
+      relationship,
+    );
+
+    return {
+      world: productionContent.world,
+      motionCatalog: productionContent.routeMotion,
+      routeExperience: productionContent.routeExperience,
+      passengers: productionContent.passengers,
+      narrativeStories: {
+        getInkSource: (storyId) => {
+          const story = productionContent.narrativeStories.find(
+            (candidate) => candidate.id === storyId,
+          );
+          if (story === undefined) throw new Error(`Unknown authored Ink story: ${storyId}`);
+          return story.source;
+        },
+      },
+      narrativeQueries: queries,
+      narrativeEvents,
+      completion: {
+        commit: (context) => {
+          // Both domain stores are rolled back by GameSession.execute when
+          // either stage or durable persistence fails.
+          economyCompletion.commit(context);
+          relationshipCompletion.commit(context);
+        },
+      },
+      workEligibility: createWorkEligibilityContext(
+        this.#stores.economy,
+        this.#stores.social,
+        this.#stores.personal,
+        this.#stores.relationships,
+      ),
+      autopilot: { gameMinutesPerRealSecond: 2 },
+    };
+  }
+
+  #requireRide(): PassengerRideOrchestrator {
+    const ride = this.#state.rideSession;
+    if (ride === null) throw new Error('No ride has been accepted.');
+    return PassengerRideOrchestrator.restore(ride, this.#rideDependencies());
+  }
+
+  public getRidePresentation(): RidePresentation | null {
+    this.#assertAlive();
+    if (this.#state.rideSession === null) return null;
+    return this.#requireRide().getPresentation();
+  }
+
+  #pickupRide(): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Passenger pickup must happen inside the taxi.');
+    }
+    if (this.#stores.social === null) {
+      throw new Error('Register your driver identity before picking up passengers.');
+    }
+    const ride = this.#requireRide();
+    ride.pickup(this.#state.gameTime);
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  #chooseDialogue(choiceIndex: number): void {
+    const ride = this.#requireRide();
+    ride.chooseDialogue(choiceIndex);
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  #registerIdentity(displayName: string): void {
+    if (this.#stores.social !== null) {
+      throw new Error('Driver identity is already registered.');
+    }
+    const identity = CoverIdentityProfileSchema.parse({
+      id: entityId('identity', 'driver'),
+      displayName,
+      // No permit, citizenship or invented claims granted during registration.
+      attributes: [],
+    });
+    this.#stores = {
+      ...this.#stores,
+      social: new SocialStealthStateStore(createSocialStealthState(identity)),
     };
   }
 
@@ -352,6 +437,15 @@ export class GameSession {
           break;
         case 'ride.accept':
           this.#acceptRide(command.jobId);
+          break;
+        case 'ride.pickup':
+          this.#pickupRide();
+          break;
+        case 'ride.choose-dialogue':
+          this.#chooseDialogue(command.choiceIndex);
+          break;
+        case 'identity.register':
+          this.#registerIdentity(command.displayName);
           break;
         case 'radio.tune':
           this.#stores.radio.tune(command.stationId);
