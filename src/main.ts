@@ -1,7 +1,7 @@
 import './styles.css';
 import { GameApplication } from './app/GameApplication';
 import { BrowserGameSaveStorage } from './app/session/BrowserGameSaveStorage';
-import { GameSession } from './app/session/GameSession';
+import type { GameSession } from './app/session/GameSession';
 import { PlayerShiftController } from './app/shift/PlayerShiftController';
 import {
   createShiftControlSurface,
@@ -124,9 +124,10 @@ async function runRequestedPersonalSpaceProbe(
 
 function bootstrapSupportedGame(
   applicationRoot: HTMLElement,
+  SessionCtor: typeof GameSession,
 ): () => void {
   // Hydrate before constructing graphics; never overwrite an invalid save.
-  const session = GameSession.open(new BrowserGameSaveStorage());
+  const session = SessionCtor.open(new BrowserGameSaveStorage());
   let preferencesPersistence: BrowserAccessibilityPreferencesPersistence;
   let preferences: AccessibilityPreferencesStore;
 
@@ -236,7 +237,11 @@ if (!compatibility.supported) {
   };
 } else {
   try {
-    disposeApplication = bootstrapSupportedGame(root);
+    // GameSession (including Ink Story, work and narrative orchestration)
+    // loads only on supported browser startup. Keep the versioned-save
+    // hydration before Babylon/UI construction, preserving error recovery.
+    const { GameSession: SessionCtor } = await import('./app/session/GameSession');
+    disposeApplication = bootstrapSupportedGame(root, SessionCtor);
   } catch (error: unknown) {
     disposeApplication = showStartupFailure(root, error);
   }
