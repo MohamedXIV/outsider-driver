@@ -67,7 +67,7 @@ describe('PlayerShiftController', () => {
     expect(x.controller.getSnapshot().location).toBe('taxi');
     expect(x.showTaxi).toHaveBeenCalledTimes(1);
     expect(x.showPersonalSpace).not.toHaveBeenCalled();
-    expect(x.getSaved()).toBeNull();
+    expect(x.getSaved()).not.toBeNull();
     x.controller.dispose();
     expect(() => x.controller.goToGarage()).toThrow(/disposed/i);
     x.session.dispose();

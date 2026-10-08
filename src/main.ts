@@ -2,6 +2,11 @@ import './styles.css';
 import { GameApplication } from './app/GameApplication';
 import { BrowserGameSaveStorage } from './app/session/BrowserGameSaveStorage';
 import { GameSession } from './app/session/GameSession';
+import { PlayerShiftController } from './app/shift/PlayerShiftController';
+import {
+  createShiftControlSurface,
+  type ShiftControlSurface,
+} from './ui/shift/createShiftControlSurface';
 import { BrowserAccessibilityPreferencesPersistence } from './app/preferences/BrowserAccessibilityPreferencesPersistence';
 import { AccessibilityPreferencesStore } from './domain/preferences/AccessibilityPreferencesState';
 import { detectBrowserRuntimeSupport } from './platform/BrowserRuntimeSupport';
@@ -140,6 +145,8 @@ function bootstrapSupportedGame(
   let surface: ReturnType<typeof createGameSurface> | null = null;
   let rendering: BabylonRenderingRuntime | null = null;
   let application: GameApplication | null = null;
+  let playerShift: PlayerShiftController | null = null;
+  let shiftControls: ShiftControlSurface | null = null;
 
   try {
     stopPreferencePersistence = preferences.subscribe((state) => {
@@ -152,11 +159,19 @@ function bootstrapSupportedGame(
     rendering = new BabylonRenderingRuntime(surface.canvas, preferences);
     application = new GameApplication(rendering, session);
     application.start();
+    playerShift = new PlayerShiftController(session, rendering);
+    shiftControls = createShiftControlSurface(
+      surface.uiLayer,
+      session,
+      playerShift,
+    );
 
     performance.mark('outsider-driver:startup-ready');
     void runRequestedInochiProbe();
     void runRequestedPersonalSpaceProbe(rendering);
   } catch (error: unknown) {
+    shiftControls?.dispose();
+    playerShift?.dispose();
     stopPreferencePersistence();
     if (application !== null) {
       application.dispose();
@@ -168,18 +183,30 @@ function bootstrapSupportedGame(
     throw error;
   }
 
-  if (application === null || surface === null) {
+  if (
+    application === null ||
+    surface === null ||
+    playerShift === null ||
+    shiftControls === null
+  ) {
     session.dispose();
     throw new Error('Game bootstrap did not finish constructing its runtime.');
   }
 
   const activeApplication = application;
   const activeSurface = surface;
+  const activePlayerShift = playerShift;
+  const activeShiftControls = shiftControls;
 
   return (): void => {
-    activeApplication.dispose();
-    stopPreferencePersistence();
-    activeSurface.dispose();
+    activeShiftControls.dispose();
+    activePlayerShift.dispose();
+    try {
+      activeApplication.dispose();
+    } finally {
+      stopPreferencePersistence();
+      activeSurface.dispose();
+    }
   };
 }
 
