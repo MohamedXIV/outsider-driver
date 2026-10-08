@@ -47,6 +47,9 @@ export function createShiftControlSurface(
   const summary = document.createElement('summary');
   summary.textContent = 'DISPATCH / WORK NETWORK';
   dispatch.append(summary);
+  // A restored mid-ride save must expose the active passenger without forcing
+  // the player to rediscover a collapsed dispatch drawer on every reload.
+  dispatch.open = session.exportState().rideSession !== null;
   const offers = document.createElement('div');
   offers.className = 'shift-work-offers';
   dispatch.append(offers);
@@ -151,11 +154,54 @@ export function createShiftControlSurface(
           }
         }
         const progress = document.createElement('p');
-        progress.textContent =
-          'Route navigation / arrival integration is in progress.';
+        const distance = presentation?.routeProgress;
+        progress.className = 'shift-route-progress';
+        progress.textContent = distance === null || distance === undefined
+          ? 'Route awaiting navigation'
+          : `AUTOPILOT / ${String(Math.round(distance * 100))}%`;
         offers.append(progress);
+
+        const paused = presentation?.pausedRouteEvent;
+        if (paused?.type === 'route.checkpoint') {
+          const warning = document.createElement('p');
+          warning.textContent = `Checkpoint: ${paused.checkpointId}`;
+          offers.append(warning);
+          offers.append(button('Continue checkpoint', () => runAction(() =>
+            session.execute({
+              type: 'ride.resolve-event',
+              resolution: { type: 'continue' },
+            }),
+          )));
+        } else if (paused?.type === 'route.decision') {
+          const warning = document.createElement('p');
+          warning.textContent = paused.promptKey;
+          offers.append(warning);
+          for (const choice of paused.choices) {
+            offers.append(button(choice.label, () => runAction(() =>
+              session.execute({
+                type: 'ride.resolve-event',
+                resolution: { type: 'choose', choiceId: choice.id },
+              }),
+            )));
+          }
+        } else if (presentation?.canDropOff) {
+          offers.append(button('Drop off passenger', () => runAction(() =>
+            session.execute({ type: 'ride.drop-off' }),
+          )));
+        } else if (presentation?.phase === 'active') {
+          offers.append(button('Advance autopilot', () => runAction(() =>
+            session.execute({ type: 'ride.advance', seconds: 3 }),
+          )));
+        }
       }
       return;
+    }
+    if (ride?.phase === 'completed') {
+      const receipt = document.createElement('p');
+      receipt.className = 'shift-work-active';
+      receipt.textContent =
+        `RIDE COMPLETED / ${ride.jobId} / payment settled / ${String(state.credits)} CR balance`;
+      offers.append(receipt);
     }
     const available = session.listWorkOffers();
     if (!available.some((entry) => entry.eligible)) {
