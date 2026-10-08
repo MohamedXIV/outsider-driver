@@ -65,7 +65,7 @@ describe('PlayerShiftController', () => {
   it('resumes persisted taxi scene without resetting time/location', () => {
     const x = harness(true);
     expect(x.controller.getSnapshot().location).toBe('taxi');
-    expect(x.showTaxi).toHaveBeenCalledTimes(1);
+    expect(x.showTaxi).not.toHaveBeenCalled();
     expect(x.showPersonalSpace).not.toHaveBeenCalled();
     expect(x.getSaved()).not.toBeNull();
     x.controller.dispose();

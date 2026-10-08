@@ -183,6 +183,23 @@ export class GameSession {
     }));
   }
 
+  public listWorkOffers() {
+    this.#assertAlive();
+    return this.#work.listOffers(
+      this.#state.gameTime,
+      createWorkEligibilityContext(
+        this.#stores.economy,
+        this.#stores.social,
+        this.#stores.personal,
+        this.#stores.relationships,
+      ),
+    ).map((entry) => ({
+      ...entry,
+      reasons: [...entry.reasons],
+      job: JobContractSchema.parse(entry.job),
+    }));
+  }
+
   public subscribe(listener: (state: GameState) => void): () => void {
     this.#assertAlive();
     this.#listeners.add(listener);

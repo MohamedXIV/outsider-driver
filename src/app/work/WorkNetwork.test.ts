@@ -58,6 +58,20 @@ describe('WorkNetwork', () => {
     ]);
   });
 
+  it('lists locked official and expired work with actionable eligibility reasons', () => {
+    const network = new WorkNetwork(productionContent.jobs);
+    const ctx = createWorkEligibilityContext(new EconomyStateStore(), null);
+    const offered = network.listOffers(shiftTime, ctx);
+    expect(offered.map((x) => ({ id: x.job.id, eligible: x.eligible }))).toEqual([
+      { id: 'job:docks-official-clinic', eligible: false },
+      { id: 'job:docks-underground-clinic', eligible: true },
+    ]);
+    expect(offered[0]?.reasons).toContain('cover:work-permit');
+    const expired = network.listOffers({ day: 2, minuteOfDay: 3 * 60 }, ctx);
+    expect(expired.every((x) => x.reasons.includes('availability:expired'))).toBe(true);
+    expect(network.listAvailable(shiftTime, ctx)).toHaveLength(1);
+  });
+
   it('does not surface jobs outside their authored availability window', () => {
     const economy = new EconomyStateStore();
     const network = new WorkNetwork(productionContent.jobs);

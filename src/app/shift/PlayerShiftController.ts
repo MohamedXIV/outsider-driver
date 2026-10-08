@@ -73,6 +73,13 @@ export class PlayerShiftController {
           (entry) => entry.spaceId === current,
         ),
       );
+      // BabylonRenderingRuntime already boots the taxi. Recreating its
+      // large scene on an initial restored taxi save wastes WebGL resources.
+      if (this.#lastSpaceId === undefined && current === null) {
+        this.#lastSpaceId = null;
+        this.#lastFlags = flags;
+        return;
+      }
       if (current !== this.#lastSpaceId) {
         if (current === null) {
           this.#presentation.showTaxi();
@@ -112,6 +119,10 @@ export class PlayerShiftController {
     this.#assertAlive();
     const location = this.getSnapshot().location;
     if (location === 'garage') return;
+    const ride = this.#session.exportState().rideSession;
+    if (location === 'taxi' && ride !== null && ride.phase !== 'completed') {
+      throw new Error('Finish the active ride before returning to the garage.');
+    }
     // Home ↔ garage; a returning driver can park the taxi.
     this.#session.execute({ type: 'space.enter', spaceId: GARAGE });
   }

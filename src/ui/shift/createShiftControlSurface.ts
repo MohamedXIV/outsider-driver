@@ -45,7 +45,7 @@ export function createShiftControlSurface(
   const dispatch = document.createElement('details');
   dispatch.className = 'shift-work-board';
   const summary = document.createElement('summary');
-  summary.textContent = 'DISPATCH / AVAILABLE WORK';
+  summary.textContent = 'DISPATCH / WORK NETWORK';
   dispatch.append(summary);
   const offers = document.createElement('div');
   offers.className = 'shift-work-offers';
@@ -92,16 +92,16 @@ export function createShiftControlSurface(
     }
 
     offers.replaceChildren();
-    const available = session.listAvailableWork();
-    if (available.length === 0) {
+    const available = session.listWorkOffers();
+    if (!available.some((entry) => entry.eligible)) {
       const none = document.createElement('p');
-      none.textContent = 'No eligible offers at this time.';
+      none.textContent = 'No eligible offers right now. Locked work is listed below.';
       offers.append(none);
-      selectedJobId = null;
     }
-    for (const { job } of available) {
+    for (const { job, eligible, reasons } of available) {
       const item = document.createElement('article');
       item.className = 'shift-work-item';
+      item.dataset.eligibility = eligible ? 'eligible' : 'locked';
       const name = document.createElement('h2');
       name.textContent = getPassengerName(job.passengerId);
       const meta = document.createElement('p');
@@ -113,7 +113,16 @@ export function createShiftControlSurface(
           update();
         },
       );
-      item.append(name, meta, inspect);
+      item.append(name, meta);
+      const eligibility = document.createElement('p');
+      eligibility.textContent = eligible
+        ? 'Eligible — available for dispatch inspection'
+        : `Locked — ${reasons.map((reason) => reason.startsWith('cover:')
+          ? `missing credential: ${reason.slice(6)}`
+          : reason.startsWith('availability:')
+            ? reason.slice(13).replaceAll('-', ' ')
+            : reason.replaceAll('-', ' ')).join(', ')}`;
+      item.append(eligibility, inspect);
       if (selectedJobId === job.id) {
         const details = document.createElement('p');
         details.textContent =
