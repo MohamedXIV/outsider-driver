@@ -122,13 +122,20 @@ function bootstrapSupportedGame(
 ): () => void {
   // Hydrate before constructing graphics; never overwrite an invalid save.
   const session = GameSession.open(new BrowserGameSaveStorage());
-  const preferencesPersistence =
-    new BrowserAccessibilityPreferencesPersistence();
-  const preferences = new AccessibilityPreferencesStore(
-    session.wasRestored()
-      ? session.exportState().accessibilityPreferences
-      : preferencesPersistence.load(),
-  );
+  let preferencesPersistence: BrowserAccessibilityPreferencesPersistence;
+  let preferences: AccessibilityPreferencesStore;
+
+  try {
+    preferencesPersistence = new BrowserAccessibilityPreferencesPersistence();
+    preferences = new AccessibilityPreferencesStore(
+      session.wasRestored()
+        ? session.exportState().accessibilityPreferences
+        : preferencesPersistence.load(),
+    );
+  } catch (error: unknown) {
+    session.dispose();
+    throw error;
+  }
   let stopPreferencePersistence = (): void => {};
   let surface: ReturnType<typeof createGameSurface> | null = null;
   let rendering: BabylonRenderingRuntime | null = null;

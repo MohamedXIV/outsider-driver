@@ -37,9 +37,12 @@ export class GameApplication {
       return;
     }
 
-    this.#rendering.dispose();
-    this.#session?.dispose();
     this.#started = false;
     this.#disposed = true;
+    try {
+      this.#rendering.dispose();
+    } finally {
+      this.#session?.dispose();
+    }
   }
 }
