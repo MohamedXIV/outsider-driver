@@ -30,6 +30,8 @@ import {
 import { TranslatorStateStore } from '../../domain/translator/TranslatorState';
 import { JobContractSchema } from '../../domain/work/JobRideContracts';
 import { TranslatorRuntime } from '../../domain/translator/TranslatorRuntime';
+import { getRouteProgressSnapshot } from '../../domain/travel/RouteProgression';
+import type { RouteFlowResolution } from '../travel/RouteFlowController';
 import {
   PassengerRideOrchestrator,
   type PassengerRideDependencies,
@@ -66,6 +68,9 @@ export type GameSessionCommand =
   | { readonly type: 'ride.accept'; readonly jobId: JobId }
   | { readonly type: 'ride.pickup' }
   | { readonly type: 'ride.choose-dialogue'; readonly choiceIndex: number }
+  | { readonly type: 'ride.advance'; readonly seconds: number }
+  | { readonly type: 'ride.resolve-event'; readonly resolution: RouteFlowResolution }
+  | { readonly type: 'ride.drop-off' }
   | { readonly type: 'identity.register'; readonly displayName: string }
   | { readonly type: 'radio.tune'; readonly stationId: RadioStationId }
   | { readonly type: 'radio.listen'; readonly listening: boolean }
@@ -370,6 +375,75 @@ export class GameSession {
     this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
   }
 
+  /**
+   * Derive elapsed world time from the persisted, fractional route position.
+   * Never floor individual step deltas: reloading or a paused checkpoint
+   * would otherwise silently lose world minutes.
+   */
+  #syncRideClock(
+    liveRide: NonNullable<GameState['rideSession']>,
+  ): void {
+    if (liveRide.phase !== 'active' && liveRide.phase !== 'dropoff-ready') {
+      throw new Error('Only an active ride has route time.');
+    }
+    const elapsed = getRouteProgressSnapshot(
+      liveRide.routeFlow.routeState,
+      productionContent.world,
+    ).routeElapsedMinutes;
+    const newTime = advanceGameTime(
+      liveRide.startedAt,
+      Math.floor(elapsed + 1e-9),
+    );
+    const current = this.#state.gameTime;
+    if (current.day > newTime.day ||
+        (current.day === newTime.day &&
+         current.minuteOfDay > newTime.minuteOfDay)) {
+      throw new Error('Ride progress cannot move the world clock backward.');
+    }
+    this.#state = { ...this.#state, gameTime: newTime };
+  }
+
+  #advanceRide(seconds: number): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Taxi must be active to drive the route.');
+    }
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 30) {
+      throw new RangeError('Route step must be between 0 and 30 real seconds.');
+    }
+    const ride = this.#requireRide();
+    const before = ride.getPresentation();
+    if (before.phase !== 'active') {
+      throw new Error('Only an active ride can advance on autopilot.');
+    }
+    if (before.pausedRouteEvent !== null) {
+      throw new Error('Resolve the paused route event before continuing.');
+    }
+    ride.advance(seconds);
+    const save = ride.getSessionSave();
+    this.#syncRideClock(save);
+    this.#state = { ...this.#state, rideSession: save };
+  }
+
+  #resolveRideEvent(resolution: RouteFlowResolution): void {
+    const ride = this.#requireRide();
+    ride.resolveRouteEvent(resolution);
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  #dropOffRide(): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Drop-off requires the taxi.');
+    }
+    const ride = this.#requireRide();
+    if (!ride.getPresentation().canDropOff) {
+      throw new Error('The route must arrive before drop-off.');
+    }
+    ride.dropOff(this.#state.gameTime);
+    // Economy, relationship, completed ride and clock share the same
+    // durable command transaction. Any failure restores all domain stores.
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
   #registerIdentity(displayName: string): void {
     if (this.#stores.social !== null) {
       throw new Error('Driver identity is already registered.');
@@ -443,6 +517,15 @@ export class GameSession {
           break;
         case 'ride.choose-dialogue':
           this.#chooseDialogue(command.choiceIndex);
+          break;
+        case 'ride.advance':
+          this.#advanceRide(command.seconds);
+          break;
+        case 'ride.resolve-event':
+          this.#resolveRideEvent(command.resolution);
+          break;
+        case 'ride.drop-off':
+          this.#dropOffRide();
           break;
         case 'identity.register':
           this.#registerIdentity(command.displayName);
