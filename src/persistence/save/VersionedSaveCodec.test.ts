@@ -117,7 +117,8 @@ describe('gameSaveCodec', () => {
         }],
       },
     };
-    const { gameTime: _oldTime, ...v10 } = older;
+    const v10: Record<string, unknown> = structuredClone(older);
+    delete v10.gameTime;
     const result = gameSaveCodec.decode({
       schemaVersion: 10,
       savedAt: timestamp,

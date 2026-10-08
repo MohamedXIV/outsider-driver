@@ -156,6 +156,31 @@ describe('production GameSession', () => {
     restored.dispose();
   });
 
+  it('returns independent work snapshots and keeps observers away from canonical state', () => {
+    const session = GameSession.open(persistence(new MemoryStorage()));
+    const available = session.listAvailableWork();
+    const underground = available.find(
+      ({ job }) => job.id === 'job:docks-underground-clinic',
+    );
+    expect(underground).toBeDefined();
+    const originalFare = underground?.job.fare.baseCredits;
+    if (underground === undefined) throw new Error('Missing authored underground job');
+
+    underground.job.fare.baseCredits = 99999;
+    const second = session.listAvailableWork();
+    expect(second.find(({ job }) => job.id === underground.job.id)
+      ?.job.fare.baseCredits).toBe(originalFare);
+
+    session.subscribe((state) => {
+      state.radioState.listening = true;
+    });
+    expect(session.exportState().radioState.listening).toBe(false);
+
+    session.execute({ type: 'radio.listen', listening: false });
+    expect(session.exportState().radioState.listening).toBe(false);
+    session.dispose();
+  });
+
   it('publishes state after successful persistence and disallows use after disposal', () => {
     const session = GameSession.open(persistence(new MemoryStorage()));
     const observed: GameState[] = [];

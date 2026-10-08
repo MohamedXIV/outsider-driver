@@ -176,7 +176,11 @@ export class GameSession {
         this.#stores.personal,
         this.#stores.relationships,
       ),
-    );
+    ).map((entry) => ({
+      channel: entry.channel,
+      // Never expose mutable references into the authoritative job catalog.
+      job: JobContractSchema.parse(entry.job),
+    }));
   }
 
   public subscribe(listener: (state: GameState) => void): () => void {
@@ -256,7 +260,9 @@ export class GameSession {
     }
 
     for (const listener of this.#listeners) {
-      listener(next);
+      // Fresh state per subscriber: presentation code cannot mutate canonical
+      // memory or another subscriber's snapshot.
+      listener(this.exportState());
     }
 
     return next;
