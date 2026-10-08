@@ -10,7 +10,7 @@ import { PlayerShiftController } from './PlayerShiftController';
 function harness(saved = false) {
   let persisted: ReturnType<GameSession['exportState']> | null = null;
   if (saved) {
-    const initial = GameSession.open({ load: () => null, save: () => {} });
+    const initial = GameSession.open({ load: () => null, save: () => { return; } });
     persisted = initial.exportState();
     initial.dispose();
   }
@@ -38,7 +38,7 @@ describe('PlayerShiftController', () => {
     expect(x.showPersonalSpace.mock.lastCall?.[0].kind).toBe('home');
     expect(x.getSaved()?.personalSpaceState.currentSpaceId).toBe('personal-space:home');
 
-    expect(() => x.controller.enterTaxi()).toThrow(/garage/i);
+    expect(() => { x.controller.enterTaxi(); }).toThrow(/garage/i);
     x.controller.goToGarage();
     expect(x.controller.getSnapshot().location).toBe('garage');
     expect(x.showPersonalSpace.mock.lastCall?.[0].kind).toBe('garage');
@@ -51,7 +51,7 @@ describe('PlayerShiftController', () => {
     x.controller.enterTaxi();
     expect(x.showTaxi).toHaveBeenCalledTimes(1);
     expect(x.controller.getSnapshot().location).toBe('taxi');
-    expect(() => x.controller.goHome()).toThrow(/garage/i);
+    expect(() => { x.controller.goHome(); }).toThrow(/garage/i);
 
     x.controller.goToGarage();
     expect(x.controller.getSnapshot().inspectionLight).toBe(true);
@@ -69,7 +69,7 @@ describe('PlayerShiftController', () => {
     expect(x.showPersonalSpace).not.toHaveBeenCalled();
     expect(x.getSaved()).not.toBeNull();
     x.controller.dispose();
-    expect(() => x.controller.goToGarage()).toThrow(/disposed/i);
+    expect(() => { x.controller.goToGarage(); }).toThrow(/disposed/i);
     x.session.dispose();
   });
 

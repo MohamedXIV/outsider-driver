@@ -47,10 +47,39 @@ export function createShiftControlSurface(
   const summary = document.createElement('summary');
   summary.textContent = 'DISPATCH / WORK NETWORK';
   dispatch.append(summary);
+  // A restored mid-ride save must expose the active passenger without forcing
+  // the player to rediscover a collapsed dispatch drawer on every reload.
+  dispatch.open = session.exportState().rideSession !== null;
   const offers = document.createElement('div');
   offers.className = 'shift-work-offers';
   dispatch.append(offers);
-  panel.append(heading, status, actionError, actions, dispatch);
+  const identityForm = document.createElement('form');
+  identityForm.className = 'shift-identity';
+  const identityLabel = document.createElement('label');
+  identityLabel.textContent = 'DRIVER ALIAS / COVER';
+  identityLabel.htmlFor = 'shift-cover-name';
+  const identityInput = document.createElement('input');
+  identityInput.id = 'shift-cover-name';
+  identityInput.type = 'text';
+  identityInput.name = 'coverName';
+  identityInput.maxLength = 120;
+  identityInput.required = true;
+  identityInput.placeholder = 'Choose your driver name';
+  const identitySubmit = document.createElement('button');
+  identitySubmit.type = 'submit';
+  identitySubmit.className = 'shift-control-button';
+  identitySubmit.textContent = 'Register driver';
+  identityForm.append(identityLabel, identityInput, identitySubmit);
+  identityForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    runAction(() => {
+      session.execute({
+        type: 'identity.register',
+        displayName: identityInput.value,
+      });
+    });
+  });
+  panel.append(heading, status, actionError, identityForm, actions, dispatch);
   mount.append(panel);
 
   let selectedJobId: JobId | null = null;
@@ -72,26 +101,108 @@ export function createShiftControlSurface(
     const state = navigation.getSnapshot();
     const hours = String(Math.floor(state.gameTime.minuteOfDay / 60)).padStart(2, '0');
     const minutes = String(state.gameTime.minuteOfDay % 60).padStart(2, '0');
+    const identity = session.getProjection();
     status.textContent =
-      `${state.location.toUpperCase()} / DAY ${String(state.gameTime.day)} / ${hours}:${minutes} / ${String(state.credits)} CR`;
+      `${state.location.toUpperCase()} / DAY ${String(state.gameTime.day)} / ${hours}:${minutes} / ${String(state.credits)} CR` +
+      (identity.coverName === null ? '' : ` / ${identity.coverName}`);
+    identityForm.hidden = identity.hasCoverIdentity;
 
     actions.replaceChildren();
     if (state.location === 'home') {
-      actions.append(button('Go to garage', () => runAction(() => navigation.goToGarage())));
+      actions.append(button('Go to garage', () => { runAction(() => { navigation.goToGarage(); }); }));
     } else if (state.location === 'garage') {
       actions.append(
-        button('Enter taxi', () => runAction(() => navigation.enterTaxi())),
-        button('Return home', () => runAction(() => navigation.goHome())),
+        button('Enter taxi', () => { runAction(() => { navigation.enterTaxi(); }); }),
+        button('Return home', () => { runAction(() => { navigation.goHome(); }); }),
         button(
           state.inspectionLight ? 'Turn inspection light off' : 'Turn inspection light on',
-          () => runAction(() => navigation.setInspectionLight(!state.inspectionLight)),
+          () => { runAction(() => { navigation.setInspectionLight(!state.inspectionLight); }); },
         ),
       );
     } else {
-      actions.append(button('Return to garage', () => runAction(() => navigation.goToGarage())));
+      actions.append(button('Return to garage', () => { runAction(() => { navigation.goToGarage(); }); }));
     }
 
     offers.replaceChildren();
+    const ride = session.exportState().rideSession;
+    if (ride !== null && ride.phase !== 'completed') {
+      const active = document.createElement('p');
+      active.className = 'shift-work-active';
+      active.textContent =
+        `ASSIGNED / ${ride.jobId} / ${ride.phase.toUpperCase()}`;
+      offers.append(active);
+      if (ride.phase === 'assigned') {
+        offers.append(button('Pick up passenger', () => { runAction(() =>
+          session.execute({ type: 'ride.pickup' }),
+        ); }));
+      } else {
+        const presentation = session.getRidePresentation();
+        if (presentation?.dialogue !== null && presentation?.dialogue !== undefined) {
+          for (const line of presentation.dialogue.lines) {
+            const dialogueLine = document.createElement('p');
+            dialogueLine.className = 'shift-dialogue-line';
+            dialogueLine.textContent = line.text;
+            offers.append(dialogueLine);
+          }
+          for (const choice of presentation.dialogue.choices) {
+            offers.append(button(choice.text, () => { runAction(() =>
+              session.execute({
+                type: 'ride.choose-dialogue',
+                choiceIndex: choice.index,
+              }),
+            ); }));
+          }
+        }
+        const progress = document.createElement('p');
+        const distance = presentation?.routeProgress;
+        progress.className = 'shift-route-progress';
+        progress.textContent = distance === null || distance === undefined
+          ? 'Route awaiting navigation'
+          : `AUTOPILOT / ${String(Math.round(distance * 100))}%`;
+        offers.append(progress);
+
+        const paused = presentation?.pausedRouteEvent;
+        if (paused?.type === 'route.checkpoint') {
+          const warning = document.createElement('p');
+          warning.textContent = `Checkpoint: ${paused.checkpointId}`;
+          offers.append(warning);
+          offers.append(button('Continue checkpoint', () => { runAction(() =>
+            session.execute({
+              type: 'ride.resolve-event',
+              resolution: { type: 'continue' },
+            }),
+          ); }));
+        } else if (paused?.type === 'route.decision') {
+          const warning = document.createElement('p');
+          warning.textContent = paused.promptKey;
+          offers.append(warning);
+          for (const choice of paused.choices) {
+            offers.append(button(choice.labelKey, () => { runAction(() =>
+              session.execute({
+                type: 'ride.resolve-event',
+                resolution: { type: 'choose', choiceId: choice.id },
+              }),
+            ); }));
+          }
+        } else if (presentation?.canDropOff) {
+          offers.append(button('Drop off passenger', () => { runAction(() =>
+            session.execute({ type: 'ride.drop-off' }),
+          ); }));
+        } else if (presentation?.phase === 'active') {
+          offers.append(button('Advance autopilot', () => { runAction(() =>
+            session.execute({ type: 'ride.advance', seconds: 3 }),
+          ); }));
+        }
+      }
+      return;
+    }
+    if (ride?.phase === 'completed') {
+      const receipt = document.createElement('p');
+      receipt.className = 'shift-work-active';
+      receipt.textContent =
+        `RIDE COMPLETED / ${ride.jobId} / payment settled / ${String(state.credits)} CR balance`;
+      offers.append(receipt);
+    }
     const available = session.listWorkOffers();
     if (!available.some((entry) => entry.eligible)) {
       const none = document.createElement('p');
@@ -126,9 +237,17 @@ export function createShiftControlSurface(
       if (selectedJobId === job.id) {
         const details = document.createElement('p');
         details.textContent =
-          `Route: ${job.pickupLocationId} → ${job.destinationLocationId}. ` +
-          'Dispatch acceptance becomes available when the live ride lifecycle is connected.';
+          `Route: ${job.pickupLocationId} → ${job.destinationLocationId}.`;
         item.append(details);
+        if (eligible && state.location === 'taxi') {
+          item.append(button('Accept job', () => { runAction(() =>
+            session.execute({ type: 'ride.accept', jobId: job.id }),
+          ); }));
+        } else if (eligible) {
+          const hint = document.createElement('p');
+          hint.textContent = 'Enter the taxi to accept dispatch.';
+          item.append(hint);
+        }
       }
       offers.append(item);
     }

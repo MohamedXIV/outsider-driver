@@ -73,6 +73,18 @@ export function withRelationshipNarrativeQueries(
   return {
     ...base,
     relationships,
+    // Class methods live on the prototype and disappear in `...base`.
+    // Forward via the owning instance so social/knowledge Ink queries keep
+    // their authoritative state and correct `this` binding.
+    hasFact: (factId) => base.hasFact(factId),
+    hasClaim: (claimId) => base.hasClaim(claimId),
+    coverIdentityMatches: (key, value) =>
+      base.coverIdentityMatches(key, value),
+    wouldContradictClaim: (proposal) =>
+      base.wouldContradictClaim(proposal),
+    getPassengerSuspicion: (passengerId) =>
+      base.getPassengerSuspicion(passengerId),
+    getCityAttention: () => base.getCityAttention(),
   };
 }
 
