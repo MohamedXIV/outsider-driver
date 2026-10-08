@@ -6,6 +6,24 @@ The player is a human living illegally in a city where humans are forbidden or h
 
 Every passenger creates a temporary social pressure chamber: the player must do a believable job, understand the city, maintain a cover story, learn what the passenger knows and believes, and decide how much to reveal.
 
+## Visual identity — retro-futurism (product direction)
+
+Outsider Driver must have a **distinctive retro-futuristic identity, not the default visual language of another cyberpunk city**. This is a product-level direction, even before the project has a complete art bible or approved concept art.
+
+The city should feel like a future with its own history. Vehicles, terminals, infrastructure, signage, domestic objects, and interfaces have recognizable generations, accumulated repairs, regional variations, and signs of everyday use. The old taxi is a recurring character-like space: its dashboard, controls, materials, visibility, and modifications should make its age and continued utility immediately legible.
+
+- Prioritize memorable silhouettes, tactile/repairable technology, layered analog-and-digital interfaces, practical interiors, and distinct district cultures over generic sci-fi decoration.
+- Advanced and alien technology can coexist with obsolete hardware; retro-futurism does **not** require choosing a specific historical decade or a uniform technology level.
+- Neon, holograms, rain, and high-tech signage may appear when justified by the world. A default purple/cyan neon skyline, ubiquitous holograms, or generic cyberpunk dressing must not substitute for authored visual identity.
+- Lighting, shapes, textures, typography, interfaces, and props should communicate place, social class, ownership, and risk, not just visual spectacle.
+- Preserve clear legibility inside the first-person taxi, particularly at night and during conversations; visual effects should not obstruct passengers, routes, controls, or choices.
+
+### Rendering style is still exploratory
+
+The **world identity above is a direction to honor now**; the exact rendering treatment is **not yet decided**. Stylized low-poly geometry, illustrated/pixel-art-influenced textures, anime/toon/cel lighting, selective outlines, and restrained dithering are candidates for look-development comparisons, not requirements or an approved art bible. Avoid visually unstable retro-rendering artifacts as a default aesthetic.
+
+Make look decisions using representative in-engine captures of the taxi cockpit (interior and street view), with shared material/lighting experiments in the garage or home and coherent presentation beside important Inochi2D passengers. Judge readability, performance, atmosphere, asset-authoring cost, and distinctiveness before adopting a renderer-wide technique. Do not confuse a sophisticated shader with finished environment modeling, framing, materials, and lighting.
+
 ## Core fantasy
 
 **Survive by learning how to belong somewhere you do not belong.**
