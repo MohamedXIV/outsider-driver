@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { entityId } from '../../domain/ids/EntityId';
 import {
   createInitialGameState,
@@ -211,8 +211,7 @@ describe('production GameSession', () => {
       if (shouldThrow) throw new Error('broken presentation');
     });
     shouldThrow = true;
-    const originalConsoleError = console.error;
-    console.error = () => {};
+    const errorLogger = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       expect(() => session.execute({ type: 'radio.listen', listening: true }))
         .not.toThrow();
@@ -220,7 +219,7 @@ describe('production GameSession', () => {
       session.execute({ type: 'radio.listen', listening: false });
       expect(notificationCount).toBe(2);
     } finally {
-      console.error = originalConsoleError;
+      errorLogger.mockRestore();
     }
     expect(memory.getItem(GAME_SAVE_STORAGE_KEY)).not.toBeNull();
     expect(session.exportState().radioState.listening).toBe(false);
