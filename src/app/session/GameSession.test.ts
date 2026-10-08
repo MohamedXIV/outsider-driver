@@ -284,6 +284,106 @@ describe('production GameSession', () => {
     session.dispose();
   });
 
+  it('finishes an authored shift with checkpoint pause, persistent clock and atomic fare', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    const jobId = entityId('job', 'docks-underground-clinic');
+    session.execute({ type: 'identity.register', displayName: 'Docks Driver' });
+    session.execute({ type: 'ride.accept', jobId });
+    session.execute({ type: 'ride.pickup' });
+    session.execute({ type: 'ride.choose-dialogue', choiceIndex: 0 });
+
+    expect(() => session.execute({ type: 'ride.drop-off' }))
+      .toThrow(/route must arrive/i);
+    session.execute({ type: 'ride.advance', seconds: 3 });
+    const atCheckpoint = session.exportState();
+    expect(atCheckpoint.gameTime).toEqual({ day: 1, minuteOfDay: 18 * 60 + 5 });
+    expect(session.getRidePresentation()?.pausedRouteEvent).toMatchObject({
+      type: 'route.checkpoint',
+      checkpointId: 'customs-light',
+    });
+    expect(() => session.execute({ type: 'ride.advance', seconds: 3 }))
+      .toThrow(/paused route event/i);
+    expect(session.exportState()).toEqual(atCheckpoint);
+
+    session.dispose();
+    const restored = GameSession.open(persistence(memory));
+    expect(restored.getRidePresentation()?.pausedRouteEvent?.type).toBe('route.checkpoint');
+    expect(restored.getProjection().gameTime.minuteOfDay).toBe(1085);
+    restored.execute({ type: 'ride.resolve-event', resolution: { type: 'continue' } });
+    restored.execute({ type: 'ride.advance', seconds: 3 });
+    expect(restored.getRidePresentation()).toMatchObject({
+      phase: 'dropoff-ready',
+      routeProgress: 1,
+      canDropOff: true,
+    });
+    expect(restored.getProjection().gameTime.minuteOfDay).toBe(1088);
+    expect(restored.exportState().economyState.credits).toBe(0);
+
+    const priorCompletion = restored.exportState();
+    memory.rejectWrites = true;
+    expect(() => restored.execute({ type: 'ride.drop-off' }))
+      .toThrow(/Storage quota exceeded/);
+    expect(restored.exportState()).toEqual(priorCompletion);
+    memory.rejectWrites = false;
+
+    const completed = restored.execute({ type: 'ride.drop-off' });
+    expect(completed.rideSession?.phase).toBe('completed');
+    expect(completed.gameTime.minuteOfDay).toBe(1088);
+    // Gross: 56 base + 8*4 per-minute + 12 bonus = 100.
+    // Expense: 10 dispatch + 8*1 per-minute = 18.
+    expect(completed.economyState.credits).toBe(82);
+    expect(completed.economyState.undergroundAccess).toBe(3);
+    expect(completed.economyState.settledRideIds).toEqual([
+      'ride:docks-underground-clinic-d1-m1080',
+    ]);
+    expect(completed.relationshipState.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          passengerId: 'passenger:underground-clinic-rider',
+          completedRideIds: ['ride:docks-underground-clinic-d1-m1080'],
+        }),
+      ]),
+    );
+    expect(() => restored.execute({ type: 'ride.drop-off' }))
+      .toThrow(/route must arrive/i);
+
+    restored.execute({
+      type: 'space.enter',
+      spaceId: entityId('personal-space', 'garage'),
+    });
+    restored.execute({
+      type: 'space.enter',
+      spaceId: entityId('personal-space', 'home'),
+    });
+    restored.dispose();
+
+    const home = GameSession.open(persistence(memory));
+    expect(home.exportState().rideSession?.phase).toBe('completed');
+    expect(home.getProjection()).toMatchObject({
+      credits: 82,
+      currentSpaceId: 'personal-space:home',
+      gameTime: { day: 1, minuteOfDay: 1088 },
+    });
+    home.dispose();
+  });
+
+  it('uses absolute route position so repeated sub-minute steps do not lose time', () => {
+    const session = GameSession.open(persistence(new MemoryStorage()));
+    session.execute({ type: 'identity.register', displayName: 'Driver' });
+    session.execute({
+      type: 'ride.accept', jobId: entityId('job', 'docks-underground-clinic'),
+    });
+    session.execute({ type: 'ride.pickup' });
+    for (let i = 0; i < 4; i += 1) {
+      session.execute({ type: 'ride.advance', seconds: 0.2 });
+    }
+    expect(session.getProjection().gameTime.minuteOfDay).toBe(1081);
+    const saved = session.exportState();
+    expect(saved.rideSession?.phase).toBe('active');
+    session.dispose();
+  });
+
   it('rolls back a dispatched ride if storage fails', () => {
     const memory = new MemoryStorage();
     const session = GameSession.open(persistence(memory));
