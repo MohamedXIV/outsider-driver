@@ -36,9 +36,12 @@ test('new shift navigates through home, garage and taxi using real persisted sta
 
   await controls.locator('.shift-work-board summary').click();
   await expect(controls.getByText('Backchannel Rider')).toBeVisible();
-  await expect(controls.getByText('Clinic Dispatcher')).toHaveCount(0);
+  await expect(controls.getByText('Clinic Dispatcher')).toBeVisible();
+  await expect(controls.getByText(/missing credential: work-permit/)).toBeVisible();
 
-  await controls.getByRole('button', { name: 'Inspect offer' }).click();
+  const eligibleJob = controls.locator('.shift-work-item[data-eligibility="eligible"]');
+  await expect(eligibleJob).toHaveCount(1);
+  await eligibleJob.getByRole('button', { name: 'Inspect offer' }).click();
   await expect(
     controls.getByText(/Dispatch acceptance becomes available/),
   ).toBeVisible();
