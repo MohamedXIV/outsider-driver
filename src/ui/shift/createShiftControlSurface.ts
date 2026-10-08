@@ -177,7 +177,7 @@ export function createShiftControlSurface(
           warning.textContent = paused.promptKey;
           offers.append(warning);
           for (const choice of paused.choices) {
-            offers.append(button(choice.label, () => runAction(() =>
+            offers.append(button(choice.labelKey, () => runAction(() =>
               session.execute({
                 type: 'ride.resolve-event',
                 resolution: { type: 'choose', choiceId: choice.id },
