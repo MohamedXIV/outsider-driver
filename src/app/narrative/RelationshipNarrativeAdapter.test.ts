@@ -105,6 +105,7 @@ describe('RelationshipNarrativeAdapter', () => {
 
     expect(composed.hasFact(knownFact)).toBe(true);
     expect(composed.hasClaim(entityId('claim', 'nonexistent'))).toBe(false);
+    expect(composed.coverIdentityMatches('work-permit', 'licensed-driver')).toBe(false);
     expect(composed.getCityAttention()).toBe(0);
     expect(composed.getPassengerSuspicion(
       entityId('passenger', 'underground-clinic-rider'),
