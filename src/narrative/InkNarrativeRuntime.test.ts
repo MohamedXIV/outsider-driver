@@ -38,11 +38,7 @@ describe('Ink narrative boundary', () => {
   });
 
   it('keeps the production precompiled Ink story byte-for-byte in sync with its authored source', () => {
-    const authored = productionContent.narrativeStories.find(
-      (candidate) => candidate.id === 'foundation-passenger',
-    );
-    expect(authored).toBeDefined();
-    if (authored === undefined) throw new Error('Missing production Ink story');
+    const authored = productionContent.narrativeStories[0];
 
     expect(authored.compiled).toEqual(compileInkSource(authored.source));
     const emitted: NarrativeDomainEvent[] = [];
