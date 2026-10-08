@@ -181,6 +181,26 @@ describe('production GameSession', () => {
     session.dispose();
   });
 
+  it('never leaks the mutable persisted snapshot through command results', () => {
+    const session = GameSession.open(persistence(new MemoryStorage()));
+    const returned = session.execute({ type: 'radio.listen', listening: true });
+    returned.radioState.listening = false;
+    returned.gameTime.day = 500;
+    expect(session.exportState().radioState.listening).toBe(true);
+    expect(session.getProjection().gameTime.day).toBe(1);
+    session.dispose();
+  });
+
+  it('unsubscribes callbacks that throw during initial delivery', () => {
+    const session = GameSession.open(persistence(new MemoryStorage()));
+    expect(() => session.subscribe(() => {
+      throw new Error('Listener failed');
+    })).toThrow(/Listener failed/);
+    expect(() => session.execute({ type: 'radio.listen', listening: true }))
+      .not.toThrow();
+    session.dispose();
+  });
+
   it('publishes state after successful persistence and disallows use after disposal', () => {
     const session = GameSession.open(persistence(new MemoryStorage()));
     const observed: GameState[] = [];

@@ -186,7 +186,12 @@ export class GameSession {
   public subscribe(listener: (state: GameState) => void): () => void {
     this.#assertAlive();
     this.#listeners.add(listener);
-    listener(this.exportState());
+    try {
+      listener(this.exportState());
+    } catch (error: unknown) {
+      this.#listeners.delete(listener);
+      throw error;
+    }
 
     return () => {
       this.#listeners.delete(listener);
@@ -248,6 +253,10 @@ export class GameSession {
               ),
           };
           break;
+        default: {
+          const unsupported: never = command;
+          throw new Error(`Unsupported session command: ${String(unsupported)}`);
+        }
       }
 
       next = this.exportState();
@@ -265,7 +274,9 @@ export class GameSession {
       listener(this.exportState());
     }
 
-    return next;
+    // The persisted snapshot must never escape as a mutable reference into
+    // #state, including when an outside caller retains the command result.
+    return this.exportState();
   }
 
   public dispose(): void {
