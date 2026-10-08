@@ -1,12 +1,22 @@
 import type { RenderingRuntimePort } from './ports/RenderingRuntimePort';
+import type { GameSession } from './session/GameSession';
 
 export class GameApplication {
   readonly #rendering: RenderingRuntimePort;
+  readonly #session: GameSession | null;
   #started = false;
   #disposed = false;
 
-  public constructor(rendering: RenderingRuntimePort) {
+  public constructor(
+    rendering: RenderingRuntimePort,
+    session: GameSession | null = null,
+  ) {
     this.#rendering = rendering;
+    this.#session = session;
+  }
+
+  public getSession(): GameSession | null {
+    return this.#session;
   }
 
   public start(): void {
@@ -28,6 +38,7 @@ export class GameApplication {
     }
 
     this.#rendering.dispose();
+    this.#session?.dispose();
     this.#started = false;
     this.#disposed = true;
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GameApplication } from './GameApplication';
+import { GameSession } from './session/GameSession';
 import type { RenderingRuntimePort } from './ports/RenderingRuntimePort';
 
 class FakeRenderingRuntime implements RenderingRuntimePort {
@@ -34,6 +35,22 @@ describe('GameApplication', () => {
     application.dispose();
     application.dispose();
 
+    expect(rendering.disposals).toBe(1);
+  });
+
+  it('owns and disposes the production game session', () => {
+    const rendering = new FakeRenderingRuntime();
+    const session = GameSession.open({
+      load: () => null,
+      save: () => {},
+    });
+    const application = new GameApplication(rendering, session);
+
+    expect(application.getSession()).toBe(session);
+    application.start();
+    application.dispose();
+
+    expect(() => session.exportState()).toThrow(/disposed/i);
     expect(rendering.disposals).toBe(1);
   });
 
