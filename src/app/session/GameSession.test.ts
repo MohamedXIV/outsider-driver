@@ -368,6 +368,66 @@ describe('production GameSession', () => {
     home.dispose();
   });
 
+  it('rejects checkpoint bypasses and teleportation without changing persistent state', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    session.execute({ type: 'identity.register', displayName: 'Guarded Driver' });
+    session.execute({
+      type: 'ride.accept',
+      jobId: entityId('job', 'docks-underground-clinic'),
+    });
+    session.execute({ type: 'ride.pickup' });
+    session.execute({ type: 'ride.advance', seconds: 3 });
+
+    const atCheckpoint = session.exportState();
+    expect(session.getRidePresentation()?.pausedRouteEvent?.type).toBe(
+      'route.checkpoint',
+    );
+    expect(() => session.execute({
+      type: 'ride.resolve-event',
+      resolution: { type: 'choose', choiceId: 'unsupported-detour' },
+    })).toThrow(/Checkpoint events only accept continue/);
+    expect(session.exportState()).toEqual(atCheckpoint);
+
+    expect(() => session.execute({
+      type: 'space.enter',
+      spaceId: entityId('personal-space', 'garage'),
+    })).toThrow(/Finish the active ride/);
+    expect(session.exportState()).toEqual(atCheckpoint);
+
+    session.execute({
+      type: 'ride.resolve-event',
+      resolution: { type: 'continue' },
+    });
+    expect(session.getRidePresentation()?.pausedRouteEvent).toBeNull();
+    session.dispose();
+  });
+
+  it('rolls back route progress and world clock when saving a drive step fails', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    session.execute({ type: 'identity.register', displayName: 'Recovery Driver' });
+    session.execute({
+      type: 'ride.accept',
+      jobId: entityId('job', 'docks-underground-clinic'),
+    });
+    session.execute({ type: 'ride.pickup' });
+    const before = session.exportState();
+    memory.rejectWrites = true;
+    expect(() => session.execute({
+      type: 'ride.advance',
+      seconds: 3,
+    })).toThrow(/Storage quota exceeded/);
+    expect(session.exportState()).toEqual(before);
+
+    memory.rejectWrites = false;
+    session.execute({ type: 'ride.advance', seconds: 3 });
+    expect(session.getProjection().gameTime.minuteOfDay).toBe(1085);
+    expect(session.getRidePresentation()?.pausedRouteEvent?.type)
+      .toBe('route.checkpoint');
+    session.dispose();
+  });
+
   it('uses absolute route position so repeated sub-minute steps do not lose time', () => {
     const session = GameSession.open(persistence(new MemoryStorage()));
     session.execute({ type: 'identity.register', displayName: 'Driver' });
