@@ -239,9 +239,9 @@ export class GameSession {
   }
 
   /**
-   * Assign an authored, eligible ride through the production orchestrator.
-   * No passenger pickup, Ink choices, movement or fare is invented here; the
-   * assigned ride is a durable first stage that #67 can resume and progress.
+   * Accept a canonical job through the production ride orchestrator. The
+   * assignment, pickup, Ink events, route state, world clock and settlement
+   * then share this session's durable command boundary.
    */
   #acceptRide(jobId: JobId): void {
     if (this.#stores.spaces.getCurrentSpaceId() !== null) {
