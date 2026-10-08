@@ -174,6 +174,57 @@ describe('production GameSession', () => {
     restored.dispose();
   });
 
+  it('accepts an eligible authored job as a durable assigned ride, rejecting duplicates', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    const underground = entityId('job', 'docks-underground-clinic');
+    const official = entityId('job', 'docks-official-clinic');
+
+    expect(() => session.execute({ type: 'ride.accept', jobId: underground }))
+      .toThrow(/Enter the taxi/i);
+    expect(() => session.execute({ type: 'ride.accept', jobId: official }))
+      .toThrow(/Enter the taxi/i);
+
+    session.execute({ type: 'space.enter', spaceId: entityId('personal-space', 'garage') });
+    session.execute({ type: 'space.leave' });
+    expect(() => session.execute({ type: 'ride.accept', jobId: official }))
+      .toThrow(/cover:work-permit/);
+
+    const accepted = session.execute({ type: 'ride.accept', jobId: underground });
+    expect(accepted.rideSession).toMatchObject({
+      phase: 'assigned',
+      jobId: underground,
+      acceptedAt: { day: 1, minuteOfDay: 1080 },
+    });
+    expect(accepted.rideSession?.rideId).toBe(
+      'ride:docks-underground-clinic-d1-m1080',
+    );
+    expect(() => session.execute({ type: 'ride.accept', jobId: underground }))
+      .toThrow(/already assigned or active/i);
+    expect(() => session.execute({ type: 'time.advance', minutes: 1 }))
+      .toThrow(/unfinished ride/);
+    const before = session.exportState();
+
+    session.dispose();
+    const restored = GameSession.open(persistence(memory));
+    expect(restored.exportState()).toEqual(before);
+    restored.dispose();
+  });
+
+  it('rolls back a dispatched ride if storage fails', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    session.execute({ type: 'space.leave' });
+    const before = session.exportState();
+    memory.rejectWrites = true;
+    expect(() => session.execute({
+      type: 'ride.accept',
+      jobId: entityId('job', 'docks-underground-clinic'),
+    })).toThrow(/Storage quota exceeded/);
+    expect(session.exportState()).toEqual(before);
+    session.dispose();
+  });
+
   it('returns independent work snapshots and keeps observers away from canonical state', () => {
     const session = GameSession.open(persistence(new MemoryStorage()));
     const available = session.listAvailableWork();

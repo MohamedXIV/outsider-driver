@@ -92,6 +92,16 @@ export function createShiftControlSurface(
     }
 
     offers.replaceChildren();
+    const ride = session.exportState().rideSession;
+    if (ride !== null && ride.phase !== 'completed') {
+      const active = document.createElement('p');
+      active.className = 'shift-work-active';
+      active.textContent =
+        `ASSIGNED / ${ride.jobId} / ${ride.phase.toUpperCase()} — ` +
+        'Pickup and in-ride controls are the next integration step.';
+      offers.append(active);
+      return;
+    }
     const available = session.listWorkOffers();
     if (!available.some((entry) => entry.eligible)) {
       const none = document.createElement('p');
@@ -126,9 +136,17 @@ export function createShiftControlSurface(
       if (selectedJobId === job.id) {
         const details = document.createElement('p');
         details.textContent =
-          `Route: ${job.pickupLocationId} → ${job.destinationLocationId}. ` +
-          'Dispatch acceptance becomes available when the live ride lifecycle is connected.';
+          `Route: ${job.pickupLocationId} → ${job.destinationLocationId}.`;
         item.append(details);
+        if (eligible && state.location === 'taxi') {
+          item.append(button('Accept job', () => runAction(() =>
+            session.execute({ type: 'ride.accept', jobId: job.id }),
+          )));
+        } else if (eligible) {
+          const hint = document.createElement('p');
+          hint.textContent = 'Enter the taxi to accept dispatch.';
+          item.append(hint);
+        }
       }
       offers.append(item);
     }

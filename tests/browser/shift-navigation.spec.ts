@@ -42,12 +42,15 @@ test('new shift navigates through home, garage and taxi using real persisted sta
   const eligibleJob = controls.locator('.shift-work-item[data-eligibility="eligible"]');
   await expect(eligibleJob).toHaveCount(1);
   await eligibleJob.getByRole('button', { name: 'Inspect offer' }).click();
-  await expect(
-    controls.getByText(/Dispatch acceptance becomes available/),
-  ).toBeVisible();
+  await expect(eligibleJob.getByText(/Route:/)).toBeVisible();
+  await eligibleJob.getByRole('button', { name: 'Accept job' }).click();
+  await expect(controls.getByText(/ASSIGNED \/ job:docks-underground-clinic/))
+    .toBeVisible();
+  await page.reload({ waitUntil: 'networkidle' });
+  await expect(controls.getByText(/ASSIGNED \/ job:docks-underground-clinic/))
+    .toBeVisible();
 
   await controls.getByRole('button', { name: 'Return to garage' }).click();
-  await expect(controls.locator('.shift-controls-status')).toContainText('GARAGE');
-  await controls.getByRole('button', { name: 'Return home' }).click();
-  await expect(controls.locator('.shift-controls-status')).toContainText('HOME');
+  await expect(controls.getByRole('alert')).toContainText(/Finish the active ride/);
+  await expect(controls.locator('.shift-controls-status')).toContainText('TAXI');
 });
