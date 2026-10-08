@@ -161,6 +161,11 @@ function bootstrapSupportedGame(
     throw error;
   }
 
+  if (application === null || surface === null) {
+    session.dispose();
+    throw new Error('Game bootstrap did not finish constructing its runtime.');
+  }
+
   const activeApplication = application;
   const activeSurface = surface;
 
@@ -185,7 +190,7 @@ function showStartupFailure(
   heading.textContent = 'Unable to start Outsider Driver';
   const explanation = document.createElement('p');
   explanation.textContent =
-    'The saved game could not be loaded or saved safely. Existing save data has not been deleted. Avoid clearing site storage; keep a copy for recovery.';
+    'The game could not start safely. Existing save data has not been deleted. Avoid clearing site storage; keep a copy for recovery.';
   const detail = document.createElement('p');
   detail.textContent = error instanceof Error ? error.message : String(error);
   panel.append(heading, explanation, detail);
