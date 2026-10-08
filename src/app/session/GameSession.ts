@@ -483,6 +483,12 @@ export class GameSession {
     try {
       switch (command.type) {
         case 'space.enter':
+          if (
+            this.#state.rideSession !== null &&
+            this.#state.rideSession.phase !== 'completed'
+          ) {
+            throw new Error('Finish the active ride before entering a personal space.');
+          }
           this.#stores.spaces.enter(command.spaceId);
           break;
         case 'space.leave':
