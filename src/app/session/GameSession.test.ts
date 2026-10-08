@@ -180,6 +180,12 @@ describe('production GameSession', () => {
     const underground = entityId('job', 'docks-underground-clinic');
     const official = entityId('job', 'docks-official-clinic');
 
+    // A bare domain session has no personal-space location (taxi state).
+    // Real browser startup moves new games home through PlayerShiftController.
+    session.execute({
+      type: 'space.enter',
+      spaceId: entityId('personal-space', 'home'),
+    });
     expect(() => session.execute({ type: 'ride.accept', jobId: underground }))
       .toThrow(/Enter the taxi/i);
     expect(() => session.execute({ type: 'ride.accept', jobId: official }))

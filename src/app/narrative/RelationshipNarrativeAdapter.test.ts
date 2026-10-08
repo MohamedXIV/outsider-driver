@@ -85,6 +85,32 @@ describe('RelationshipNarrativeAdapter', () => {
     expect(relationships.getHumanAttitude(passengerId)).toBe(-35);
   });
 
+  it('preserves prototype-backed social queries when composing relationship queries', () => {
+    const state = new SocialStealthStateStore(
+      createSocialStealthState({
+        id: 'identity:query-composition',
+        displayName: 'Query Composition',
+        attributes: [],
+      }),
+    );
+    const knownFact = entityId('fact', 'docks-checkpoint-rumor');
+    state.learnFact(knownFact);
+    const relationships = new RelationshipStateStore(
+      productionContent.relationships,
+    );
+    const composed = withRelationshipNarrativeQueries(
+      new SocialStealthNarrativeAdapter(state),
+      new RelationshipNarrativeAdapter(relationships),
+    );
+
+    expect(composed.hasFact(knownFact)).toBe(true);
+    expect(composed.hasClaim(entityId('claim', 'nonexistent'))).toBe(false);
+    expect(composed.getCityAttention()).toBe(0);
+    expect(composed.getPassengerSuspicion(
+      entityId('passenger', 'underground-clinic-rider'),
+    )).toBe(0);
+  });
+
   it('fails clearly if relationship events are sent to the social sink alone', () => {
     const social = new SocialStealthNarrativeAdapter(
       new SocialStealthStateStore(
