@@ -51,8 +51,12 @@ function bundleAttributionPlugin() {
 export default defineConfig({
   plugins: [compiledInkPlugin(), bundleAttributionPlugin()],
   build: {
-    target: 'es2022',
-    sourcemap: true,
+    // The supported Chromium/Firefox/WebKit generations all implement ES2024
+    // and modulepreload; avoid shipping transforms and a legacy preload shim.
+    target: 'es2024',
+    modulePreload: { polyfill: false },
+    // Keep map files for debugging without shipping per-chunk map URL comments.
+    sourcemap: 'hidden',
     rolldownOptions: {
       output: {
         // Keep Ink's runtime and schema validation in independently cached
