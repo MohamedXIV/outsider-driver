@@ -181,3 +181,41 @@ emissive texture. Both passenger renderers follow this path.
 Do not mark Unlit visually approved until the replacement
 `taxi-world-hybrid.png` is examined for a visible character, preserved
 colours, correct alpha, and no double lighting.
+
+## Phase: grounded passenger and painted taxi textures
+
+The lab now has three **optional, default-off** art experiments:
+1. **Contact shadow** (0–0.85): two alpha-gradient planes attached to the
+   passenger seat anchor, one just above the cushion and another in front
+   of the backrest; these are stylized grounding decals, not real light-cast
+   shadows. They do not cast on arbitrary taxi geometry.
+2. **Silhouette ink width** (0–5 image pixels) plus **Ink opacity** (0–1):
+   computes a thin edge once from the assembled reference portrait alpha,
+   NOT independently around each cutout layer (which would create seams).
+   The outline is parented to whichever A/B/C passenger root is visible,
+   and regenerated only when art/width changes.
+3. **Taxi surfaces: Original / Painterly** swaps the authored paint and
+   upholstery SVG textures in the existing Babylon taxi StandardMaterials.
+   Added two subtle, hand-painted-looking tiled SVG assets with stitched
+   seams, worn fabric, pigment strokes and warm edge wear. These are scoped
+   to the Lab and preserve the authored scene definition.
+
+Separate controls mean you can test these treatments against World style
+Default/Hybrid with the same mint elf, camera and cabin lighting. Every
+setting defaults to the previous appearance. They do not alter gameplay,
+saves, production scene data, asset loading defaults, or the legacy Inochi
+pipeline; close/dispose restores original materials and removes experimental
+geometry/textures.
+
+### Acceptance / known limitations
+- Inspect seat contact and silhouette edge specifically in driver/glance/close
+  views, Default/Hybrid world looks, and cabin/dim/neon lighting.
+- The outline follows the baked full reference silhouette, not separately
+  animated hair or limbs: large motions reveal mismatch. This is an
+  evaluation prototype, *not* a production-ready deforming contour shader.
+- Shadow decals approximate seat/backrest grounding, not dynamic lighting.
+- Scene materials remain low-poly; richer props, hand-placed grunge decals,
+  material UV tuning and silhouette parallax are future art tasks.
+- Unit tests ensure reversible painterly textures and disposal. Browser
+  interaction captures `taxi-painterly-grounded-mint-elf.png` and
+  `taxi-original-mint-elf.png` as real rendered comparison images.
