@@ -1,6 +1,6 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { MaterialPluginBase } from '@babylonjs/core/Materials/materialPluginBase';
-import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { UniformBuffer } from '@babylonjs/core/Materials/uniformBuffer';
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import type { Scene } from '@babylonjs/core/scene';
@@ -108,7 +108,10 @@ if (uTaxiToonBands.x > 0.5) {
     };
   }
 
+  public activate(): void { this._enable(true); }
+
   public deactivate(): void {
+    this.options = DEFAULT_HYBRID_LOOK;
     this._enable(false);
   }
 }
@@ -123,17 +126,29 @@ export interface TaxiHybridLookController {
  * Apply a reversible effect to the cabin and surrounding taxi scene's existing
  * shared materials; it is not part of serialized presentation/game state.
  */
+// Reopening Passenger Lab in the same Babylon scene reuses plugins rather
+// than registering a second plugin with the same material/name.
+const attachedPlugins = new WeakMap<StandardMaterial, PainterlyCelMaterialPlugin>();
+
 export function createTaxiHybridLook(scene: Scene): TaxiHybridLookController {
   const plugins: PainterlyCelMaterialPlugin[] = [];
   for (const material of scene.materials) {
     if (!material.name.startsWith('taxi-material-')) continue;
-    const surface = material as StandardMaterial;
+    if (!(material instanceof StandardMaterial)) continue;
+    const surface = material;
     if (surface.disableLighting ||
       surface.emissiveTexture !== null ||
       Math.max(surface.emissiveColor.r, surface.emissiveColor.g, surface.emissiveColor.b) > 0.06) {
       continue;
     }
-    plugins.push(new PainterlyCelMaterialPlugin(surface));
+    let plugin = attachedPlugins.get(surface);
+    if (plugin === undefined) {
+      plugin = new PainterlyCelMaterialPlugin(surface);
+      attachedPlugins.set(surface, plugin);
+    } else {
+      plugin.activate();
+    }
+    plugins.push(plugin);
   }
   let disposed = false;
   return {
