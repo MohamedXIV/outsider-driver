@@ -219,3 +219,6 @@ geometry/textures.
 - Unit tests ensure reversible painterly textures and disposal. Browser
   interaction captures `taxi-painterly-grounded-mint-elf.png` and
   `taxi-original-mint-elf.png` as real rendered comparison images.
+
+### Final visual checkpoint (grounding and painterly textures)
+Run one GitHub test checkpoint after the shadow/outline and hand-painted surface addition because it exercises WebGL alpha-compositing and source-image silhouette extraction. Compare the two saved screenshots with the same mint elf artwork; report failures rather than assuming test success. This checkpoint remains Draft and does not merge production code.
