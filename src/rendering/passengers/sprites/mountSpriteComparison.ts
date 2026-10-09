@@ -89,23 +89,24 @@ export function mountSpriteComparison(
   }
   if (taxi === null) throw new Error('Sprite viewer requires the Babylon taxi scene.');
 
-  const scene = taxi.scene;
-  const camera = taxi.camera;
+  const activeTaxi = taxi;
+  const scene = activeTaxi.scene;
+  const camera = activeTaxi.camera;
   const originalPosition = camera.position.clone();
   const originalRotation = camera.rotation.clone();
   const originalFov = camera.fov;
-  const originalCabinIntensity = taxi.cabinLight.intensity;
-  const originalAmbientIntensity = taxi.ambientLight.intensity;
-  const originalCabinColor = taxi.cabinLight.diffuse.clone();
+  const originalCabinIntensity = activeTaxi.cabinLight.intensity;
+  const originalAmbientIntensity = activeTaxi.ambientLight.intensity;
+  const originalCabinColor = activeTaxi.cabinLight.diffuse.clone();
 
   const neon = new PointLight('sprite-evaluation-neon', new Vector3(0, 1.5, 0), scene);
-  neon.parent = taxi.anchors.passengerLighting;
+  neon.parent = activeTaxi.anchors.passengerLighting;
   neon.diffuse = new Color3(0.55, 0.3, 1);
   neon.intensity = 0;
 
   const candidates = new Map<SpriteEvaluationMode, SpritePassengerCandidate>();
   for (const mode of SPRITE_MODES) {
-    candidates.set(mode, new SpritePassengerCandidate(scene, taxi.anchors.passengerSeat, mode));
+    candidates.set(mode, new SpritePassengerCandidate(scene, activeTaxi.anchors.passengerSeat, mode));
   }
   let current: SpriteEvaluationMode = 'layered';
   const applyMode = (mode: SpriteEvaluationMode): void => {
@@ -161,9 +162,9 @@ export function mountSpriteComparison(
     }
   }
   function setLighting(value: string): void {
-    taxi.cabinLight.intensity = originalCabinIntensity * (value === 'dim' ? 0.12 : 1);
-    taxi.ambientLight.intensity = originalAmbientIntensity * (value === 'dim' ? 0.18 : 1);
-    taxi.cabinLight.diffuse.copyFrom(originalCabinColor);
+    activeTaxi.cabinLight.intensity = originalCabinIntensity * (value === 'dim' ? 0.12 : 1);
+    activeTaxi.ambientLight.intensity = originalAmbientIntensity * (value === 'dim' ? 0.18 : 1);
+    activeTaxi.cabinLight.diffuse.copyFrom(originalCabinColor);
     neon.intensity = value === 'neon' ? 1.7 : 0;
   }
 
@@ -288,9 +289,9 @@ export function mountSpriteComparison(
     camera.position.copyFrom(originalPosition);
     camera.rotation.copyFrom(originalRotation);
     camera.fov = originalFov;
-    taxi.cabinLight.intensity = originalCabinIntensity;
-    taxi.ambientLight.intensity = originalAmbientIntensity;
-    taxi.cabinLight.diffuse.copyFrom(originalCabinColor);
+    activeTaxi.cabinLight.intensity = originalCabinIntensity;
+    activeTaxi.ambientLight.intensity = originalAmbientIntensity;
+    activeTaxi.cabinLight.diffuse.copyFrom(originalCabinColor);
     panel.remove();
     onClosed();
   };
