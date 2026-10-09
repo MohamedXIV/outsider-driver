@@ -14,7 +14,7 @@
   "pieces": [
     {
       "id": "torso",
-      "image": "torso.png",
+      "image": "torso.webp",
       "pivot": [
         230,
         277
@@ -23,7 +23,7 @@
     },
     {
       "id": "head",
-      "image": "head.png",
+      "image": "head.webp",
       "pivot": [
         230,
         280
@@ -32,7 +32,7 @@
     },
     {
       "id": "antenna-right",
-      "image": "antenna-right.png",
+      "image": "antenna-right.webp",
       "pivot": [
         271,
         133
@@ -41,8 +41,8 @@
     }
   ],
   "alternate": {
-    "spritesheet": "portrait.png",
-    "hybrid": "portrait.png"
+    "spritesheet": "portrait.webp",
+    "hybrid": "portrait.webp"
   },
-  "notes": "Conservative image-derived upper-body cutouts. Head/antenna pivots are rough; some concealed pixels are absent. Mouth/eyes baked into head. No complete gaze/blink cutouts available; no false claim of true facial rigging."
+  "notes": "Source-derived rough upper-body art, not a finished rig. The right antenna is still baked into head/portrait sources: the evaluation renderer masks its alpha before drawing the independently movable antenna cutout. Head/neck seams and hidden pixels are not production-ready; eyes and mouth remain baked and cannot animate."
 }
