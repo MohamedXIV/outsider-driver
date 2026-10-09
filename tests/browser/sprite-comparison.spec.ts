@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test('three real sprite candidates share the taxi seat and respond to Ink', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'chromium-desktop',
-    'Visual comparison runs once in the canonical desktop WebGL browser.');
+  test.skip(process.env.SPRITE_LAB_DEV !== '1' || testInfo.project.name !== 'chromium-desktop',
+    'This is a dev-server-only comparison; production browser smoke excludes it.');
 
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
