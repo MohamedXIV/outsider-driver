@@ -250,7 +250,7 @@ export function mountSpriteComparison(
     const unsupported = new Set(['Expression', 'Talk intensity', 'Look left / right']);
     for (const label of controls.querySelectorAll('label')) {
       const field = label.querySelector<HTMLInputElement | HTMLSelectElement>('input, select');
-      if (field !== null && [...unsupported].some(name => label.textContent?.startsWith(name))) {
+      if (field !== null && [...unsupported].some(name => label.textContent.startsWith(name))) {
         field.disabled = activeArt === 'mint-elf';
       }
     }
