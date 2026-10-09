@@ -162,6 +162,8 @@ export function mountSpriteComparison(
     'Compare the original test character or the user-art mint elf inside Babylon. Mint elf cutouts are provisional; facial movement is not yet supported.');
   const controls = element('div', 'sprite-viewer-controls');
   const details = element('div', 'sprite-viewer-metrics');
+  const worldStatus = element('p', 'sprite-viewer-world-status', 'Original taxi lighting');
+  worldStatus.setAttribute('role', 'status');
   const artStatus = element('p', 'sprite-viewer-asset-status', 'Original comparison art ready');
   artStatus.setAttribute('role', 'status');
   const artNotice = element('p', 'sprite-viewer-note', '');
@@ -219,6 +221,9 @@ export function mountSpriteComparison(
     ], 'default', value => {
       worldStyle = value === 'hybrid' ? 'hybrid' : 'default';
       applyWorldLook();
+      worldStatus.textContent = worldStyle === 'hybrid'
+        ? `Hybrid lighting on ${String(worldLook.materialCount)} taxi materials`
+        : 'Original taxi lighting';
     }),
     select('Toon steps', [
       { value: '2', label: '2 bands' },
@@ -313,7 +318,7 @@ export function mountSpriteComparison(
   controls.append(actions);
   const notice = element('p', 'sprite-viewer-note',
     'Hybrid world shading quantizes existing 3D material lighting without changing painted textures or emissive displays. Sprite Unlit, brightness, and tint are independent. Default mode preserves the old taxi look. This experiment is not a final art direction or a game save setting.');
-  panel.append(header, intro, controls, artStatus, details, artNotice, notice, transcript);
+  panel.append(header, intro, controls, worldStatus, artStatus, details, artNotice, notice, transcript);
   root.append(panel);
 
   function updateArtControls(): void {
