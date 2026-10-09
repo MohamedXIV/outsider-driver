@@ -68,3 +68,37 @@ facial animation capability until independent eye/mouth layers have been cleaned
 and authored. The dedicated Playwright spec exercises WebP HTTP 200/MIME,
 asset readiness, mode switching and real Ink choices. Fresh CI still required
 for any new PR head.
+
+
+## Lighting evaluation after user screenshot (October 2026)
+
+The real mint elf art appears darker than neighboring 3D taxi geometry in the
+user's screenshot. **Do not treat this as a reason to switch the characters
+to 3D**: first compare equal exposures and materials.
+
+Two new controls in the development-only Passenger Lab are independent of the
+3D scene's `Taxi lighting` selector:
+
+- **Sprite shader: Lit / Unlit**. Lit retains Babylon StandardMaterial direct
+  lighting. Unlit uses `StandardMaterial.disableLighting = true` while
+  retaining the source artwork's painted shading. This is *not* a custom toon
+  shader and does not bypass shared postprocess or exposure.
+- **Sprite brightness: 0.25–3×**, initial value 1×. Applies per-character
+  material RGB tint/multiplier (not texture re-encoding or transparency gain);
+  applied to both procedural comparison alien and real mint elf, all A/B/C
+  variants, and when switching between them. It does not change cabin lights.
+
+Compare `Taxi lighting = cabin/dim/neon` under each sprite shading setting.
+Check clipping above 2× brightness, color fidelity, nighttime readability and
+alpha silhouette. The artist-painted shading inside mint elf art is preserved
+in Unlit; the remaining differences with 3D architecture, contact shadows and
+scene textures are *art-direction questions* requiring more work.
+
+Potential next phase, **not implemented yet**: stepped diffuse lighting for
+3D cabin materials (2–3 tonal bands with an ambient floor and anti-aliased
+thresholds), coordinated LUT/color grade for 2D and 3D, and optional
+normal-mapped or fake-directional tint for sprite layers without destroying
+their painted details. Avoid high-frequency dithering or vertex wobble.
+
+The current changes intentionally do not convert the whole 3D taxi to toon
+rendering or add new save settings. User review precedes that broader change.
