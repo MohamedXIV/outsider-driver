@@ -77,6 +77,18 @@ test('source-derived mint elf images load and switch between honest cutout modes
   const loaded = panel.locator('.sprite-viewer-asset-status');
   await expect(loaded).toHaveText('Mint elf artwork loaded', { timeout: 45_000 });
 
+  const spriteShader = panel.getByLabel('Sprite shader');
+  const brightness = panel.getByLabel('Sprite brightness');
+  await expect(spriteShader).toHaveValue('lit');
+  await expect(brightness).toHaveValue('1');
+  await spriteShader.selectOption('unlit');
+  await brightness.fill('1.75');
+  await expect(spriteShader).toHaveValue('unlit');
+  await expect(brightness).toHaveValue('1.75');
+  await panel.getByLabel('Taxi lighting').selectOption('dim');
+  // Cabin lighting and sprite exposure are independent controls.
+  await expect(brightness).toHaveValue('1.75');
+
   // The face is not independently rigged: disabled controls must be honest.
   await expect(panel.getByLabel('Expression')).toBeDisabled();
   await expect(panel.getByLabel('Talk intensity')).toBeDisabled();
@@ -96,6 +108,9 @@ test('source-derived mint elf images load and switch between honest cutout modes
   await mode.selectOption('hybrid');
   await expect(metrics).toContainText('2 transparent planes');
   await page.screenshot({ path: testInfo.outputPath('mint-elf-hybrid.png') });
+  await spriteShader.selectOption('lit');
+  await brightness.fill('1');
+  await expect(spriteShader).toHaveValue('lit');
 
   // The same Ink hooks continue driving the shared performance contract.
   await expect(panel.getByText('Passenger: Customs lights sweep every cab after midnight.')).toBeVisible();
