@@ -141,59 +141,63 @@ function bootstrapSupportedGame(
   application.start();
   performance.mark('outsider-driver:startup-ready');
 
-  // Lazy, isolated comparison lab. The normal game never imports its atlases
-  // or the Ink compiler unless the player explicitly opens this evaluation.
-  const spriteViewerRequested = new URLSearchParams(window.location.search)
-    .get('spriteViewer') === '1';
-  let closeSpriteViewer: (() => void) | null = null;
-  let viewerDisposed = false;
-  let viewerOpening = false;
-  const viewerButton = document.createElement('button');
-  viewerButton.type = 'button';
-  viewerButton.className = 'sprite-viewer-launch';
-  viewerButton.textContent = 'Passenger Lab';
-  viewerButton.setAttribute('aria-label', 'Open sprite passenger comparison');
-  const shell = applicationRoot.querySelector('.game-shell');
-  if (shell !== null && (import.meta.env.DEV || spriteViewerRequested)) {
-    shell.append(viewerButton);
+  // Never ship the heavyweight Ink compiler or experimental art in the
+  // production client bundle. This viewer is a Vite development-only lab.
+  let disposeSpriteLab: (() => void) | null = null;
+  if (import.meta.env.DEV) {
+    const spriteViewerRequested = new URLSearchParams(window.location.search)
+      .get('spriteViewer') === '1';
+    let closeSpriteViewer: (() => void) | null = null;
+    let viewerDisposed = false;
+    let viewerOpening = false;
+    const viewerButton = document.createElement('button');
+    viewerButton.type = 'button';
+    viewerButton.className = 'sprite-viewer-launch';
+    viewerButton.textContent = 'Passenger Lab';
+    viewerButton.setAttribute('aria-label', 'Open sprite passenger comparison');
+    const shell = applicationRoot.querySelector('.game-shell');
+    shell?.append(viewerButton);
+    const openSpriteViewer = async (): Promise<void> => {
+      if (viewerOpening || viewerDisposed || closeSpriteViewer !== null) return;
+      viewerOpening = true;
+      viewerButton.disabled = true;
+      try {
+        const { mountSpriteComparison } = await import(
+          './rendering/passengers/sprites/mountSpriteComparison'
+        );
+        if (viewerDisposed) return;
+        closeSpriteViewer = mountSpriteComparison(
+          shell ?? applicationRoot,
+          rendering,
+          preferences,
+          () => {
+            closeSpriteViewer = null;
+            viewerButton.disabled = false;
+          },
+        );
+      } catch (error) {
+        console.error('Passenger sprite viewer failed:', error);
+        viewerButton.textContent = 'Passenger Lab (error — retry)';
+      } finally {
+        viewerOpening = false;
+        if (closeSpriteViewer === null) viewerButton.disabled = false;
+      }
+    };
+    const handleOpenSpriteViewer = (): void => { void openSpriteViewer(); };
+    viewerButton.addEventListener('click', handleOpenSpriteViewer);
+    if (spriteViewerRequested) void openSpriteViewer();
+    disposeSpriteLab = () => {
+      viewerDisposed = true;
+      closeSpriteViewer?.();
+      viewerButton.removeEventListener('click', handleOpenSpriteViewer);
+      viewerButton.remove();
+    };
   }
-  const openSpriteViewer = async (): Promise<void> => {
-    if (viewerOpening || viewerDisposed || closeSpriteViewer !== null) return;
-    viewerOpening = true;
-    viewerButton.disabled = true;
-    try {
-      const { mountSpriteComparison } = await import(
-        './rendering/passengers/sprites/mountSpriteComparison'
-      );
-      if (viewerDisposed) return;
-      closeSpriteViewer = mountSpriteComparison(
-        shell ?? applicationRoot,
-        rendering,
-        preferences,
-        () => {
-          closeSpriteViewer = null;
-          viewerButton.disabled = false;
-        },
-      );
-    } catch (error) {
-      console.error('Passenger sprite viewer failed:', error);
-      viewerButton.textContent = 'Passenger Lab (error — retry)';
-    } finally {
-      viewerOpening = false;
-      if (closeSpriteViewer === null) viewerButton.disabled = false;
-    }
-  };
-  const handleOpenSpriteViewer = (): void => { void openSpriteViewer(); };
-  viewerButton.addEventListener('click', handleOpenSpriteViewer);
-  if (spriteViewerRequested) void openSpriteViewer();
   void runRequestedInochiProbe();
   void runRequestedPersonalSpaceProbe(rendering);
 
   return (): void => {
-    viewerDisposed = true;
-    closeSpriteViewer?.();
-    viewerButton.removeEventListener('click', handleOpenSpriteViewer);
-    viewerButton.remove();
+    disposeSpriteLab?.();
     application.dispose();
     stopPreferencePersistence();
     surface.dispose();
