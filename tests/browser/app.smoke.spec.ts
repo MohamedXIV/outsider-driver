@@ -379,6 +379,11 @@ for (const [
 
 
 test('accessibility and control settings persist and provide a keyboard escape path', async ({ page }, testInfo) => {
+  // Canonical runner trace 37875150736: the full real-input/reload scenario
+  // consumes ~30 seconds cumulatively even with correct persisted DOM values.
+  // This is a whole-test bound, not a weakened per-action or startup budget.
+  test.setTimeout(60_000);
+
   test.skip(
     testInfo.project.name === 'chromium-compact-touch',
     'The compact profile has a dedicated touch/layout settings contract; desktop profiles exercise persistence when the runtime capability gate permits the game surface.',
