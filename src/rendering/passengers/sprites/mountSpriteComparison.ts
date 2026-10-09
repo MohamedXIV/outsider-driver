@@ -13,7 +13,7 @@ import {
   SpritePassengerCandidate,
   type SpriteEvaluationMode,
 } from './SpritePassengerCandidate';
-import { ALIEN_EXPRESSIONS, type AlienExpression } from './AlienPortraitArt';
+import { ALIEN_EXPRESSIONS } from './AlienPortraitArt';
 
 function element<K extends keyof HTMLElementTagNameMap>(
   type: K,
@@ -41,7 +41,7 @@ function select(
     dropdown.add(option);
   }
   dropdown.value = value;
-  dropdown.addEventListener('change', () => update(dropdown.value));
+  dropdown.addEventListener('change', () => { update(dropdown.value); });
   container.append(dropdown);
   return container;
 }
@@ -177,11 +177,11 @@ export function mountSpriteComparison(
       refreshMetrics();
     }),
     select('Expression', ALIEN_EXPRESSIONS.map(expression => ({value: expression, label: expression})),
-      'neutral', value => applyToAll(model => model.setExpression(value as AlienExpression))),
-    range('Talk intensity', 0, 1, 0, value => applyToAll(model => model.setTalk(value))),
-    range('Look left / right', -1, 1, 0, value => applyToAll(model => model.setGaze(value, 0))),
-    range('Head direction', -1, 1, 0, value => applyToAll(model => model.setHeadPose(value, 0))),
-    range('Body lean', -1, 1, 0, value => applyToAll(model => model.setBodyPose(value, 0))),
+      'neutral', value => { applyToAll(model => { model.setExpression(value); }); }),
+    range('Talk intensity', 0, 1, 0, value => { applyToAll(model => { model.setTalk(value); }); }),
+    range('Look left / right', -1, 1, 0, value => { applyToAll(model => { model.setGaze(value, 0); }); }),
+    range('Head direction', -1, 1, 0, value => { applyToAll(model => { model.setHeadPose(value, 0); }); }),
+    range('Body lean', -1, 1, 0, value => { applyToAll(model => { model.setBodyPose(value, 0); }); }),
     select('Camera framing', [
       { value: 'driver', label: 'Original driver POV (passenger behind you)' },
       { value: 'glance', label: 'Turn to passenger / seat view' },
@@ -208,10 +208,10 @@ export function mountSpriteComparison(
   let blinkTimeout = 0;
   blinkButton.addEventListener('click', () => {
     window.clearTimeout(blinkTimeout);
-    applyToAll(model => model.setBlink(1));
-    blinkTimeout = window.setTimeout(() => applyToAll(model => model.setBlink(0)), 220);
+    applyToAll(model => { model.setBlink(1); });
+    blinkTimeout = window.setTimeout(() => { applyToAll(model => { model.setBlink(0); }); }, 220);
   });
-  neutralButton.addEventListener('click', () => applyToAll(model => model.reset()));
+  neutralButton.addEventListener('click', () => { applyToAll(model => { model.reset(); }); });
 
   let story: InkNarrativeRuntime | null = null;
   const facts = new Set<string>();
@@ -235,7 +235,7 @@ export function mountSpriteComparison(
       dialogueContent.append(element('p', 'sprite-viewer-line', line.text));
     }
     const cue = resolvePassengerPerformanceCue(turn);
-    if (cue !== null) applyToAll(candidate => candidate.applyCue(cue));
+    if (cue !== null) applyToAll(candidate => { candidate.applyCue(cue); });
     for (const choice of turn.choices) {
       const button = element('button', 'sprite-viewer-choice', choice.text);
       button.type = 'button';
@@ -253,7 +253,7 @@ export function mountSpriteComparison(
   }
   function resetDialogue(): void {
     facts.clear();
-    applyToAll(candidate => candidate.reset());
+    applyToAll(candidate => { candidate.reset(); });
     try {
       story = InkNarrativeRuntime.fromInkSource(foundationInk, queries, events);
       presentTurn(story.continueUntilChoiceOrEnd());
