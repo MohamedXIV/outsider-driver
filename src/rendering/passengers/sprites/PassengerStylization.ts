@@ -83,8 +83,6 @@ export class PassengerStylization {
   readonly #outline: Mesh;
   readonly #outlineMaterial: StandardMaterial;
   readonly #outlineTexture: DynamicTexture;
-  #activeRoot: TransformNode | null = null;
-  #art: PassengerArtSource = 'demo-alien';
   #thickness = 0;
   #strength = 0;
   #request = 0;
@@ -142,8 +140,6 @@ export class PassengerStylization {
 
   public setOutline(root: TransformNode | null, art: PassengerArtSource,
     thickness: number, opacity: number): void {
-    this.#activeRoot = root;
-    this.#art = art;
     this.#thickness = Math.max(0, Math.min(5, Math.round(thickness)));
     this.#strength = Math.max(0, Math.min(1, opacity));
     this.#outline.parent = root;
