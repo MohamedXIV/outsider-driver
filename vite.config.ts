@@ -76,9 +76,9 @@ export default defineConfig({
           // default shaders independent under the strict lazy-chunk budget.
           if (
             /\/node_modules\/@babylonjs\/core\/Shaders(?:WGSL)?\//.test(normalized) &&
-            /(?:color|vertexColorMixing|rgbdDecode|postprocess|logDepth|fogFragment)/i.test(normalized)
+            /(?:vertexColorMixing|rgbdDecode|logDepth|fogFragment)/i.test(normalized)
           ) {
-            return 'babylon-small-shaders';
+            return 'babylon-deferred-shaders';
           }
           return undefined;
         },
