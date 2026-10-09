@@ -41,15 +41,16 @@ function sourceCanvas(art: PassengerArtSource): Promise<HTMLCanvasElement> {
   return promise;
 }
 
+/** Shadow RGB is baked dark. An emissive WHITE alpha mask becomes a bright glow. */
 function gradientTexture(scene: Scene, name: string): DynamicTexture {
   const texture = new DynamicTexture(name, { width: 128, height: 128 }, scene, false);
   const ctx = texture.getContext() as CanvasRenderingContext2D;
   ctx.clearRect(0, 0, 128, 128);
   const gradient = ctx.createRadialGradient(64, 64, 9, 64, 64, 63);
-  gradient.addColorStop(0, 'rgba(255,255,255,0.78)');
-  gradient.addColorStop(0.37, 'rgba(255,255,255,0.41)');
-  gradient.addColorStop(0.78, 'rgba(255,255,255,0.10)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  gradient.addColorStop(0, 'rgba(40,32,35,0.78)');
+  gradient.addColorStop(0.37, 'rgba(40,32,35,0.41)');
+  gradient.addColorStop(0.78, 'rgba(40,32,35,0.10)');
+  gradient.addColorStop(1, 'rgba(40,32,35,0)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 128, 128);
   texture.hasAlpha = true;
@@ -63,6 +64,8 @@ function alphaMaterial(scene: Scene, name: string, texture: DynamicTexture, colo
   material.useAlphaFromDiffuseTexture = true;
   material.emissiveTexture = texture;
   material.emissiveColor = color;
+  // Avoid adding a white diffuse term to an already-painted unlit RGBA atlas.
+  material.diffuseColor = Color3.Black();
   material.disableLighting = true;
   material.disableDepthWrite = true;
   material.backFaceCulling = false;
@@ -120,7 +123,7 @@ export class PassengerStylization {
     backrest.isPickable = false;
     for (const [index, mesh] of [cushion, backrest].entries()) {
       const material = alphaMaterial(scene, 'passenger-shadow-ink-' + String(index),
-        this.#shadowTexture, new Color3(0.17, 0.14, 0.14));
+        this.#shadowTexture, Color3.White());
       material.alpha = 0;
       mesh.material = material;
       mesh.renderingGroupId = 0;
