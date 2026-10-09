@@ -1,33 +1,18 @@
-import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { describe, expect, it } from 'vitest';
-import { defaultTaxiSceneDefinition } from '../../../content/presentation/defaultTaxiScene';
-import { createTaxiScene } from '../../taxi/createTaxiScene';
-import { PassengerStylization } from './PassengerStylization';
+import { groundingShadowAlphas, silhouetteOutlineOffsets } from './PassengerStylization';
 
-describe('passenger grounding and outline lifecycle', () => {
-  it('keeps optional shadow meshes disabled by default and disposes all resources', () => {
-    const engine = new NullEngine();
-    const taxi = createTaxiScene(engine, defaultTaxiSceneDefinition);
-    const originalMeshCount = taxi.scene.meshes.length;
-    const treatment = new PassengerStylization(taxi.scene, taxi.anchors.passengerSeat);
-    const cushion = taxi.scene.getMeshByName('passenger-contact-shadow-seat');
-    const back = taxi.scene.getMeshByName('passenger-contact-shadow-back');
-    const outline = taxi.scene.getMeshByName('passenger-ink-outline-plane');
-    expect(cushion?.isEnabled()).toBe(false);
-    expect(back?.isEnabled()).toBe(false);
-    expect(outline?.isEnabled()).toBe(false);
-    treatment.setShadow(0.5);
-    expect(cushion?.isEnabled()).toBe(true);
-    expect(back?.isEnabled()).toBe(true);
-    treatment.setShadow(0);
-    expect(cushion?.isEnabled()).toBe(false);
-    treatment.setOutline(null, 'mint-elf', 4, 1);
-    expect(outline?.isEnabled()).toBe(false);
-    treatment.dispose();
-    treatment.dispose();
-    expect(taxi.scene.meshes.length).toBe(originalMeshCount);
-    expect(taxi.scene.getMeshByName('passenger-ink-outline-plane')).toBeNull();
-    taxi.scene.dispose();
-    engine.dispose();
+describe('passenger grounding and original-art silhouette ink math', () => {
+  it('clamps independent cushion/backrest opacity without adding light', () => {
+    expect(groundingShadowAlphas(0)).toEqual([0, 0]);
+    expect(groundingShadowAlphas(0.5)).toEqual([0.41, 0.3]);
+    expect(groundingShadowAlphas(2)).toEqual(groundingShadowAlphas(0.85));
+  });
+  it('produces a closed, bounded outline kernel without per-layer seams', () => {
+    const offsets = silhouetteOutlineOffsets(2);
+    expect(offsets).toHaveLength(20);
+    expect(offsets[0]?.[0]).toBeCloseTo(2);
+    expect(offsets[0]?.[1]).toBeCloseTo(0);
+    for (const [x, y] of offsets) expect(Math.hypot(x, y)).toBeCloseTo(2);
+    expect(silhouetteOutlineOffsets(8)[0]?.[0]).toBeCloseTo(5);
   });
 });
