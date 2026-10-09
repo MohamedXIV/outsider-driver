@@ -158,3 +158,5 @@ matte materials should still be compared under cabin/dim/neon presets.
 Keep PR #79 **Draft**; visual approval is not implied by passing tests.
 
 Shader-prototype CI checkpoint: one complete suite run is required because the new fragment shader cannot be meaningfully compiled by TypeScript alone. Preserve the Draft PR and inspect generated Default/Hybrid screenshots before considering any merge.
+
+The second verification checkpoint includes the corrected Babylon Color3 API and an explicit MaterialPluginBase re-open regression, so repeated use of the Passenger Lab must not accumulate duplicate plugins on shared taxi materials.
