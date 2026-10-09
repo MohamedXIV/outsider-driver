@@ -41,6 +41,20 @@ jobs:
       - name: Sprite lab Chromium dev-server interaction
         run: npm run test:sprite:browser
 
+      # Keep visual A/B/C evidence even on success, so a human can review
+      # the actual Babylon-cabin renders without relying on mock screenshots.
+      - name: Upload sprite comparison screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprite-comparison-visuals
+          path: |
+            test-results/**/spritesheet.png
+            test-results/**/layered.png
+            test-results/**/hybrid.png
+          if-no-files-found: ignore
+          retention-days: 5
+
       - name: Cross-browser smoke
         run: npm run test:browser
 
