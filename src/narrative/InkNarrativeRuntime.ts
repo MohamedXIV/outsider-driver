@@ -26,10 +26,7 @@ import {
   type NarrativeLine,
   type NarrativeTurn,
 } from './contracts/NarrativePresentation';
-import {
-  compileInkSource,
-  type CompiledInkStory,
-} from './compileInkSource';
+import type { CompiledInkStory } from './compileInkSource';
 
 const adjustmentSchema = z.number().min(-100).max(100);
 const reasonSchema = SocialKeySchema;
@@ -61,18 +58,6 @@ export class InkNarrativeRuntime {
   readonly #story: Story;
   readonly #queries: NarrativeQueryPort;
   readonly #events: NarrativeEventSink;
-
-  public static fromInkSource(
-    source: string,
-    queries: NarrativeQueryPort,
-    events: NarrativeEventSink,
-  ): InkNarrativeRuntime {
-    return new InkNarrativeRuntime(
-      compileInkSource(source),
-      queries,
-      events,
-    );
-  }
 
   public constructor(
     compiled: CompiledInkStory,

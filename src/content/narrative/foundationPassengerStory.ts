@@ -1,7 +1,6 @@
 import source from './foundation-passenger.ink?raw';
-import {
-  InkNarrativeRuntime,
-} from '../../narrative/InkNarrativeRuntime';
+import type { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from '../../narrative/createDevelopmentInkRuntimeFromSource';
 import type {
   NarrativeEventSink,
   NarrativeQueryPort,
@@ -13,7 +12,7 @@ export function createFoundationPassengerNarrative(
   queries: NarrativeQueryPort,
   events: NarrativeEventSink,
 ): InkNarrativeRuntime {
-  return InkNarrativeRuntime.fromInkSource(
+  return createDevelopmentInkRuntimeFromSource(
     foundationPassengerInkSource,
     queries,
     events,

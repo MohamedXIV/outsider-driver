@@ -3,6 +3,13 @@ import { expect, test } from '@playwright/test';
 test('new shift navigates through home, garage and taxi using real persisted state', async ({
   page,
 }, testInfo) => {
+  // An actual complete shift with multiple full GPU scene transitions, three
+  // reloads, dialogue, checkpoint, settlement and dozens of real UI actions.
+  // Canonical compact Chromium run 37876465623 exhausted the 30s whole-test
+  // deadline in the middle of the ride. Keep all per-action assertions and
+  // never raise the independent 5s production startup budget.
+  test.setTimeout(120_000);
+
   test.skip(
     testInfo.project.name === 'firefox-desktop',
     'Firefox may show the existing supported-browser fallback rather than a Babylon scene.',

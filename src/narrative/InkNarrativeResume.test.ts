@@ -6,7 +6,7 @@ import type {
   NarrativeDomainEvent,
   NarrativeQueryPort,
 } from './contracts/NarrativeBoundary';
-import { InkNarrativeRuntime } from './InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from './createDevelopmentInkRuntimeFromSource';
 
 const queries: NarrativeQueryPort = {
   hasFact: () => false,
@@ -20,7 +20,7 @@ const queries: NarrativeQueryPort = {
 describe('InkNarrativeRuntime resume', () => {
   it('restores at a choice boundary and continues without replaying prior events', () => {
     const firstEvents: NarrativeDomainEvent[] = [];
-    const first = InkNarrativeRuntime.fromInkSource(
+    const first = createDevelopmentInkRuntimeFromSource(
       foundationPassengerInkSource,
       queries,
       {
@@ -36,7 +36,7 @@ describe('InkNarrativeRuntime resume', () => {
 
     const savedState = first.serializeState();
     const restoredEvents: NarrativeDomainEvent[] = [];
-    const restored = InkNarrativeRuntime.fromInkSource(
+    const restored = createDevelopmentInkRuntimeFromSource(
       foundationPassengerInkSource,
       queries,
       {

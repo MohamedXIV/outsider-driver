@@ -1,4 +1,5 @@
 import { productionContent } from '../../content/production/ProductionContent';
+import { getCompiledProductionInkStory } from '../../content/narrative/productionCompiledInkStories';
 import { validatePassengerCatalog } from '../../content/passengers/PassengerContracts';
 import { validateTranslatorCatalog } from '../../content/translator/TranslatorContracts';
 import { validateWorldContentCatalog } from '../../content/world/WorldContracts';
@@ -317,12 +318,12 @@ export class GameSession {
       routeExperience: productionContent.routeExperience,
       passengers: productionContent.passengers,
       narrativeStories: {
-        getInkSource: (storyId) => {
+        getCompiledInkStory: (storyId) => {
           const story = productionContent.narrativeStories.find(
             (candidate) => candidate.id === storyId,
           );
           if (story === undefined) throw new Error(`Unknown authored Ink story: ${storyId}`);
-          return story.source;
+          return getCompiledProductionInkStory(story.id);
         },
       },
       narrativeQueries: queries,
