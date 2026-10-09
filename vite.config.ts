@@ -59,9 +59,10 @@ export default defineConfig({
     sourcemap: 'hidden',
     rolldownOptions: {
       output: {
-        // A further bounded Oxc compression pass targets the remaining
-        // ~616-byte aggregate budget gap without deleting diagnostics or code.
-        minify: { compress: { maxIterations: 5 } },
+        // Keep module-private names minified. Test the actual runtime in the
+        // canonical cross-browser suite: public export/property names remain
+        // untouched and runtime contract must behave byte-for-byte.
+        minify: { mangle: { toplevel: true } },
         // Keep Ink's runtime and schema validation in independently cached
         // browser modules. Do not alter the authored narrative or loading API.
         // Chunk attribution and the strict size checks quantify the result.
