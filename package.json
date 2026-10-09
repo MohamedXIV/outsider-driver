@@ -22,7 +22,8 @@
     "build:metadata": "node scripts/write-build-metadata.mjs",
     "lock:verify": "node scripts/verify-package-lock.mjs",
     "save:compat": "vitest run src/persistence/save/SaveCompatibility.test.ts --reporter=verbose",
-    "budget:check": "node scripts/check-production-budgets.mjs"
+    "budget:check": "node scripts/check-production-budgets.mjs",
+    "test:sprite:browser": "playwright test --config playwright.sprite.config.ts"
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",
