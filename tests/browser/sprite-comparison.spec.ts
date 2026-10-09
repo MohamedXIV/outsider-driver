@@ -162,6 +162,34 @@ test('Painterly/Cel world preset compiles and restores while sprite tint stays i
   await expect(panel.getByLabel('Sprite light tint')).toHaveValue('0.7');
   await page.screenshot({ path: testInfo.outputPath('taxi-world-hybrid.png') });
 
+  // Reversible grounding and hand-painted cabin materials, including the
+  // source-derived (not per-layer) alpha-ink edge.
+  for (const name of ['paint', 'upholstery']) {
+    const url = '/taxi/lab-painterly-' + name + '.svg';
+    const asset = await page.request.get(url);
+    expect(asset.status()).toBe(200);
+    expect(asset.headers()['content-type']).toContain('image/svg+xml');
+  }
+  await panel.getByLabel('Taxi surfaces').selectOption('painted');
+  await panel.getByLabel('Contact shadow').fill('0.55');
+  await panel.getByLabel('Silhouette ink width').selectOption('2');
+  await panel.getByLabel('Ink opacity').fill('0.5');
+  await expect(panel.getByLabel('Taxi surfaces')).toHaveValue('painted');
+  await expect(panel.getByLabel('Contact shadow')).toHaveValue('0.55');
+  await expect(panel.getByLabel('Silhouette ink width')).toHaveValue('2');
+  // Let the source portrait decode and its outline atlas rasterize once.
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: testInfo.outputPath('taxi-painterly-grounded-mint-elf.png') });
+
+  await panel.getByLabel('Silhouette ink width').selectOption('0');
+  await panel.getByLabel('Contact shadow').fill('0');
+  await panel.getByLabel('Taxi surfaces').selectOption('original');
+  await style.selectOption('default');
+  await expect(panel.getByLabel('Taxi surfaces')).toHaveValue('original');
+  await expect(panel.getByLabel('Contact shadow')).toHaveValue('0');
+  await expect(panel.getByLabel('Silhouette ink width')).toHaveValue('0');
+  await page.screenshot({ path: testInfo.outputPath('taxi-original-mint-elf.png') });
+
   await style.selectOption('default');
   await expect(worldStatus).toHaveText('Original taxi lighting');
   await panel.getByRole('button', { name: '✕ Close' }).click();
