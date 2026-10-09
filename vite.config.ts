@@ -59,10 +59,6 @@ export default defineConfig({
     sourcemap: 'hidden',
     rolldownOptions: {
       output: {
-        // Keep module-private names minified. Test the actual runtime in the
-        // canonical cross-browser suite: public export/property names remain
-        // untouched and runtime contract must behave byte-for-byte.
-        minify: { mangle: { toplevel: true } },
         // Keep Ink's runtime and schema validation in independently cached
         // browser modules. Do not alter the authored narrative or loading API.
         // Chunk attribution and the strict size checks quantify the result.
@@ -73,6 +69,16 @@ export default defineConfig({
           }
           if (normalized.includes('/node_modules/zod/')) {
             return 'validation';
+          }
+          // Babylon emits numerous tiny GLSL/WGSL fragments as separate
+          // dynamic chunks. Consolidate only small, named shader modules to
+          // eliminate duplicated per-chunk wrappers, leaving larger compiled
+          // default shaders independent under the strict lazy-chunk budget.
+          if (
+            /\/node_modules\/@babylonjs\/core\/Shaders(?:WGSL)?\//.test(normalized) &&
+            /(?:color|vertexColorMixing|rgbdDecode|postprocess|logDepth|fogFragment)/i.test(normalized)
+          ) {
+            return 'babylon-small-shaders';
           }
           return undefined;
         },
