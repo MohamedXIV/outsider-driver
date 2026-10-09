@@ -39,6 +39,11 @@ The viewer displays actual plane count and estimated raw RGBA atlas bytes (`widt
 - **Replace on approval**: `BabylonInochiPassengerRenderer`, `InochiPuppetSession`, `OfficialInochiRuntimeAdapter`, parameter mapping and specific puppet asset loading.
 - **Remove after end-to-end migration tests**: Inochi WASM downloads/preparation, probes/fixtures, stale docs and tests. **None are removed in this branch.**
 
+## Verification history
+
+- CI run #37918750826 on the initial Draft PR failed at strict ESLint before TypeScript/build/browser testing. The reported parser/project and void-arrow rules were corrected in subsequent commits; **do not treat that run as a PASS**.
+- The browser comparison is developer-only, so production bundle size remains the authoritative performance gate. Preview hosting may be externally rate limited; browser testing via Node 24 / Vite dev does not require Vercel.
+
 ## Validation
 
 Run `npm run typecheck`, `npm run test`, `npm run build`, then `npm run test:sprite:browser` (dedicated Vite dev-server Playwright configuration, not the normal production preview smoke suite).
