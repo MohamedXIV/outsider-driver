@@ -39,8 +39,8 @@ function sourceImage(name: SourceName): Promise<HTMLImageElement> {
   if (cached !== undefined) return cached;
   const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('Unable to load mint elf asset: ' + ROOT + name + '.webp'));
+    image.onload = () => { resolve(image); };
+    image.onerror = () => { reject(new Error('Unable to load mint elf asset: ' + ROOT + name + '.webp')); };
     image.src = ROOT + name + '.webp';
   });
   sourceCache.set(name, promise);
