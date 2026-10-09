@@ -53,12 +53,15 @@ export default defineConfig({
   build: {
     // The supported Chromium/Firefox/WebKit generations all implement ES2024
     // and modulepreload; avoid shipping transforms and a legacy preload shim.
-    target: 'esnext',
+    target: 'es2024',
     modulePreload: { polyfill: false },
     // Keep map files for debugging without shipping per-chunk map URL comments.
     sourcemap: 'hidden',
     rolldownOptions: {
       output: {
+        // A further bounded Oxc compression pass targets the remaining
+        // ~616-byte aggregate budget gap without deleting diagnostics or code.
+        minify: { compress: { maxIterations: 5 } },
         // Keep Ink's runtime and schema validation in independently cached
         // browser modules. Do not alter the authored narrative or loading API.
         // Chunk attribution and the strict size checks quantify the result.
