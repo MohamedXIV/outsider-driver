@@ -38,6 +38,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
+      - name: Sprite lab Chromium dev-server interaction
+        run: npm run test:sprite:browser
+
       - name: Cross-browser smoke
         run: npm run test:browser
 
