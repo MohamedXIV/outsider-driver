@@ -155,7 +155,6 @@ export function mountSpriteComparison(
     }
     updatePassengerGrounding();
   };
-  applyMode(current);
   const activeCandidates = (): ReadonlyMap<SpriteEvaluationMode, SpritePassengerCandidate | MintElfPassengerCandidate> =>
     activeArt === 'mint-elf' ? mintCandidates : candidates;
   function updatePassengerGrounding(): void {
@@ -164,6 +163,7 @@ export function mountSpriteComparison(
     passengerStylization.setOutline(active?.root ?? null, activeArt,
       outlineThickness, outlineOpacity);
   }
+  applyMode(current);
 
   const panel = element('aside', 'sprite-viewer');
   panel.setAttribute('aria-label', 'Passenger sprite animation comparison');
