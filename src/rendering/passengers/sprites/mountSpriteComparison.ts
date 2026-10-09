@@ -14,6 +14,7 @@ import {
   type SpriteEvaluationMode,
 } from './SpritePassengerCandidate';
 import { ALIEN_EXPRESSIONS } from './AlienPortraitArt';
+import { MintElfPassengerCandidate } from './MintElfPassengerCandidate';
 
 function element<K extends keyof HTMLElementTagNameMap>(
   type: K,
@@ -109,13 +110,17 @@ export function mountSpriteComparison(
     candidates.set(mode, new SpritePassengerCandidate(scene, activeTaxi.anchors.passengerSeat, mode));
   }
   let current: SpriteEvaluationMode = 'layered';
+  let activeArt: 'demo-alien' | 'mint-elf' = 'demo-alien';
+  const mintCandidates = new Map<SpriteEvaluationMode, MintElfPassengerCandidate>();
   const applyMode = (mode: SpriteEvaluationMode): void => {
     current = mode;
     for (const [key, candidate] of candidates) {
-      candidate.root.setEnabled(key === mode);
+      candidate.root.setEnabled(activeArt === 'demo-alien' && key === mode);
     }
   };
   applyMode(current);
+  const activeCandidates = (): ReadonlyMap<SpriteEvaluationMode, SpritePassengerCandidate | MintElfPassengerCandidate> =>
+    activeArt === 'mint-elf' ? mintCandidates : candidates;
 
   const panel = element('aside', 'sprite-viewer');
   panel.setAttribute('aria-label', 'Passenger sprite animation comparison');
@@ -125,7 +130,7 @@ export function mountSpriteComparison(
   closeButton.type = 'button';
   header.append(title, closeButton);
   const intro = element('p', 'sprite-viewer-intro',
-    'Same adult alien, same Babylon passenger seat, three animation techniques. No production save changes.');
+    'Compare the original test character or the user-art mint elf inside Babylon. Mint elf cutouts are provisional; facial movement is not yet supported.');
   const controls = element('div', 'sprite-viewer-controls');
   const details = element('div', 'sprite-viewer-metrics');
   const transcript = element('section', 'sprite-viewer-dialogue');
@@ -138,10 +143,10 @@ export function mountSpriteComparison(
   transcript.append(dialogueHeading, dialogueContent, choiceContainer, startDialogue);
 
   function applyToAll(callback: (candidate: SpritePassengerCandidate) => void): void {
-    for (const candidate of candidates.values()) callback(candidate);
+    for (const candidate of activeCandidates().values()) callback(candidate);
   }
   function refreshMetrics(): void {
-    const model = candidates.get(current);
+    const model = activeCandidates().get(current);
     if (!model) return;
     const metrics = model.metrics();
     details.textContent = `${String(metrics.meshes)} transparent planes · ${(metrics.decodedTextureBytes / (1024 * 1024)).toFixed(2)} MiB estimated RGBA atlas memory · ${String(metrics.meshes)} potential draw calls`;
@@ -169,6 +174,24 @@ export function mountSpriteComparison(
   }
 
   controls.append(
+    select('Passenger art', [
+      { value: 'demo-alien', label: 'Original comparison drawing' },
+      { value: 'mint-elf', label: 'Mint elf — extracted user artwork' },
+    ], 'demo-alien', value => {
+      if (value === 'mint-elf') {
+        if (mintCandidates.size === 0) {
+          for (const mode of SPRITE_MODES) {
+            mintCandidates.set(mode, new MintElfPassengerCandidate(scene, activeTaxi.anchors.passengerSeat, mode));
+          }
+        }
+        activeArt = 'mint-elf';
+      } else {
+        activeArt = 'demo-alien';
+      }
+      for (const [key, actor] of mintCandidates) actor.root.setEnabled(activeArt === 'mint-elf' && key === current);
+      applyMode(current);
+      refreshMetrics();
+    }),
     select('Animation renderer', SPRITE_MODES.map(mode => ({ value: mode, label:
       mode === 'spritesheet' ? 'A · Packed spritesheet' :
       mode === 'layered' ? 'B · Layered sprites' : 'C · Hybrid sprites',
@@ -272,7 +295,7 @@ export function mountSpriteComparison(
     const dt = Math.min(scene.getEngine().getDeltaTime() / 1000, 0.1);
     elapsed += dt;
     const motion = preferences.getMotionIntensity();
-    for (const candidate of candidates.values()) candidate.update(dt, motion);
+    for (const candidate of activeCandidates().values()) candidate.update(dt, motion);
     if (elapsed >= 0.75) {
       elapsed = 0;
       refreshMetrics();
@@ -285,6 +308,7 @@ export function mountSpriteComparison(
     window.clearTimeout(blinkTimeout);
     scene.onBeforeRenderObservable.remove(observer);
     for (const candidate of candidates.values()) candidate.dispose();
+    for (const candidate of mintCandidates.values()) candidate.dispose();
     neon.dispose();
     camera.position.copyFrom(originalPosition);
     camera.rotation.copyFrom(originalRotation);
