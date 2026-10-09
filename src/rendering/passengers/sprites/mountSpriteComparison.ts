@@ -117,6 +117,9 @@ export function mountSpriteComparison(
     for (const [key, candidate] of candidates) {
       candidate.root.setEnabled(activeArt === 'demo-alien' && key === mode);
     }
+    for (const [key, candidate] of mintCandidates) {
+      candidate.root.setEnabled(activeArt === 'mint-elf' && key === mode);
+    }
   };
   applyMode(current);
   const activeCandidates = (): ReadonlyMap<SpriteEvaluationMode, SpritePassengerCandidate | MintElfPassengerCandidate> =>
@@ -142,7 +145,7 @@ export function mountSpriteComparison(
   startDialogue.type = 'button';
   transcript.append(dialogueHeading, dialogueContent, choiceContainer, startDialogue);
 
-  function applyToAll(callback: (candidate: SpritePassengerCandidate) => void): void {
+  function applyToAll(callback: (candidate: SpritePassengerCandidate | MintElfPassengerCandidate) => void): void {
     for (const candidate of activeCandidates().values()) callback(candidate);
   }
   function refreshMetrics(): void {
