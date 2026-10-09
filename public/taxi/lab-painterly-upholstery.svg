@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+ <linearGradient id="cloth" x2="1" y2=".82"><stop stop-color="#c7cfb5"/><stop offset=".35" stop-color="#d8d8bf"/><stop offset=".72" stop-color="#a3b09c"/><stop offset="1" stop-color="#c5c4aa"/></linearGradient>
+ <pattern id="threads" width="16" height="16" patternUnits="userSpaceOnUse">
+  <path d="M0 12L12 0M-4 4L4-4M12 16L16 12" fill="none" stroke="#738671" stroke-width=".9" opacity=".32"/>
+  <path d="M4 0L16 12M0 12L4 16" fill="none" stroke="#f7f1d8" stroke-width=".85" opacity=".6"/>
+ </pattern>
+ <pattern id="sketch" width="58" height="46" patternUnits="userSpaceOnUse">
+  <path d="M3 25q14-6 28-1M20 9q23 0 33-3M7 41q28-2 43 0" fill="none" stroke="#f8efda" stroke-width="1.6" opacity=".32"/>
+ </pattern>
+</defs>
+<rect width="512" height="512" fill="url(#cloth)"/>
+<rect width="512" height="512" fill="url(#threads)"/>
+<rect width="512" height="512" fill="url(#sketch)"/>
+<path d="M13 0Q5 120 17 249T13 512M498 0Q506 120 496 257T497 512" stroke="#676f61" stroke-width="7" opacity=".45" fill="none"/>
+<path d="M21 0Q15 130 25 250T22 512M491 0Q500 130 488 258T490 512" stroke="#faedd4" stroke-width="3" opacity=".7" fill="none"/>
+<path d="M35 15Q24 180 40 320T34 500M478 16Q490 170 473 320T476 500" stroke="#8f967e" stroke-width="2.2" stroke-dasharray="8 9" fill="none" opacity=".65"/>
+<path d="M0 105Q122 96 230 105T512 100M0 407Q125 401 251 410T512 404" stroke="#7b8a74" stroke-width="2.5" opacity=".24" fill="none"/>
+<path d="M0 111Q121 104 232 111T512 106M0 414Q128 410 254 416T512 412" stroke="#ffffe6" stroke-width="2" opacity=".34" fill="none"/>
+<g fill="none" stroke-linecap="round"><path d="M82 210q48 7 95 3M286 319q32-5 73-1M174 65q35-4 64-2M360 469q42-4 79 0" stroke="#6e816a" stroke-width="3" opacity=".22"/>
+<path d="M81 214q52 7 104 1M285 324q34-3 70 0M174 69q30-3 69-1M363 473q45-3 74 1" stroke="#fff4d9" stroke-width="2" opacity=".4"/></g>
+<g fill="#6d7569" opacity=".12"><ellipse cx="121" cy="346" rx="78" ry="19"/><ellipse cx="381" cy="173" rx="65" ry="22"/></g>
+</svg>
