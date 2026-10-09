@@ -114,7 +114,9 @@ export class PassengerStylization {
       width: 0.80, height: 0.76, sideOrientation: Mesh.DOUBLESIDE,
     }, scene);
     backrest.parent = seat;
-    backrest.position.set(0, 0.49, 0.365);
+    // Put the decal slightly in front of the seat-back front face; farther
+    // back would be hidden by the opaque backrest depth buffer.
+    backrest.position.set(0, 0.49, 0.27);
     backrest.isPickable = false;
     for (const [index, mesh] of [cushion, backrest].entries()) {
       const material = alphaMaterial(scene, 'passenger-shadow-ink-' + String(index),
@@ -134,7 +136,7 @@ export class PassengerStylization {
     this.#outlineMaterial = alphaMaterial(scene, 'passenger-silhouette-ink',
       this.#outlineTexture, new Color3(0.22, 0.17, 0.16));
     this.#outline = MeshBuilder.CreatePlane('passenger-ink-outline-plane',
-      { width: 1, height: 640 / 512, sideOrientation: Mesh.DOUBLESIDE }, scene);
+      { width: 1, height: 1, sideOrientation: Mesh.DOUBLESIDE }, scene);
     this.#outline.material = this.#outlineMaterial;
     this.#outline.position.set(0, 0.64, 0.013);
     this.#outline.renderingGroupId = 1;
@@ -184,8 +186,9 @@ export class PassengerStylization {
       ctx.drawImage(source, x, y, drawnW, drawnH);
       ctx.globalCompositeOperation = 'source-over';
       this.#outlineTexture.update();
-      // The outline plane matches the baked portrait dimensions including
-      // its transparent margin, but sits behind all character animation planes.
+      // Unit-plane geometry is scaled to the physical portrait dimensions;
+      // do NOT also bake its texture aspect ratio into the plane's height.
+      // That double scaling made a huge ghost silhouette behind the head.
       const worldW = art === 'demo-alien' ? 0.98 : 1;
       const worldH = art === 'demo-alien' ? 1.225 : 558 / 452;
       this.#outline.scaling.set(worldW * (w / drawnW),
