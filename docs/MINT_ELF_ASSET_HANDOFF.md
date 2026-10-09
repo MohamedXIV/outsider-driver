@@ -1,13 +1,55 @@
-# Mint elf source art — asset handoff
+# Mint elf: source-art upper-body prototype (PR #79)
 
-The supplied character sheet has been cut into real alpha-preserving source-art images (portrait, torso, head and right antenna), plus a JSON manifest. These are currently **rough cutouts**, not fully repaired rig-ready parts: hair/antenna seams and face overlays require refinement. The lips, irises and eyelids remain baked into the head image.
+## Assets on GitHub
 
-Target directory: `public/passengers/mint-elf/`.
+The user uploaded the binary art and pushed it successfully to branch
+`feat/sprite-passenger-visual-comparison` (first asset head `1a298e8`).
+These assets are **already present** in `public/passengers/mint-elf/`:
 
-Current GitHub connector cannot ingest the generated binary files directly. The assets were produced in the ChatGPT conversation as `outsider-mint-elf-assets.zip` and must be transferred to the repository before any browser rendering can honestly be marked working. Do not claim this character has replaced the existing lab candidate or that browser testing passed.
+- `portrait.webp` — one baked original portrait, all features together
+- `torso.webp` — lower part of the original illustration
+- `head.webp` — rough head/hair/ears cutout
+- `antenna-right.webp` — isolated source-painted right antenna
+- `manifest.json` — 452×558 canvas, source and rough pivot metadata; updated to point to the actual WebP filenames
 
-Next steps: place the alpha-preserving images at the target directory, add a Babylon cutout renderer that uses the real textures, and test the three candidate modes against the actual portrait. Retain PR #79 Draft; do not merge or remove Inochi dependencies until tested.
+These are extracted from the supplied artwork, not redraws of the former
+procedural alien. They contain *real original image pixels* and transparency.
 
-## Current integration state
+## Actual in-taxi integration
 
-`MintElfPassengerCandidate.ts` is implemented and the `Passenger art` selector now offers the mint elf in `mountSpriteComparison.ts`. The needed files must be extracted from `mint-elf-repo-assets.zip` to `public/passengers/mint-elf/` before choosing the option. **Until then the browser will request missing textures (404), so this cannot be called a completed playable GitHub integration.** The actual asset archive is available from the conversation, not in the repository. No fresh TypeScript or browser check has been executed on this new integration head.
+`MintElfPassengerCandidate` is selectable via **Passenger art → Mint elf** in the
+existing Babylon Passenger Lab. All variants use `taxi.anchors.passengerSeat`
+and the same isolated Ink dialog and semantic animation interface as the original
+lab. It is **Vite development-only**; it never writes game state or saves.
+
+- **A — Spritesheet:** one original full portrait. There are no authored
+  multiple full-body frames yet; no claim of true spritesheet animation.
+- **B — Layered:** torso, head, right antenna on three transparent planes.
+  Head/antenna rotate around their own approximate pivots.
+- **C — Hybrid:** baked full portrait, with the right antenna masked out and
+  re-rendered independently (two planes).
+- Masking is calculated once after WebP decode, using the actual alpha mask from
+  `antenna-right.webp`. No per-frame pixel uploads, Inochi dependencies or
+  extra production bundle code are introduced.
+- The UI reports loading/failure, counts actual planes and estimates decoded
+  RGBA texel memory. These are **not** measured GPU draw calls or VRAM.
+
+## Limitations and acceptance
+
+The original eyes, mouth, lashes and brows are still painted directly into the
+head; gaze, speaking, blinking and expression controls are disabled for this
+art. There are no finished hidden pixels for the neckline, and some hair/ear
+boundaries are rough. Animation is presently gentle rotation/bob only; it cannot
+yet match a hand-authored professional puppet.
+
+To inspect: `gh pr checkout 79` (or `git pull` if already on that branch),
+then `npm ci`, `npm run dev:sprites`, and visit
+`http://localhost:5173/?spriteViewer=1`. Choose the **Mint elf** artwork, move
+between A/B/C, turn the camera and change lighting. Dedicated test:
+`npm run test:sprite:browser`. Always verify the current PR head's test status;
+the previous green CI from before the binary upload does not cover this work.
+
+**Do not merge automatically.** Preserve the earlier Inochi implementation until
+the user has reviewed the new art and the replacement passes the full integration
+gates. The visual identity remains the user-approved art, not the temporary
+procedural alien.
