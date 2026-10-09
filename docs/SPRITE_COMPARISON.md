@@ -162,3 +162,5 @@ Shader-prototype CI checkpoint: one complete suite run is required because the n
 The second verification checkpoint includes the corrected Babylon Color3 API and an explicit MaterialPluginBase re-open regression, so repeated use of the Passenger Lab must not accumulate duplicate plugins on shared taxi materials.
 
 Shader acceptance checkpoint: strict TypeScript's required MaterialPluginBase overrides are now explicit. Validate the real GLSL compilation in Chromium before accepting the look.
+
+Third verification checkpoint: the initial Chromium shader interaction reached the Hybrid selector but failed at HTML range validation (`min=0.04`, `step=0.05` rejected 0.35). Controls now use 0.01 precision; complete the same screenshot and reset test without loosening its checks.
