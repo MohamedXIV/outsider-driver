@@ -15,6 +15,7 @@ import {
 } from './SpritePassengerCandidate';
 import { ALIEN_EXPRESSIONS } from './AlienPortraitArt';
 import { MintElfPassengerCandidate } from './MintElfPassengerCandidate';
+import { createTaxiHybridLook, taxiSpriteTint, type TaxiWorldStyle } from '../../taxi/TaxiHybridLook';
 
 function element<K extends keyof HTMLElementTagNameMap>(
   type: K,
@@ -105,6 +106,18 @@ export function mountSpriteComparison(
   neon.diffuse = new Color3(0.55, 0.3, 1);
   neon.intensity = 0;
 
+  // Adds no world state: these GLSL extensions only live inside Passenger Lab.
+  const worldLook = createTaxiHybridLook(scene);
+  let worldStyle: TaxiWorldStyle = 'default';
+  let toonSteps = 3;
+  let ambientFloor = 0.22;
+  let bandSoftness = 0.15;
+  let rimIntensity = 0.12;
+  function applyWorldLook(): void {
+    worldLook.apply({ style: worldStyle, steps: toonSteps, ambientFloor, bandSoftness, rimIntensity });
+  }
+  applyWorldLook();
+
   const candidates = new Map<SpriteEvaluationMode, SpritePassengerCandidate>();
   for (const mode of SPRITE_MODES) {
     candidates.set(mode, new SpritePassengerCandidate(scene, activeTaxi.anchors.passengerSeat, mode));
@@ -114,12 +127,15 @@ export function mountSpriteComparison(
   const mintCandidates = new Map<SpriteEvaluationMode, MintElfPassengerCandidate>();
   let spriteUnlit = false;
   let spriteBrightness = 1;
+  let spriteTintInfluence = 0;
   function applySpriteLighting(): void {
+    const tint = taxiSpriteTint(spriteTintInfluence, originalCabinColor,
+      neon.diffuse, neon.intensity > 0 ? 0.75 : 0);
     for (const candidate of candidates.values()) {
-      candidate.setSpriteLighting(spriteUnlit, spriteBrightness);
+      candidate.setSpriteLighting(spriteUnlit, spriteBrightness, tint);
     }
     for (const candidate of mintCandidates.values()) {
-      candidate.setSpriteLighting(spriteUnlit, spriteBrightness);
+      candidate.setSpriteLighting(spriteUnlit, spriteBrightness, tint);
     }
   }
   const applyMode = (mode: SpriteEvaluationMode): void => {
@@ -193,9 +209,37 @@ export function mountSpriteComparison(
     activeTaxi.ambientLight.intensity = originalAmbientIntensity * (value === 'dim' ? 0.18 : 1);
     activeTaxi.cabinLight.diffuse.copyFrom(originalCabinColor);
     neon.intensity = value === 'neon' ? 1.7 : 0;
+    applySpriteLighting();
   }
 
   controls.append(
+    select('World style', [
+      { value: 'default', label: 'Default — original taxi' },
+      { value: 'hybrid', label: 'Hybrid — Painterly / Cel' },
+    ], 'default', value => {
+      worldStyle = value === 'hybrid' ? 'hybrid' : 'default';
+      applyWorldLook();
+    }),
+    select('Toon steps', [
+      { value: '2', label: '2 bands' },
+      { value: '3', label: '3 bands (recommended)' },
+      { value: '4', label: '4 bands' },
+    ], '3', value => {
+      toonSteps = Number(value);
+      applyWorldLook();
+    }),
+    range('World ambient floor', 0.04, 0.6, ambientFloor, value => {
+      ambientFloor = value;
+      applyWorldLook();
+    }),
+    range('Band softness', 0, 0.45, bandSoftness, value => {
+      bandSoftness = value;
+      applyWorldLook();
+    }),
+    range('World rim light', 0, 0.5, rimIntensity, value => {
+      rimIntensity = value;
+      applyWorldLook();
+    }),
     select('Passenger art', [
       { value: 'demo-alien', label: 'Original comparison drawing' },
       { value: 'mint-elf', label: 'Mint elf — extracted user artwork' },
@@ -255,6 +299,10 @@ export function mountSpriteComparison(
       spriteBrightness = value;
       applySpriteLighting();
     }),
+    range('Sprite light tint', 0, 1, 0, value => {
+      spriteTintInfluence = value;
+      applySpriteLighting();
+    }),
   );
   const blinkButton = element('button', 'sprite-viewer-action', 'Trigger blink');
   blinkButton.type = 'button';
@@ -264,7 +312,7 @@ export function mountSpriteComparison(
   actions.append(blinkButton, neutralButton);
   controls.append(actions);
   const notice = element('p', 'sprite-viewer-note',
-    'Sprite shader and brightness affect only the 2D character, never cabin meshes. Unlit bypasses direct/ambient light but remains affected by the shared camera exposure/postprocessing. This is an evaluation control, not yet a toon shader. Motion reduction comes from game settings.');
+    'Hybrid world shading quantizes existing 3D material lighting without changing painted textures or emissive displays. Sprite Unlit, brightness, and tint are independent. Default mode preserves the old taxi look. This experiment is not a final art direction or a game save setting.');
   panel.append(header, intro, controls, artStatus, details, artNotice, notice, transcript);
   root.append(panel);
 
@@ -363,6 +411,7 @@ export function mountSpriteComparison(
     scene.onBeforeRenderObservable.remove(observer);
     for (const candidate of candidates.values()) candidate.dispose();
     for (const candidate of mintCandidates.values()) candidate.dispose();
+    worldLook.dispose();
     neon.dispose();
     camera.position.copyFrom(originalPosition);
     camera.rotation.copyFrom(originalRotation);
