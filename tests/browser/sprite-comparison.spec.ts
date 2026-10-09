@@ -51,3 +51,56 @@ test('three real sprite candidates share the taxi seat and respond to Ink', asyn
   await expect(panel).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+
+test('source-derived mint elf images load and switch between honest cutout modes', async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  test.skip(process.env.SPRITE_LAB_DEV !== '1' || testInfo.project.name !== 'chromium-desktop',
+    'Source art evaluation requires the Vite development server.');
+
+  const pageErrors: string[] = [];
+  page.on('pageerror', error => { pageErrors.push(error.message); });
+  const response = await page.goto('/?spriteViewer=1', { waitUntil: 'domcontentloaded' });
+  expect(response?.ok()).toBe(true);
+
+  // These files have now actually been uploaded to the PR branch; do not
+  // mistake an HTTP 404 SPA fallback or stale generated vector art for them.
+  for (const name of ['portrait', 'head', 'torso', 'antenna-right']) {
+    const asset = await page.request.get('/passengers/mint-elf/' + name + '.webp');
+    expect(asset.status()).toBe(200);
+    expect(asset.headers()['content-type']).toContain('image/webp');
+  }
+
+  const panel = page.getByRole('complementary', { name: 'Passenger sprite animation comparison' });
+  await expect(panel).toBeVisible({ timeout: 30_000 });
+  await panel.getByLabel('Passenger art').selectOption('mint-elf');
+  const loaded = panel.locator('.sprite-viewer-asset-status');
+  await expect(loaded).toHaveText('Mint elf artwork loaded', { timeout: 45_000 });
+
+  // The face is not independently rigged: disabled controls must be honest.
+  await expect(panel.getByLabel('Expression')).toBeDisabled();
+  await expect(panel.getByLabel('Talk intensity')).toBeDisabled();
+  await expect(panel.getByLabel('Look left / right')).toBeDisabled();
+  await expect(panel.getByRole('button', { name: 'Trigger blink' })).toBeDisabled();
+  await expect(panel.getByText(/Only gentle body\/head\/antenna motion works/)).toBeVisible();
+
+  const mode = panel.getByLabel('Animation renderer');
+  const metrics = panel.locator('.sprite-viewer-metrics');
+  await mode.selectOption('spritesheet');
+  await expect(metrics).toContainText('1 transparent planes');
+  await page.screenshot({ path: testInfo.outputPath('mint-elf-spritesheet.png') });
+  await mode.selectOption('layered');
+  await expect(metrics).toContainText('3 transparent planes');
+  await panel.getByLabel('Head direction').fill('0.35');
+  await page.screenshot({ path: testInfo.outputPath('mint-elf-layered.png') });
+  await mode.selectOption('hybrid');
+  await expect(metrics).toContainText('2 transparent planes');
+  await page.screenshot({ path: testInfo.outputPath('mint-elf-hybrid.png') });
+
+  // The same Ink hooks continue driving the shared performance contract.
+  await expect(panel.getByText('Passenger: Customs lights sweep every cab after midnight.')).toBeVisible();
+  await panel.getByRole('button', { name: 'Ask why.' }).click();
+  await expect(panel.getByText('Driver: Why the sweep?')).toBeVisible();
+  await expect(panel.getByText('Passenger: Keep moving.')).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
