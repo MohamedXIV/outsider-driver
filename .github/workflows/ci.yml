@@ -52,6 +52,8 @@ jobs:
             test-results/**/spritesheet.png
             test-results/**/layered.png
             test-results/**/hybrid.png
+            test-results/**/taxi-world-default.png
+            test-results/**/taxi-world-hybrid.png
           if-no-files-found: ignore
           retention-days: 5
 
