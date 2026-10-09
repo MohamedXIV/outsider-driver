@@ -165,8 +165,12 @@ export class MintElfPassengerCandidate implements PassengerPerformanceControlPor
       const material = piece.mesh.material;
       if (!(material instanceof StandardMaterial)) continue;
       material.disableLighting = unlit;
-      material.diffuseColor = tint.scale(gain);
-      material.emissiveColor = Color3.Black();
+      // A StandardMaterial with lighting disabled has no diffuse light
+      // contribution. The original painted RGBA must therefore be supplied
+      // through emissiveTexture, retaining diffuseTexture for alpha blending.
+      material.diffuseColor = unlit ? Color3.Black() : tint.scale(gain);
+      material.emissiveTexture = unlit ? piece.texture : null;
+      material.emissiveColor = unlit ? tint.scale(gain) : Color3.Black();
     }
   }
 
