@@ -156,7 +156,7 @@ function bootstrapSupportedGame(
     viewerButton.className = 'sprite-viewer-launch';
     viewerButton.textContent = 'Passenger Lab';
     viewerButton.setAttribute('aria-label', 'Open sprite passenger comparison');
-    const shell = applicationRoot.querySelector('.game-shell');
+    const shell = applicationRoot.querySelector<HTMLElement>('.game-shell');
     shell?.append(viewerButton);
     const openSpriteViewer = async (): Promise<void> => {
       if (viewerOpening || viewerDisposed || closeSpriteViewer !== null) return;
