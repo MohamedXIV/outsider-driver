@@ -53,6 +53,23 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    rolldownOptions: {
+      output: {
+        // Keep Ink's runtime and schema validation in independently cached
+        // browser modules. Do not alter the authored narrative or loading API.
+        // Chunk attribution and the strict size checks quantify the result.
+        manualChunks(id: string) {
+          const normalized = id.replaceAll('\\', '/');
+          if (normalized.includes('/node_modules/inkjs/')) {
+            return 'ink-runtime';
+          }
+          if (normalized.includes('/node_modules/zod/')) {
+            return 'validation';
+          }
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     host: true,
