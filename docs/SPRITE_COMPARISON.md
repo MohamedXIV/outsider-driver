@@ -43,9 +43,12 @@ The viewer displays actual plane count and estimated raw RGBA atlas bytes (`widt
 
 - CI run #37918750826 on the initial Draft PR failed at strict ESLint before TypeScript/build/browser testing. The reported parser/project and void-arrow rules were corrected.
 - CI run #37919019507 verified ESLint, content and save checks, and **275/275 existing unit tests**; compilation stopped on four strict TypeScript errors involving a DOM Element and nullability of the taxi handle. These were fixed in the next commit. This is still **not a green CI run**.
+- CI run #37919280454 passed the **complete production foundation** (lint/content/save/275 existing tests/typecheck/Vite build/performance budgets). The Chromium visual test reached active mode, expression, slider and lighting interactions before the 30-second aggregate test timeout on software-rendered CI. Browser acceptance is **not yet green**; the isolated test timeout was raised to 120 seconds, with budgets unchanged. Its PNG/trace artifacts document the visible 3D passenger.
 - The browser comparison is developer-only, so production bundle size remains the authoritative performance gate. Preview hosting may be externally rate limited; browser testing via Node 24 / Vite dev does not require Vercel.
 
 ## Validation
+
+The browser test also captures a `spritesheet.png`, `layered.png` and `hybrid.png` inside the real taxi, which CI uploads as **sprite-comparison-visuals** for human A/B/C review.
 
 Run `npm run typecheck`, `npm run test`, `npm run build`, then `npm run test:sprite:browser` (dedicated Vite dev-server Playwright configuration, not the normal production preview smoke suite).
 
