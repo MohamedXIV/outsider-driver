@@ -1,6 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import manifest from '../../../../public/passengers/mint-elf/manifest.json';
+import * as z from 'zod';
+
+const manifest = z.object({
+  schemaVersion: z.number(),
+  artboard: z.array(z.number()),
+  pieces: z.array(z.object({ id: z.string(), image: z.string() })),
+  alternate: z.object({ spritesheet: z.string(), hybrid: z.string() }),
+}).parse(JSON.parse(readFileSync(
+  new URL('../../../../public/passengers/mint-elf/manifest.json', import.meta.url),
+  'utf8',
+)) as unknown);
 
 describe('Mint elf real-art asset contract', () => {
   it('uses the same fixed artboard as the Babylon texture renderer', () => {
