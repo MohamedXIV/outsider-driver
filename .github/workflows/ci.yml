@@ -54,6 +54,8 @@ jobs:
             test-results/**/hybrid.png
             test-results/**/taxi-world-default.png
             test-results/**/taxi-world-hybrid.png
+            test-results/**/taxi-painterly-grounded-mint-elf.png
+            test-results/**/taxi-original-mint-elf.png
           if-no-files-found: ignore
           retention-days: 5
 
