@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test('three real sprite candidates share the taxi seat and respond to Ink', async ({ page }, testInfo) => {
+  // SwiftShader/software-rendered CI needs longer for real 3D redraws; gameplay
+  // frame-time and production startup budgets are not modified by this test.
+  test.setTimeout(120_000);
   test.skip(process.env.SPRITE_LAB_DEV !== '1' || testInfo.project.name !== 'chromium-desktop',
     'This is a dev-server-only comparison; production browser smoke excludes it.');
 
@@ -19,10 +22,13 @@ test('three real sprite candidates share the taxi seat and respond to Ink', asyn
 
   await mode.selectOption('spritesheet');
   await expect(memory).toContainText('1 transparent planes');
+  await page.screenshot({ path: testInfo.outputPath('spritesheet.png') });
   await mode.selectOption('layered');
   await expect(memory).toContainText('5 transparent planes');
+  await page.screenshot({ path: testInfo.outputPath('layered.png') });
   await mode.selectOption('hybrid');
   await expect(memory).toContainText('3 transparent planes');
+  await page.screenshot({ path: testInfo.outputPath('hybrid.png') });
 
   await panel.getByLabel('Expression').selectOption('guarded');
   await panel.getByLabel('Talk intensity').fill('0.8');
