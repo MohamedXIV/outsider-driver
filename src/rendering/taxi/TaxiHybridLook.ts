@@ -47,18 +47,18 @@ class PainterlyCelMaterialPlugin extends MaterialPluginBase {
     this._enable(true);
   }
 
-  public getClassName(): string { return 'TaxiPainterlyCelMaterialPlugin'; }
+  public override getClassName(): string { return 'TaxiPainterlyCelMaterialPlugin'; }
 
-  public isCompatible(language: ShaderLanguage): boolean {
+  public override isCompatible(language: ShaderLanguage): boolean {
     // Driver taxi currently uses Babylon's WebGL/GLSL path.
     return language === ShaderLanguage.GLSL;
   }
 
-  public getUniforms(): { externalUniforms: string[] } {
+  public override getUniforms(): { externalUniforms: string[] } {
     return { externalUniforms: ['uTaxiToonBands', 'uTaxiToonRim'] };
   }
 
-  public bindForSubMesh(
+  public override bindForSubMesh(
     _uniformBuffer: UniformBuffer,
     _scene: Scene,
     _engine: AbstractEngine,
@@ -76,7 +76,7 @@ class PainterlyCelMaterialPlugin extends MaterialPluginBase {
       clamp(rimIntensity, 0, 0.5), 0.66, 0.79, 0.91);
   }
 
-  public getCustomCode(shaderType: string): Record<string, string> | null {
+  public override getCustomCode(shaderType: string): Record<string, string> | null {
     if (shaderType !== 'fragment') return null;
     return {
       CUSTOM_FRAGMENT_DEFINITIONS: `
