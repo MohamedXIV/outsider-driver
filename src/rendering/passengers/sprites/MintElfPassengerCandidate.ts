@@ -2,7 +2,8 @@ import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTextur
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
-import { Mesh, MeshBuilder } from '@babylonjs/core/Meshes';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
 import type { PassengerPerformanceControlPort } from '../../../app/ports/PassengerPerformancePort';
@@ -118,6 +119,8 @@ export class MintElfPassengerCandidate implements PassengerPerformanceControlPor
   #bodyX = 0;
   #bodyY = 0;
   #disposed = false;
+  // Semantic cue values are accepted but cannot affect the current baked face.
+  #facialIntent = { talk: 0, blink: 0, gazeX: 0, gazeY: 0, expression: 'neutral' };
 
   constructor(scene: Scene, seat: TransformNode, mode: SpriteEvaluationMode) {
     this.root = new TransformNode('mint-elf-' + mode, scene);
@@ -152,14 +155,11 @@ export class MintElfPassengerCandidate implements PassengerPerformanceControlPor
     });
   }
 
-  public setTalk(_amount: number): void {
-    // Unsupported until separate mouth artwork is approved.
-  }
-  public setBlink(_amount: number): void {
-    // Unsupported until separate eyelid artwork is approved.
-  }
-  public setGaze(_x: number, _y: number): void {
-    // Unsupported until separate eyes and iris artwork are approved.
+  public setTalk(amount: number): void { this.#facialIntent.talk = amount; }
+  public setBlink(amount: number): void { this.#facialIntent.blink = amount; }
+  public setGaze(x: number, y: number): void {
+    this.#facialIntent.gazeX = x;
+    this.#facialIntent.gazeY = y;
   }
   public setHeadPose(x: number, y: number): void {
     this.#headX = Math.max(-1, Math.min(1, x));
@@ -169,8 +169,8 @@ export class MintElfPassengerCandidate implements PassengerPerformanceControlPor
     this.#bodyX = Math.max(-1, Math.min(1, x));
     this.#bodyY = Math.max(-1, Math.min(1, y));
   }
-  public setExpression(_name: string | null): void {
-    // The uploaded reference has only one baked facial expression.
+  public setExpression(name: string | null): void {
+    this.#facialIntent.expression = name ?? 'neutral';
   }
   public applyCue(name: string): void {
     switch (name) {
@@ -192,6 +192,7 @@ export class MintElfPassengerCandidate implements PassengerPerformanceControlPor
     this.#headY = 0;
     this.#bodyX = 0;
     this.#bodyY = 0;
+    this.#facialIntent = { talk: 0, blink: 0, gazeX: 0, gazeY: 0, expression: 'neutral' };
   }
   public update(deltaSeconds: number, motionIntensity: number): void {
     if (this.#disposed || this.status !== 'ready') return;
