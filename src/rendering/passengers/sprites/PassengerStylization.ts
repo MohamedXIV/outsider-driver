@@ -114,6 +114,7 @@ export class PassengerStylization {
       mesh.alphaIndex = -10 + index;
       this.#shadowPlanes.push(mesh);
       this.#shadowMaterials.push(material);
+      mesh.setEnabled(false);
     }
 
     this.#outlineTexture = new DynamicTexture('passenger-art-ink-outline',
@@ -133,8 +134,9 @@ export class PassengerStylization {
 
   public setShadow(opacity: number): void {
     const clamped = Math.max(0, Math.min(0.85, opacity));
-    this.#shadowMaterials[0]!.alpha = clamped * 0.82;
-    this.#shadowMaterials[1]!.alpha = clamped * 0.60;
+    for (const [index, material] of this.#shadowMaterials.entries()) {
+      material.alpha = clamped * (index === 0 ? 0.82 : 0.60);
+    }
     for (const mesh of this.#shadowPlanes) mesh.setEnabled(clamped > 0);
   }
 
@@ -147,8 +149,9 @@ export class PassengerStylization {
     this.#outline.parent = root;
     this.#outline.setEnabled(root !== null && this.#thickness > 0 && this.#strength > 0);
     this.#outlineMaterial.alpha = this.#strength;
-    if (!this.#outline.isEnabled()) return;
+    // Also invalidate an old asynchronous source decode when ink is turned off.
     const request = ++this.#request;
+    if (!this.#outline.isEnabled()) return;
     void sourceCanvas(art).then(source => {
       if (this.#disposed || request !== this.#request) return;
       const ctx = this.#outlineTexture.getContext() as CanvasRenderingContext2D;
