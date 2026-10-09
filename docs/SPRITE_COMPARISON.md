@@ -164,3 +164,20 @@ The second verification checkpoint includes the corrected Babylon Color3 API and
 Shader acceptance checkpoint: strict TypeScript's required MaterialPluginBase overrides are now explicit. Validate the real GLSL compilation in Chromium before accepting the look.
 
 Third verification checkpoint: the initial Chromium shader interaction reached the Hybrid selector but failed at HTML range validation (`min=0.04`, `step=0.05` rejected 0.35). Controls now use 0.01 precision; complete the same screenshot and reset test without loosening its checks.
+
+
+## Unlit screenshot regression
+
+Visual review of the real Chromium `taxi-world-hybrid.png` exposed an
+important issue *not caught by the earlier control-level tests*: turning
+off Babylon diffuse lighting also removed the source art illumination,
+making the mint elf a black silhouette. The sprite renderer now uses
+the **same uploaded RGBA texture in its emissive channel** while in
+Unlit mode, retains the diffuse texture to preserve alpha, and carries
+the independent brightness/tint multiplier through emissiveColor.
+Lit mode restores the original diffuse channel and disables the extra
+emissive texture. Both passenger renderers follow this path.
+
+Do not mark Unlit visually approved until the replacement
+`taxi-world-hybrid.png` is examined for a visible character, preserved
+colours, correct alpha, and no double lighting.
