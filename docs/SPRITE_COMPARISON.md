@@ -53,3 +53,18 @@ The browser test also captures a `spritesheet.png`, `layered.png` and `hybrid.pn
 Run `npm run typecheck`, `npm run test`, `npm run build`, then `npm run test:sprite:browser` (dedicated Vite dev-server Playwright configuration, not the normal production preview smoke suite).
 
 The separate browser smoke spec is gated by `SPRITE_LAB_DEV=1` and is intentionally skipped during the normal production-only `npm run test:browser`; it runs in the dedicated sprite-lab config. Not yet measured: art production cost at scale; sprite image sizes once exported and compressed; exact GPU frame timing; reloading a live ride from the stacked gameplay PRs. Do not merge automatically, mark tests PASS without executing, or declare a winner.
+
+
+## Mint elf real-art integration after asset upload
+
+The first evaluation's procedural alien is still selectable, but the user's
+actual illustrated mint elf is now also wired in as a **source-art** option. See
+[Mint elf art handoff](MINT_ELF_ASSET_HANDOFF.md). Its files are under
+`public/passengers/mint-elf/`, with WebP suffixes. The A/B/C approaches are
+**architecture variants rather than three finished animations** of this sprite.
+B uses torso, head and independently masked right antenna; C uses full portrait
+with only the right antenna separated. A is one original image. Do not compare
+facial animation capability until independent eye/mouth layers have been cleaned
+and authored. The dedicated Playwright spec exercises WebP HTTP 200/MIME,
+asset readiness, mode switching and real Ink choices. Fresh CI still required
+for any new PR head.
