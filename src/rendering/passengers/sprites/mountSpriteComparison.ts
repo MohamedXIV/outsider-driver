@@ -112,6 +112,16 @@ export function mountSpriteComparison(
   let current: SpriteEvaluationMode = 'layered';
   let activeArt: 'demo-alien' | 'mint-elf' = 'demo-alien';
   const mintCandidates = new Map<SpriteEvaluationMode, MintElfPassengerCandidate>();
+  let spriteUnlit = false;
+  let spriteBrightness = 1;
+  function applySpriteLighting(): void {
+    for (const candidate of candidates.values()) {
+      candidate.setSpriteLighting(spriteUnlit, spriteBrightness);
+    }
+    for (const candidate of mintCandidates.values()) {
+      candidate.setSpriteLighting(spriteUnlit, spriteBrightness);
+    }
+  }
   const applyMode = (mode: SpriteEvaluationMode): void => {
     current = mode;
     for (const [key, candidate] of candidates) {
@@ -197,6 +207,7 @@ export function mountSpriteComparison(
           }
         }
         activeArt = 'mint-elf';
+        applySpriteLighting();
       } else {
         activeArt = 'demo-alien';
       }
@@ -233,6 +244,17 @@ export function mountSpriteComparison(
       {value: 'dim', label: 'Deep night / low light'},
       {value: 'neon', label: 'Passing violet neon'},
     ], 'cabin', setLighting),
+    select('Sprite shader', [
+      { value: 'lit', label: 'Lit — follows cabin lights' },
+      { value: 'unlit', label: 'Unlit — keeps painted artwork visible' },
+    ], 'lit', value => {
+      spriteUnlit = value === 'unlit';
+      applySpriteLighting();
+    }),
+    range('Sprite brightness', 0.25, 3, 1, value => {
+      spriteBrightness = value;
+      applySpriteLighting();
+    }),
   );
   const blinkButton = element('button', 'sprite-viewer-action', 'Trigger blink');
   blinkButton.type = 'button';
@@ -242,7 +264,7 @@ export function mountSpriteComparison(
   actions.append(blinkButton, neutralButton);
   controls.append(actions);
   const notice = element('p', 'sprite-viewer-note',
-    'Spritesheet: fixed full-face frames (gaze is not independently supported). Layered: body/head/antennae/eyes/mouth. Hybrid: pre-rendered body/head + live face layers. Motion reduction comes from game settings.');
+    'Sprite shader and brightness affect only the 2D character, never cabin meshes. Unlit bypasses direct/ambient light but remains affected by the shared camera exposure/postprocessing. This is an evaluation control, not yet a toon shader. Motion reduction comes from game settings.');
   panel.append(header, intro, controls, artStatus, details, artNotice, notice, transcript);
   root.append(panel);
 
