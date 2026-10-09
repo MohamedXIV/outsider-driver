@@ -119,3 +119,55 @@ test('source-derived mint elf images load and switch between honest cutout modes
   await expect(panel.getByText('Passenger: Keep moving.')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
+
+
+test('Painterly/Cel world preset compiles and restores while sprite tint stays independent', async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  test.skip(process.env.SPRITE_LAB_DEV !== '1' || testInfo.project.name !== 'chromium-desktop',
+    'Experimental Babylon shader only runs in the dedicated dev-server lab.');
+
+  const pageErrors: string[] = [];
+  page.on('pageerror', error => { pageErrors.push(error.message); });
+  page.on('console', message => {
+    if (message.type() === 'error' &&
+        /shader|effect compilation|unable to compile/i.test(message.text())) {
+      pageErrors.push(message.text());
+    }
+  });
+
+  await page.goto('/?spriteViewer=1', { waitUntil: 'domcontentloaded' });
+  const panel = page.getByRole('complementary', { name: 'Passenger sprite animation comparison' });
+  await expect(panel).toBeVisible({ timeout: 30_000 });
+
+  const style = panel.getByLabel('World style');
+  const worldStatus = panel.locator('.sprite-viewer-world-status');
+  await expect(style).toHaveValue('default');
+  await expect(worldStatus).toHaveText('Original taxi lighting');
+  await page.screenshot({ path: testInfo.outputPath('taxi-world-default.png') });
+
+  await style.selectOption('hybrid');
+  await expect(worldStatus).toContainText(/Hybrid lighting on [1-9][0-9]* taxi materials/);
+  await panel.getByLabel('Toon steps').selectOption('2');
+  await panel.getByLabel('World ambient floor').fill('0.35');
+  await panel.getByLabel('Band softness').fill('0.1');
+  await panel.getByLabel('World rim light').fill('0.2');
+
+  await panel.getByLabel('Passenger art').selectOption('mint-elf');
+  await expect(panel.locator('.sprite-viewer-asset-status'))
+    .toHaveText('Mint elf artwork loaded', { timeout: 45_000 });
+  await panel.getByLabel('Sprite shader').selectOption('unlit');
+  await panel.getByLabel('Sprite brightness').fill('1.4');
+  await panel.getByLabel('Sprite light tint').fill('0.7');
+  await panel.getByLabel('Taxi lighting').selectOption('neon');
+  await expect(panel.getByLabel('Sprite light tint')).toHaveValue('0.7');
+  await page.screenshot({ path: testInfo.outputPath('taxi-world-hybrid.png') });
+
+  await style.selectOption('default');
+  await expect(worldStatus).toHaveText('Original taxi lighting');
+  await panel.getByRole('button', { name: '✕ Close' }).click();
+  await expect(panel).toHaveCount(0);
+  await page.getByRole('button', { name: 'Open sprite passenger comparison' }).click();
+  await expect(panel).toBeVisible();
+  await expect(panel.getByLabel('World style')).toHaveValue('default');
+  expect(pageErrors).toEqual([]);
+});
