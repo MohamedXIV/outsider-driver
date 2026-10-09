@@ -159,13 +159,13 @@ export class MintElfPassengerCandidate implements PassengerPerformanceControlPor
    * Experimental, independent of the cabin lights. Unlit preserves original
    * painted shading; the multiplier is applied to RGB without touching alpha.
    */
-  public setSpriteLighting(unlit: boolean, brightness: number): void {
+  public setSpriteLighting(unlit: boolean, brightness: number, tint: Color3 = Color3.White()): void {
     const gain = Math.max(0.25, Math.min(3, brightness));
     for (const piece of this.parts) {
       const material = piece.mesh.material;
       if (!(material instanceof StandardMaterial)) continue;
       material.disableLighting = unlit;
-      material.diffuseColor = new Color3(gain, gain, gain);
+      material.diffuseColor = tint.scale(gain);
       material.emissiveColor = Color3.Black();
     }
   }
