@@ -136,6 +136,9 @@ export function mountSpriteComparison(
     'Compare the original test character or the user-art mint elf inside Babylon. Mint elf cutouts are provisional; facial movement is not yet supported.');
   const controls = element('div', 'sprite-viewer-controls');
   const details = element('div', 'sprite-viewer-metrics');
+  const artStatus = element('p', 'sprite-viewer-asset-status', 'Original comparison art ready');
+  artStatus.setAttribute('role', 'status');
+  const artNotice = element('p', 'sprite-viewer-note', '');
   const transcript = element('section', 'sprite-viewer-dialogue');
   transcript.setAttribute('aria-label', 'Real Ink dialogue');
   const dialogueHeading = element('h3', '', 'INK / CHECKPOINT CONVERSATION');
@@ -152,7 +155,13 @@ export function mountSpriteComparison(
     const model = activeCandidates().get(current);
     if (!model) return;
     const metrics = model.metrics();
-    details.textContent = `${String(metrics.meshes)} transparent planes · ${(metrics.decodedTextureBytes / (1024 * 1024)).toFixed(2)} MiB estimated RGBA atlas memory · ${String(metrics.meshes)} potential draw calls`;
+    details.textContent = `${String(metrics.meshes)} transparent planes · ${(metrics.decodedTextureBytes / (1024 * 1024)).toFixed(2)} MiB estimated decoded RGBA texture size · ${String(metrics.meshes)} potential draw calls`;
+    const elf = mintCandidates.get(current);
+    artStatus.textContent = activeArt === 'mint-elf'
+      ? elf?.status === 'ready' ? 'Mint elf artwork loaded'
+        : elf?.status === 'failed' ? 'ERROR: Mint elf artwork failed to load'
+          : 'Loading original mint elf WebP artwork…'
+      : 'Original comparison art ready';
   }
   function setFraming(value: string): void {
     if (value === 'driver') {
@@ -191,9 +200,14 @@ export function mountSpriteComparison(
       } else {
         activeArt = 'demo-alien';
       }
-      for (const [key, actor] of mintCandidates) actor.root.setEnabled(activeArt === 'mint-elf' && key === current);
       applyMode(current);
+      updateArtControls();
       refreshMetrics();
+      if (activeArt === 'mint-elf') {
+        void Promise.all([...mintCandidates.values()].map(candidate => candidate.ready)).then(() => {
+          if (activeArt === 'mint-elf') refreshMetrics();
+        });
+      }
     }),
     select('Animation renderer', SPRITE_MODES.map(mode => ({ value: mode, label:
       mode === 'spritesheet' ? 'A · Packed spritesheet' :
@@ -229,8 +243,23 @@ export function mountSpriteComparison(
   controls.append(actions);
   const notice = element('p', 'sprite-viewer-note',
     'Spritesheet: fixed full-face frames (gaze is not independently supported). Layered: body/head/antennae/eyes/mouth. Hybrid: pre-rendered body/head + live face layers. Motion reduction comes from game settings.');
-  panel.append(header, intro, controls, details, notice, transcript);
+  panel.append(header, intro, controls, artStatus, details, artNotice, notice, transcript);
   root.append(panel);
+
+  function updateArtControls(): void {
+    const unsupported = new Set(['Expression', 'Talk intensity', 'Look left / right']);
+    for (const label of controls.querySelectorAll('label')) {
+      const field = label.querySelector<HTMLInputElement | HTMLSelectElement>('input, select');
+      if (field !== null && [...unsupported].some(name => label.textContent?.startsWith(name))) {
+        field.disabled = activeArt === 'mint-elf';
+      }
+    }
+    blinkButton.disabled = activeArt === 'mint-elf';
+    artNotice.textContent = activeArt === 'mint-elf'
+      ? 'MINT ELF PROTOTYPE: real uploaded user artwork. Only gentle body/head/antenna motion works. Eye, mouth, expression and blink remain baked into the source image; those controls are disabled. The cutout seams still need artwork repair.'
+      : 'Original procedural alien supports facial controls. Mint elf is a source-art integration test, not a completed facial rig.';
+  }
+  updateArtControls();
 
   let blinkTimeout = 0;
   blinkButton.addEventListener('click', () => {
