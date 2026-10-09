@@ -270,7 +270,7 @@ export function mountSpriteComparison(
   const observer = scene.onBeforeRenderObservable.add(() => {
     const dt = Math.min(scene.getEngine().getDeltaTime() / 1000, 0.1);
     elapsed += dt;
-    const motion = preferences.get().motionIntensity;
+    const motion = preferences.getMotionIntensity();
     for (const candidate of candidates.values()) candidate.update(dt, motion);
     if (elapsed >= 0.75) {
       elapsed = 0;
