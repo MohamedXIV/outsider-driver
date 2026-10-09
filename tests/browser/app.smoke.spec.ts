@@ -21,9 +21,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+async function waitForRuntimeReady(page: Page): Promise<void> {
+  // networkidle does not mean synchronous GPU initialization has finished.
+  // Use the existing test deadline for readiness, then assert the contract.
+  await page.waitForFunction(() =>
+    performance.getEntriesByName('outsider-driver:startup-ready').length > 0 ||
+    document.querySelector('[role="alert"]') !== null,
+    undefined,
+    { polling: 100 },
+  );
+}
+
 async function expectRuntimeOutcome(
   page: Page,
 ): Promise<'game' | 'compatibility'> {
+  await waitForRuntimeReady(page);
   const gameCanvas = page.getByRole('application', {
     name: 'Outsider Driver game view',
   });
@@ -36,17 +48,13 @@ async function expectRuntimeOutcome(
 
   if (canvasCount === 1) {
     await expect(gameCanvas).toBeVisible();
-    await expect
-      .poll(async () =>
-        gameCanvas.evaluate((element) => {
-          if (!(element instanceof HTMLCanvasElement)) {
-            return false;
-          }
-
-          return element.width > 0 && element.height > 0;
-        }),
-      )
-      .toBe(true);
+    // Startup has completed: inspect once rather than polling a ready canvas
+    // under a second, unrelated five-second assertion deadline.
+    const hasDrawingBuffer = await gameCanvas.evaluate((element) =>
+      element instanceof HTMLCanvasElement &&
+      element.width > 0 && element.height > 0,
+    );
+    expect(hasDrawingBuffer).toBe(true);
 
     return 'game';
   }
@@ -140,29 +148,14 @@ test('verified WASM renders the baseline puppet and pinned official real rig in 
 
   expect(response?.ok()).toBe(true);
 
-  await expect
-    .poll(async () => {
-      try {
-        return await page.evaluate(() => {
-          const state: unknown = Reflect.get(
-            window,
-            '__outsiderDriverInochiProbe',
-          );
-
-          if (typeof state !== 'object' || state === null) {
-            return 'pending';
-          }
-
-          const status: unknown = Reflect.get(state, 'status');
-          return status === 'success' || status === 'failure'
-            ? status
-            : 'pending';
-        });
-      } catch {
-        return `crashed-after:${lastStage}`;
-      }
-    })
-    .toMatch(/^(success|failure)$/);
+  // Completion includes resource cleanup after the final acceptance stage.
+  // This uses the probe's existing 90-second test deadline, not expect's 5s.
+  await page.waitForFunction(() => {
+    const probe = (window as Window & {
+      __outsiderDriverInochiProbe?: { status?: string };
+    }).__outsiderDriverInochiProbe;
+    return probe?.status === 'success' || probe?.status === 'failure';
+  }, undefined, { polling: 100 });
 
   const rawState: unknown = await page.evaluate(() => {
     const value: unknown = Reflect.get(
@@ -386,6 +379,11 @@ for (const [
 
 
 test('accessibility and control settings persist and provide a keyboard escape path', async ({ page }, testInfo) => {
+  // Canonical runner trace 37875150736: the full real-input/reload scenario
+  // consumes ~30 seconds cumulatively even with correct persisted DOM values.
+  // This is a whole-test bound, not a weakened per-action or startup budget.
+  test.setTimeout(60_000);
+
   test.skip(
     testInfo.project.name === 'chromium-compact-touch',
     'The compact profile has a dedicated touch/layout settings contract; desktop profiles exercise persistence when the runtime capability gate permits the game surface.',
@@ -454,6 +452,7 @@ test('accessibility and control settings persist and provide a keyboard escape p
     waitUntil: 'networkidle',
   });
 
+  await waitForRuntimeReady(page);
   const reloadedSettingsButton = page.getByRole('button', {
     name: 'Accessibility and controls settings',
   });
