@@ -8,6 +8,7 @@ import type {
 import type { PersonalSpaceDefinition } from '../content/spaces/PersonalSpaceContracts';
 import { productionContent } from '../content/production/ProductionContent';
 import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
+import type { TaxiSceneHandle } from './taxi/createTaxiScene';
 
 export class BabylonRenderingRuntime
   implements RenderingRuntimePort, PersonalSpacePresentationPort
@@ -36,6 +37,12 @@ export class BabylonRenderingRuntime
       },
     );
     this.#scenes.showTaxi(productionContent.taxiScene);
+  }
+
+  /** Read-only scene access for the isolated sprite visual evaluation. */
+  public getTaxiScene(): TaxiSceneHandle | null {
+    this.#assertAlive();
+    return this.#scenes.getTaxiScene();
   }
 
   public showTaxi(): void {
