@@ -16,6 +16,8 @@ import {
 import { ALIEN_EXPRESSIONS } from './AlienPortraitArt';
 import { MintElfPassengerCandidate } from './MintElfPassengerCandidate';
 import { createTaxiHybridLook, taxiSpriteTint, type TaxiWorldStyle } from '../../taxi/TaxiHybridLook';
+import { createTaxiPainterlySurfaces } from '../../taxi/TaxiPainterlySurfaces';
+import { PassengerStylization } from './PassengerStylization';
 
 function element<K extends keyof HTMLElementTagNameMap>(
   type: K,
@@ -108,11 +110,16 @@ export function mountSpriteComparison(
 
   // Adds no world state: these GLSL extensions only live inside Passenger Lab.
   const worldLook = createTaxiHybridLook(scene);
+  const paintedSurfaces = createTaxiPainterlySurfaces(scene);
+  const passengerStylization = new PassengerStylization(scene, activeTaxi.anchors.passengerSeat);
   let worldStyle: TaxiWorldStyle = 'default';
   let toonSteps = 3;
   let ambientFloor = 0.22;
   let bandSoftness = 0.15;
   let rimIntensity = 0.12;
+  let contactShadow = 0;
+  let outlineThickness = 0;
+  let outlineOpacity = 0.5;
   function applyWorldLook(): void {
     worldLook.apply({ style: worldStyle, steps: toonSteps, ambientFloor, bandSoftness, rimIntensity });
   }
@@ -146,10 +153,17 @@ export function mountSpriteComparison(
     for (const [key, candidate] of mintCandidates) {
       candidate.root.setEnabled(activeArt === 'mint-elf' && key === mode);
     }
+    updatePassengerGrounding();
   };
   applyMode(current);
   const activeCandidates = (): ReadonlyMap<SpriteEvaluationMode, SpritePassengerCandidate | MintElfPassengerCandidate> =>
     activeArt === 'mint-elf' ? mintCandidates : candidates;
+  function updatePassengerGrounding(): void {
+    const active = activeCandidates().get(current);
+    passengerStylization.setShadow(contactShadow);
+    passengerStylization.setOutline(active?.root ?? null, activeArt,
+      outlineThickness, outlineOpacity);
+  }
 
   const panel = element('aside', 'sprite-viewer');
   panel.setAttribute('aria-label', 'Passenger sprite animation comparison');
@@ -224,6 +238,12 @@ export function mountSpriteComparison(
       worldStatus.textContent = worldStyle === 'hybrid'
         ? `Hybrid lighting on ${String(worldLook.materialCount)} taxi materials`
         : 'Original taxi lighting';
+    }),
+    select('Taxi surfaces', [
+      { value: 'original', label: 'Original taxi surface tiles' },
+      { value: 'painted', label: 'Painterly seats / enamel' },
+    ], 'original', value => {
+      paintedSurfaces.setPainted(value === 'painted');
     }),
     select('Toon steps', [
       { value: '2', label: '2 bands' },
@@ -308,6 +328,25 @@ export function mountSpriteComparison(
       spriteTintInfluence = value;
       applySpriteLighting();
     }),
+    range('Contact shadow', 0, 0.85, 0, value => {
+      contactShadow = value;
+      updatePassengerGrounding();
+    }),
+    select('Silhouette ink width', [
+      { value: '0', label: 'Off (original character)' },
+      { value: '1', label: '1 px / subtle' },
+      { value: '2', label: '2 px / recommended' },
+      { value: '3', label: '3 px / stronger' },
+      { value: '4', label: '4 px' },
+      { value: '5', label: '5 px' },
+    ], '0', value => {
+      outlineThickness = Number(value);
+      updatePassengerGrounding();
+    }),
+    range('Ink opacity', 0, 1, outlineOpacity, value => {
+      outlineOpacity = value;
+      updatePassengerGrounding();
+    }),
   );
   const blinkButton = element('button', 'sprite-viewer-action', 'Trigger blink');
   blinkButton.type = 'button';
@@ -317,7 +356,7 @@ export function mountSpriteComparison(
   actions.append(blinkButton, neutralButton);
   controls.append(actions);
   const notice = element('p', 'sprite-viewer-note',
-    'Hybrid world shading quantizes existing 3D material lighting without changing painted textures or emissive displays. Sprite Unlit, brightness, and tint are independent. Default mode preserves the old taxi look. This experiment is not a final art direction or a game save setting.');
+    'Lab-only: paint-style textures, ambient/cel shading, contact and backrest shadow, and silhouette ink are independent. Ink uses the whole artwork silhouette (not each layer seam). All new effects default OFF; camera/light/game saves stay unchanged.');
   panel.append(header, intro, controls, worldStatus, artStatus, details, artNotice, notice, transcript);
   root.append(panel);
 
@@ -416,6 +455,8 @@ export function mountSpriteComparison(
     scene.onBeforeRenderObservable.remove(observer);
     for (const candidate of candidates.values()) candidate.dispose();
     for (const candidate of mintCandidates.values()) candidate.dispose();
+    passengerStylization.dispose();
+    paintedSurfaces.dispose();
     worldLook.dispose();
     neon.dispose();
     camera.position.copyFrom(originalPosition);
