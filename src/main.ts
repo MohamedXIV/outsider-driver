@@ -149,6 +149,7 @@ function bootstrapSupportedGame(
       .get('spriteViewer') === '1';
     let closeSpriteViewer: (() => void) | null = null;
     let viewerDisposed = false;
+    const isViewerDisposed = (): boolean => viewerDisposed;
     let viewerOpening = false;
     const viewerButton = document.createElement('button');
     viewerButton.type = 'button';
@@ -165,7 +166,7 @@ function bootstrapSupportedGame(
         const { mountSpriteComparison } = await import(
           './rendering/passengers/sprites/mountSpriteComparison'
         );
-        if (viewerDisposed) return;
+        if (isViewerDisposed()) return;
         closeSpriteViewer = mountSpriteComparison(
           shell ?? applicationRoot,
           rendering,
