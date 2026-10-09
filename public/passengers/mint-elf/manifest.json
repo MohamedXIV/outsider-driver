@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "source": "pastel_elf_vtuber_sprite_sheet.png (generated in conversation)",
+  "sourceCrop": [
+    0,
+    0,
+    452,
+    558
+  ],
+  "artboard": [
+    452,
+    558
+  ],
+  "pieces": [
+    {
+      "id": "torso",
+      "image": "torso.png",
+      "pivot": [
+        230,
+        277
+      ],
+      "z": 0
+    },
+    {
+      "id": "head",
+      "image": "head.png",
+      "pivot": [
+        230,
+        280
+      ],
+      "z": 1
+    },
+    {
+      "id": "antenna-right",
+      "image": "antenna-right.png",
+      "pivot": [
+        271,
+        133
+      ],
+      "z": 2
+    }
+  ],
+  "alternate": {
+    "spritesheet": "portrait.png",
+    "hybrid": "portrait.png"
+  },
+  "notes": "Conservative image-derived upper-body cutouts. Head/antenna pivots are rough; some concealed pixels are absent. Mouth/eyes baked into head. No complete gaze/blink cutouts available; no false claim of true facial rigging."
+}
