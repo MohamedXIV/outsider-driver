@@ -53,3 +53,13 @@ the previous green CI from before the binary upload does not cover this work.
 the user has reviewed the new art and the replacement passes the full integration
 gates. The visual identity remains the user-approved art, not the temporary
 procedural alien.
+
+
+## CI verification history
+
+The first CI run after the user's asset push (run `37930313064`) stopped at
+11 pre-existing lint issues in the first mint-elf cutout renderer, so it
+provided no browser result. Run `37931203926` stopped at a separate
+strict-lint optional-chain issue in the new viewer controls. Both sets of
+findings have been corrected. Fresh verification is required on the corrected
+head, including browser load of actual WebPs and comparison screenshots.
