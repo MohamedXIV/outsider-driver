@@ -70,16 +70,6 @@ export default defineConfig({
           if (normalized.includes('/node_modules/zod/')) {
             return 'validation';
           }
-          // Babylon emits numerous tiny GLSL/WGSL fragments as separate
-          // dynamic chunks. Consolidate only small, named shader modules to
-          // eliminate duplicated per-chunk wrappers, leaving larger compiled
-          // default shaders independent under the strict lazy-chunk budget.
-          if (
-            /\/node_modules\/@babylonjs\/core\/Shaders(?:WGSL)?\//.test(normalized) &&
-            /(?:vertexColorMixing|rgbdDecode|logDepth|fogFragment)/i.test(normalized)
-          ) {
-            return 'babylon-deferred-shaders';
-          }
           return undefined;
         },
       },
