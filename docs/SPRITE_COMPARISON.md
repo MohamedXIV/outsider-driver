@@ -8,7 +8,7 @@ The production decision to **abandon Inochi2D** is final. This branch is an **ex
 
 1. Use Node 24 and `npm ci`.
 2. Launch `npm run dev`. A **Passenger Lab** button is present in development.
-3. Alternatively go to `/?spriteViewer=1` (works in a browser preview build, without making the viewer the normal game entry).
+3. Alternatively go to `http://localhost:5173/?spriteViewer=1` while the Vite **development server** runs, to auto-open the panel. This experiment is deliberately absent from production preview bundles to protect strict size budgets.
 4. Use the mode selector to switch **A: Spritesheet**, **B: Layered**, **C: Hybrid** on the same alien seated at `taxi.anchors.passengerSeat`. Choose *Passenger glance* or *Close portrait* to see the rear seat from inside the 3D taxi; original driver POV genuinely looks ahead, not backward.
 5. Exercise expression, talk, blink, gaze, head and body, lighting, close-up and `Restart Ink dialogue` / real choices. The authored `foundation-passenger.ink` is compiled by the existing runtime; `performance:guarded` and `performance:firm` call the common `PassengerPerformanceControlPort` semantics. Domain events run against an **in-memory isolated demo** and never change the game session/save.
 6. Set **Settings → Motion intensity = 0** to suppress automatic secondary movement.
@@ -41,6 +41,6 @@ The viewer displays actual plane count and estimated raw RGBA atlas bytes (`widt
 
 ## Validation
 
-Run `npm run typecheck`, `npm run test`, `npm run build`, then `npx playwright test tests/browser/sprite-comparison.spec.ts --project=chromium-desktop`.
+Run `npm run typecheck`, `npm run test`, `npm run build`, then `npm run test:sprite:browser` (dedicated Vite dev-server Playwright configuration, not the normal production preview smoke suite).
 
-Not yet measured: art production cost at scale; sprite image sizes once exported and compressed; exact GPU frame timing; reloading a live ride from the stacked gameplay PRs. Do not merge automatically, mark tests PASS without executing, or declare a winner.
+The separate browser smoke spec is gated by `SPRITE_LAB_DEV=1` and is intentionally skipped during the normal production-only `npm run test:browser`; it runs in the dedicated sprite-lab config. Not yet measured: art production cost at scale; sprite image sizes once exported and compressed; exact GPU frame timing; reloading a live ride from the stacked gameplay PRs. Do not merge automatically, mark tests PASS without executing, or declare a winner.
