@@ -41,7 +41,8 @@ The viewer displays actual plane count and estimated raw RGBA atlas bytes (`widt
 
 ## Verification history
 
-- CI run #37918750826 on the initial Draft PR failed at strict ESLint before TypeScript/build/browser testing. The reported parser/project and void-arrow rules were corrected in subsequent commits; **do not treat that run as a PASS**.
+- CI run #37918750826 on the initial Draft PR failed at strict ESLint before TypeScript/build/browser testing. The reported parser/project and void-arrow rules were corrected.
+- CI run #37919019507 verified ESLint, content and save checks, and **275/275 existing unit tests**; compilation stopped on four strict TypeScript errors involving a DOM Element and nullability of the taxi handle. These were fixed in the next commit. This is still **not a green CI run**.
 - The browser comparison is developer-only, so production bundle size remains the authoritative performance gate. Preview hosting may be externally rate limited; browser testing via Node 24 / Vite dev does not require Vercel.
 
 ## Validation
