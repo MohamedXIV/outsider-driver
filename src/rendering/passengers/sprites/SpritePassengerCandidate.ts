@@ -167,13 +167,13 @@ export class SpritePassengerCandidate implements PassengerPerformanceControlPort
     this.update(0, 1);
   }
 
-  public setSpriteLighting(unlit: boolean, brightness: number): void {
+  public setSpriteLighting(unlit: boolean, brightness: number, tint: Color3 = Color3.White()): void {
     const gain = clamp(brightness, 0.25, 3);
     for (const layer of this.layers) {
       const material = layer.mesh.material;
       if (!(material instanceof StandardMaterial)) continue;
       material.disableLighting = unlit;
-      material.diffuseColor = new Color3(gain, gain, gain);
+      material.diffuseColor = tint.scale(gain);
       material.emissiveColor = unlit
         ? Color3.Black()
         : new Color3(0.10 * gain, 0.10 * gain, 0.10 * gain);
