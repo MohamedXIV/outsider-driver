@@ -161,6 +161,9 @@ test('Painterly/Cel world preset compiles and restores while sprite tint stays i
   await panel.getByLabel('Taxi lighting').selectOption('neon');
   await expect(panel.getByLabel('Sprite light tint')).toHaveValue('0.7');
   await page.screenshot({ path: testInfo.outputPath('taxi-world-hybrid.png') });
+  // The true before-and-after uses identical Mint Elf, camera, cabin light,
+  // sprite brightness/tint AND Hybrid world shader values.
+  await page.screenshot({ path: testInfo.outputPath('taxi-original-mint-elf.png') });
 
   // Reversible grounding and hand-painted cabin materials, including the
   // source-derived (not per-layer) alpha-ink edge.
@@ -188,7 +191,7 @@ test('Painterly/Cel world preset compiles and restores while sprite tint stays i
   await expect(panel.getByLabel('Taxi surfaces')).toHaveValue('original');
   await expect(panel.getByLabel('Contact shadow')).toHaveValue('0');
   await expect(panel.getByLabel('Silhouette ink width')).toHaveValue('0');
-  await page.screenshot({ path: testInfo.outputPath('taxi-original-mint-elf.png') });
+  await page.screenshot({ path: testInfo.outputPath('taxi-original-restored-mint-elf.png') });
 
   await style.selectOption('default');
   await expect(worldStatus).toHaveText('Original taxi lighting');
