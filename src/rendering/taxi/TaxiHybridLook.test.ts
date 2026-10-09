@@ -1,5 +1,6 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { describe, expect, it } from 'vitest';
 import { defaultTaxiSceneDefinition } from '../../content/presentation/defaultTaxiScene';
 import { createTaxiScene } from './createTaxiScene';
@@ -19,7 +20,9 @@ describe('reversible painterly-cel taxi visual lab', () => {
     expect(look.materialCount).toBeLessThan(sceneMaterialCount);
     const display = taxi.scene.getMeshByName('taxi-asset-instruments')?.material;
     // The actual emissive instrument display keeps its original unlit finish.
-    expect(display?.disableLighting).toBe(true);
+    expect(display).toBeInstanceOf(StandardMaterial);
+    if (!(display instanceof StandardMaterial)) throw new Error('Expected an emissive StandardMaterial');
+    expect(display.disableLighting).toBe(true);
     look.apply({ ...DEFAULT_HYBRID_LOOK, style: 'hybrid', steps: 3, ambientFloor: 0.3 });
     expect(taxi.scene.materials.length).toBe(sceneMaterialCount);
     look.apply(DEFAULT_HYBRID_LOOK);
