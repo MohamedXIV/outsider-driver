@@ -28,6 +28,11 @@ describe('reversible painterly-cel taxi visual lab', () => {
     look.apply(DEFAULT_HYBRID_LOOK);
     look.dispose();
     look.dispose();
+    // The Babylon scene is still alive when the Lab is reopened.
+    const reopened = createTaxiHybridLook(taxi.scene);
+    expect(reopened.materialCount).toBe(look.materialCount);
+    reopened.apply({ ...DEFAULT_HYBRID_LOOK, style: 'hybrid' });
+    reopened.dispose();
     taxi.scene.dispose();
     engine.dispose();
   });
