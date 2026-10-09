@@ -224,3 +224,5 @@ geometry/textures.
 Run one GitHub test checkpoint after the shadow/outline and hand-painted surface addition because it exercises WebGL alpha-compositing and source-image silhouette extraction. Compare the two saved screenshots with the same mint elf artwork; report failures rather than assuming test success. This checkpoint remains Draft and does not merge production code.
 
 The first grounding CI attempt stopped at a strict type-only import lint rule; new test helpers now cover outline radius and grounding alpha in headless Vitest, while real canvas/meshes are exclusively exercised by Chromium. The next checkpoint must prove WebP alpha compositing and reversible painted textures.
+
+Build note: 282 unit tests passed; strict TypeScript required a runtime Mesh import for the plane side-orientation constant. Corrected. The resulting checkpoint must still run Chromium before the visual prototype is accepted.
