@@ -102,3 +102,57 @@ their painted details. Avoid high-frequency dithering or vertex wobble.
 
 The current changes intentionally do not convert the whole 3D taxi to toon
 rendering or add new save settings. User review precedes that broader change.
+
+
+## Hybrid Painterly / Cel world prototype — October 9
+
+The **World style** selector in the development-only Passenger Lab can now
+toggle the original taxi (default) or an experimental *Painterly/Cel* render
+pass. Changes are scene-local and do not enter world state, save files or
+production builds. Closing the lab disables the injected world plugins.
+
+The implementation in `src/rendering/taxi/TaxiHybridLook.ts` uses Babylon's
+`MaterialPluginBase` to extend **existing opaque, non-emissive taxi
+StandardMaterials** without replacing their textures, shared instances, or
+physical geometry. The GLSL pass samples the already-computed, illuminated
+color before fog / image processing, estimates illumination relative to the
+material's painted base color, and quantizes *lighting* rather than the RGB
+texture detail itself. A small ambient minimum avoids completely black
+painted surfaces. Rim tint uses the scene's actual surface normals and viewing
+direction. Self-lit instrument displays are excluded.
+
+Adjustments for the world effect (only active in the Hybrid preset):
+
+| Passenger Lab control | Range / initial value |
+| --- | --- |
+| World style | Default (initial), Hybrid |
+| Toon steps | 2–4, initial 3 |
+| World ambient floor | 0.04–0.60, initial 0.22 |
+| Band softness | 0–0.45, initial 0.15 |
+| World rim light | 0–0.50, initial 0.12 |
+
+The passenger's own **Sprite shader Lit / Unlit**, **Sprite brightness
+0.25–3×**, and new **Sprite light tint 0–1** remain completely separate from
+the taxi materials. Tint is a bounded chromatic blend toward the current cabin
+or violet neon light color; its maximum channel is normalized and capped so
+it does not become a hidden brightness multiplier. 0 means original sprite
+colors (default); 1 still preserves 58% of the source color. It does not
+modify alpha or bake textures per frame.
+
+**Technical constraints:** This first-pass material plugin targets the
+project's current WebGL/GLSL renderer. It is a *post-lighting quantization*,
+not a physically precise per-light N·L toon model: multi-light mixtures,
+ambient terms and near-zero albedo are approximated. There is no claim of
+WebGPU compatibility, real physically based rim lighting, or complete
+artistic texture harmonization. There are no outlines or animated dithering.
+
+Validation commands, if code/tests change:
+`npm run check` and `npm run test:sprite:browser`. The latter opens the real
+Babylon taxi in Chromium, switches Default → Hybrid → Default, exercises
+steps/ambient/softness/rim and real Mint Elf sprite tint, checks page errors,
+and captures `taxi-world-default.png` and `taxi-world-hybrid.png` for
+visual review. Use the browser screenshots to decide whether painterly world
+textures, depth cues or further art work should be prioritized. The scene's
+matte materials should still be compared under cabin/dim/neon presets.
+
+Keep PR #79 **Draft**; visual approval is not implied by passing tests.
