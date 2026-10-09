@@ -173,9 +173,10 @@ export class SpritePassengerCandidate implements PassengerPerformanceControlPort
       const material = layer.mesh.material;
       if (!(material instanceof StandardMaterial)) continue;
       material.disableLighting = unlit;
-      material.diffuseColor = tint.scale(gain);
+      material.diffuseColor = unlit ? Color3.Black() : tint.scale(gain);
+      material.emissiveTexture = unlit ? layer.atlas : null;
       material.emissiveColor = unlit
-        ? Color3.Black()
+        ? tint.scale(gain)
         : new Color3(0.10 * gain, 0.10 * gain, 0.10 * gain);
     }
   }
