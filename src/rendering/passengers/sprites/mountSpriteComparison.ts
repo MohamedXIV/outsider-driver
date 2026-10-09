@@ -61,7 +61,7 @@ function range(
   input.type = 'range';
   input.min = String(min);
   input.max = String(max);
-  input.step = '0.05';
+  input.step = '0.01';
   input.value = String(initial);
   const output = element('output', '', initial.toFixed(2));
   input.addEventListener('input', () => {
