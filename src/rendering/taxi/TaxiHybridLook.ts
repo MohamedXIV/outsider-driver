@@ -76,7 +76,7 @@ class PainterlyCelMaterialPlugin extends MaterialPluginBase {
       clamp(rimIntensity, 0, 0.5), 0.66, 0.79, 0.91);
   }
 
-  public getCustomCode(shaderType: string): { [point: string]: string } | null {
+  public getCustomCode(shaderType: string): Record<string, string> | null {
     if (shaderType !== 'fragment') return null;
     return {
       CUSTOM_FRAGMENT_DEFINITIONS: `
@@ -130,7 +130,7 @@ export function createTaxiHybridLook(scene: Scene): TaxiHybridLookController {
     const surface = material as StandardMaterial;
     if (surface.disableLighting ||
       surface.emissiveTexture !== null ||
-      surface.emissiveColor.maxComponent() > 0.06) {
+      Math.max(surface.emissiveColor.r, surface.emissiveColor.g, surface.emissiveColor.b) > 0.06) {
       continue;
     }
     plugins.push(new PainterlyCelMaterialPlugin(surface));
@@ -159,7 +159,7 @@ export function taxiSpriteTint(
 ): Color3 {
   const n = clamp(neonWeight, 0, 1);
   const source = Color3.Lerp(cabinColor, neonColor, n);
-  const maximum = Math.max(0.01, source.maxComponent());
+  const maximum = Math.max(0.01, source.r, source.g, source.b);
   // Chromatic tint only: normalise maximum channel so the slider does not
   // silently become another brightness control.
   source.scaleInPlace(1 / maximum);
