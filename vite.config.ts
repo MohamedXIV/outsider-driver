@@ -53,7 +53,7 @@ export default defineConfig({
   build: {
     // The supported Chromium/Firefox/WebKit generations all implement ES2024
     // and modulepreload; avoid shipping transforms and a legacy preload shim.
-    target: 'es2024',
+    target: 'esnext',
     modulePreload: { polyfill: false },
     // Keep map files for debugging without shipping per-chunk map URL comments.
     sourcemap: 'hidden',
