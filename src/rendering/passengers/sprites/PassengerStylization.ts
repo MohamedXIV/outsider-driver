@@ -70,6 +70,19 @@ function alphaMaterial(scene: Scene, name: string, texture: DynamicTexture, colo
   return material;
 }
 
+export function silhouetteOutlineOffsets(radius: number, samples = 20): readonly (readonly [number, number])[] {
+  const size = Math.max(0, Math.min(5, radius));
+  return Array.from({ length: samples }, (_, index) => {
+    const angle = 2 * Math.PI * index / samples;
+    return [Math.cos(angle) * size, Math.sin(angle) * size] as const;
+  });
+}
+
+export function groundingShadowAlphas(opacity: number): readonly [number, number] {
+  const o = Math.max(0, Math.min(0.85, opacity));
+  return [o * 0.82, o * 0.60];
+}
+
 /**
  * Fully reversible *art-direction* props, not real cast shadows:
  * soft cushion contact and backrest grounding plus one shared silhouette
@@ -131,11 +144,11 @@ export class PassengerStylization {
   }
 
   public setShadow(opacity: number): void {
-    const clamped = Math.max(0, Math.min(0.85, opacity));
+    const levels = groundingShadowAlphas(opacity);
     for (const [index, material] of this.#shadowMaterials.entries()) {
-      material.alpha = clamped * (index === 0 ? 0.82 : 0.60);
+      material.alpha = levels[index] ?? 0;
     }
-    for (const mesh of this.#shadowPlanes) mesh.setEnabled(clamped > 0);
+    for (const mesh of this.#shadowPlanes) mesh.setEnabled(levels[0] > 0);
   }
 
   public setOutline(root: TransformNode | null, art: PassengerArtSource,
@@ -161,11 +174,8 @@ export class PassengerStylization {
       ctx.clearRect(0, 0, w, h);
       // Eighteen neighbouring copies yield a continuous, camera-independent
       // outline. It is rendered ONLY once per art/slider change, not per frame.
-      const radius = this.#thickness * scale;
-      for (let k = 0; k < 20; k += 1) {
-        const angle = 2 * Math.PI * k / 20;
-        ctx.drawImage(source, x + Math.cos(angle) * radius,
-          y + Math.sin(angle) * radius, drawnW, drawnH);
+      for (const [dx, dy] of silhouetteOutlineOffsets(this.#thickness)) {
+        ctx.drawImage(source, x + dx * scale, y + dy * scale, drawnW, drawnH);
       }
       ctx.globalCompositeOperation = 'source-in';
       ctx.fillStyle = '#ffffff';
