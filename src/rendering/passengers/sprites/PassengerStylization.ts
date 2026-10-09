@@ -134,7 +134,7 @@ export class PassengerStylization {
       { width: 512, height: 640 }, scene, false, Texture.TRILINEAR_SAMPLINGMODE);
     this.#outlineTexture.hasAlpha = true;
     this.#outlineMaterial = alphaMaterial(scene, 'passenger-silhouette-ink',
-      this.#outlineTexture, new Color3(0.22, 0.17, 0.16));
+      this.#outlineTexture, Color3.White());
     this.#outline = MeshBuilder.CreatePlane('passenger-ink-outline-plane',
       { width: 1, height: 1, sideOrientation: Mesh.DOUBLESIDE }, scene);
     this.#outline.material = this.#outlineMaterial;
@@ -180,7 +180,9 @@ export class PassengerStylization {
         ctx.drawImage(source, x + dx * scale, y + dy * scale, drawnW, drawnH);
       }
       ctx.globalCompositeOperation = 'source-in';
-      ctx.fillStyle = '#ffffff';
+      // Bake the warm graphite pigment into the atlas. Babylon's unlit
+      // emissive texture must not turn the silhouette into a white halo.
+      ctx.fillStyle = '#342d2c';
       ctx.fillRect(0, 0, w, h);
       ctx.globalCompositeOperation = 'destination-out';
       ctx.drawImage(source, x, y, drawnW, drawnH);
