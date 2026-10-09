@@ -48,7 +48,7 @@ The viewer displays actual plane count and estimated raw RGBA atlas bytes (`widt
 
 ## Validation
 
-The browser test also captures a `spritesheet.png`, `layered.png` and `hybrid.png` inside the real taxi, which CI uploads as **sprite-comparison-visuals** for human A/B/C review.
+The browser test also captures a `spritesheet.png`, `layered.png` and `hybrid.png` inside the real taxi, which CI uploads as **sprite-comparison-visuals** for human A/B/C review. These images are build evidence rather than a substitute for interactive evaluation of the three animation methods.
 
 Run `npm run typecheck`, `npm run test`, `npm run build`, then `npm run test:sprite:browser` (dedicated Vite dev-server Playwright configuration, not the normal production preview smoke suite).
 
