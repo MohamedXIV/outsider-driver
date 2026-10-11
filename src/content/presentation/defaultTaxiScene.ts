@@ -10,7 +10,6 @@ const cream: Triple = [0.64, 0.58, 0.4];
 const olive: Triple = [0.2, 0.27, 0.22];
 const rubber: Triple = [0.065, 0.085, 0.078];
 const brass: Triple = [0.55, 0.38, 0.18];
-const amber: Triple = [0.85, 0.46, 0.13];
 const cloth: Triple = [0.32, 0.38, 0.29];
 
 // Authored assembly helpers produce ordinary serializable presentation data.
