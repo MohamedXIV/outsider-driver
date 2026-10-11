@@ -54,7 +54,7 @@ function addRoad(assets: Asset[]): void {
   assets.push(part('road-bed', [12, 0.08, 176], [0, -0.34, 77], dark));
   for (let i = 0; i < 20; i++) {
     const z = 1 + i * 8;
-    assets.push(part(`road-colored-tile-${i}`, [11.5, 0.012, 8], [0, -0.292, z], teal, {
+    assets.push(part(`road-colored-tile-${String(i)}`, [11.5, 0.012, 8], [0, -0.292, z], teal, {
       texture: '/taxi/docks-road.svg',
     }));
   }
@@ -64,7 +64,7 @@ function addRoad(assets: Asset[]): void {
     assets.push(part(`sidewalk-${which}`, [1.6, 0.07, 176], [side * 7.5, -0.17, 77], dark));
   }
   for (let i = 0; i < 24; i++) {
-    assets.push(part(`lane-marking-${i}`, [0.11, 0.012, 2], [0, -0.277, 5 + i * 6], cream));
+    assets.push(part(`lane-marking-${String(i)}`, [0.11, 0.012, 2], [0, -0.277, 5 + i * 6], cream));
   }
 }
 
@@ -76,7 +76,7 @@ function addDockBuildings(assets: Asset[]): void {
       const radius = 3.4 + (i % 2) * 0.65;
       const height = 5.5 + (i % 3) * 2;
       const x = side * (11.7 + (i % 2) * 1.7);
-      const stem = `docks-${which}-${i}`;
+      const stem = `docks-${which}-${String(i)}`;
       assets.push(
         part(`${stem}-shell`, [radius * 2, height, radius * 2], [x, height / 2 - 0.29, z], wornTeal, {
           kind: 'cylinder', texture: '/taxi/docks-enamel.svg', tessellation: 16,
@@ -105,7 +105,7 @@ function addDockBuildings(assets: Asset[]): void {
 }
 
 function addBridge(assets: Asset[], number: number, z: number): void {
-  const id = `docks-overpass-${number}`;
+  const id = `docks-overpass-${String(number)}`;
   assets.push(
     part(`${id}-deck`, [41, 0.72, 5.5], [0, 5.4, z], teal, {
       texture: '/taxi/docks-road.svg',
@@ -129,7 +129,7 @@ function addBridge(assets: Asset[], number: number, z: number): void {
 }
 
 function addCargoVehicle(assets: Asset[], number: number, x: number, z: number): void {
-  const id = `docks-cargo-${number}`;
+  const id = `docks-cargo-${String(number)}`;
   assets.push(
     part(`${id}-chassis`, [1.95, 0.42, 4.45], [x, 0.32, z], dark),
     part(`${id}-cab`, [1.95, 1.45, 1.56], [x, 1.1, z + 1.26], brass, {
@@ -169,7 +169,7 @@ function addPortDetails(assets: Asset[]): void {
     for (let i = 0; i < 6; i++) {
       const z = 7 + i * 25;
       const x = side * 6.9;
-      const name = `docks-lamp-${side < 0 ? 'left' : 'right'}-${i}`;
+      const name = `docks-lamp-${side < 0 ? 'left' : 'right'}-${String(i)}`;
       assets.push(
         part(`${name}-post`, [0.14, 3.5, 0.14], [x, 1.61, z], dark, {
           kind: 'cylinder',
