@@ -1,4 +1,4 @@
-import { AssetContainer } from '@babylonjs/core/assetContainer';
+import { AssetContainer, InstantiatedEntries } from '@babylonjs/core/assetContainer';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
@@ -19,11 +19,9 @@ describe('loadTaxiCityModels', () => {
     const imported = vi.spyOn(container, 'instantiateModelsToScene')
       .mockImplementation(() => {
         const node = new TransformNode('test-import', scene);
-        return {
-          rootNodes: [node],
-          skeletons: [],
-          animationGroups: [],
-        };
+        const entries = new InstantiatedEntries();
+        entries.rootNodes.push(node);
+        return entries;
       });
     const load = vi.fn(() => Promise.resolve(container));
     try {
