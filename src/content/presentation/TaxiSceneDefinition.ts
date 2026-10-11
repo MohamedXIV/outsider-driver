@@ -83,7 +83,7 @@ export const TaxiSceneDefinitionSchema = z
     // Imported models are authored by stable IDs, never arbitrary URLs.
     models: z.array(z.object({
       id: presentationIdSchema,
-      src: z.string().regex(/^\\/city\\/[a-z0-9-]+\\.glb$/),
+      src: z.string().regex(/^\/city\/[a-z0-9-]+\.glb$/),
       space: z.literal('world'),
       transform: LocalTransformSchema,
     }).strict()).max(32).optional(),
