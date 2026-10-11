@@ -41,6 +41,26 @@ The current solution is instead a **source-owned build-time projection**:
 
 **Scope limit:** this is a single optimized, deterministic authoring format — **not** general runtime import of arbitrary third-party GLBs. A general model pipeline for artist-supplied Blender exports must design a separate **build-time conversion** with format validation. This deliberately preserves texture-driven, low-overdraw Babylon rendering without bundling the expensive general glTF loader in the player application.
 
+## Art calibration v0.2 — selective painted cel tone (2026-10-11)
+
+**New proposed pass — pending screenshot review:** the deterministic barrel texture has moved from a mostly uniform 128×128 enamel surface to a **256×256 illustrated atlas** with three intentional warm/neutral/cool directional tone regions, low-frequency brush wear, panel seams/rivets and bold oval amber/teal glazed openings. All details are baked into the SAME texture used by the exported authoring GLB and the compact Babylon runtime model. No new loader, global shader, outline post-process, dynamic light or shadow map is added.
+
+The remaining upright rounded warehouse family now uses dedicated `/taxi/docks-warehouse.svg` facade art: larger illustrated vents/windows, alien cargo pictograms and worn painted structural bands. Existing vehicle tanks and supports keep the older generic industrial enamel sheet; they **do not** inherit building windows.
+
+This is an inexpensive **soft-cel/painterly treatment through painted albedo plus the current scene lighting**, **not** an implemented dynamic custom toon shader. A future optional banded-light shader must be tested separately if this handpainted approach is insufficient.
+
+### Real-browser frame measurement
+
+`scripts/capture-taxi-scene.mjs` now waits for authored geometry readiness and measures a fixed-camera scene from the browser's live Babylon render loop after 15 warmup renders, aiming for 60 samples (15s cap). It records:
+
+- **Scene frame intervals**: time between `onAfterRenderObservable` callbacks (includes scheduling/throttling, not just rendering).
+- **Scene CPU render duration**: observed elapsed time from `onBeforeRenderObservable` to `onAfterRenderObservable` (not GPU profiling).
+- Median, p95, mean, actual sample count and whether sample collection timed out, plus GLB-source-derived mesh count.
+
+GitHub CI uses headless Chromium with SwiftShader; results can compare runs in the same environment but are **not** representative GPU FPS on players' devices. Do not claim GPU frame time, measured mobile performance or final acceptance from these numbers. Preserve current JavaScript and startup budgets.
+
+**Comparison baseline:** previous v0.1 exact-head capture `bba7e8d`, [artifact #11702992254](https://github.com/MohamedXIV/outsider-driver/actions/runs/38140934805/artifacts/11702992254), reported 279 meshes, 31 materials, 17 textures and 9,012 nominal triangles; it did **not** record frame intervals, so no historical frame-time A/B exists yet.
+
 ## Verification and acceptance still needed
 
 ## Review and QA gates
