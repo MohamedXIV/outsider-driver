@@ -38,6 +38,32 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
+      # Temporary evidence capture for the Docks concept -> runtime art gate.
+      # A real Vite/Chromium screenshot, not a generated illustration.
+      # Limit this to the visual-review branch, not every normal PR.
+      - name: Capture Docks taxi-camera art evidence
+        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/outsider-docks-vite.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 45); do
+            if curl -fsS -o /dev/null http://127.0.0.1:5173/; then break; fi
+            sleep 1
+          done
+          TAXI_CAPTURE_OUTPUT=docs/visuals/80 node scripts/capture-taxi-scene.mjs > docs/visuals-80-metrics.json
+
+      - name: Upload Docks art evidence
+        if: ${{ always() && github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docks-taxi-camera-art-evidence
+          path: |
+            docs/visuals/80/
+            docs/visuals-80-metrics.json
+          if-no-files-found: warn
+          retention-days: 3
+
       - name: Cross-browser smoke
         run: npm run test:browser
 
