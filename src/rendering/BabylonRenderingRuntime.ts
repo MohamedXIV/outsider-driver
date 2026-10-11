@@ -8,6 +8,7 @@ import type {
 import type { PersonalSpaceDefinition } from '../content/spaces/PersonalSpaceContracts';
 import { productionContent } from '../content/production/ProductionContent';
 import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
+import { hardwareScalingForDpr } from './hardwareScalingForDpr';
 
 export class BabylonRenderingRuntime
   implements RenderingRuntimePort, PersonalSpacePresentationPort
@@ -19,6 +20,8 @@ export class BabylonRenderingRuntime
     this.#scenes.render();
   };
   readonly #resize = (): void => {
+    // CSS viewport coordinates remain unchanged; only 3D backing pixels cap.
+    this.#engine.setHardwareScalingLevel(hardwareScalingForDpr(window.devicePixelRatio));
     this.#engine.resize();
   };
   #started = false;
@@ -28,7 +31,8 @@ export class BabylonRenderingRuntime
     canvas: HTMLCanvasElement,
     preferences: AccessibilityPreferencesStore,
   ) {
-    this.#engine = new Engine(canvas, true, { stencil: true }, true);
+    this.#engine = new Engine(canvas, true, { stencil: true }, false);
+    this.#resize();
     this.#scenes = new BabylonSceneOrchestrator(this.#engine);
     this.#unsubscribePreferences = preferences.subscribe(
       (state) => {
