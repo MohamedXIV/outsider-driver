@@ -136,6 +136,9 @@ function bootstrapSupportedGame(
     surface.canvas,
     preferences,
   );
+  const unsubscribeSettingsVisibility = surface.subscribeSettingsVisibility(
+    (open) => { rendering.setSettingsOverlayOpen(open); },
+  );
   const application = new GameApplication(rendering);
 
   application.start();
@@ -144,6 +147,7 @@ function bootstrapSupportedGame(
   void runRequestedPersonalSpaceProbe(rendering);
 
   return (): void => {
+    unsubscribeSettingsVisibility();
     application.dispose();
     stopPreferencePersistence();
     surface.dispose();
