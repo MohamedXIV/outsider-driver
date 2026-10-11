@@ -41,6 +41,14 @@ The current solution is instead a **source-owned build-time projection**:
 
 **Scope limit:** this is a single optimized, deterministic authoring format — **not** general runtime import of arbitrary third-party GLBs. A general model pipeline for artist-supplied Blender exports must design a separate **build-time conversion** with format validation. This deliberately preserves texture-driven, low-overdraw Babylon rendering without bundling the expensive general glTF loader in the player application.
 
+## QA #81 — Settings modal explicitly pauses background 3D rendering
+
+The next scoped [CI #38146042284](https://github.com/MohamedXIV/outsider-driver/actions/runs/38146042284) with the High-DPI backing-buffer cap confirmed the compact-touch **test (including actual raster-density assertion) passed**, but Chromium Desktop Settings **timed out again**, for 17/18. This establishes that GPU pixel density is not the sole cause of Chromium UI latency on constrained software-renderer workers; **#81 remains open**.
+
+A player-facing rendering lifecycle correction now pauses the continuous Babylon `runRenderLoop` **only while the Settings modal is visibly open**, and resumes precisely on close. `createGameSurface` exposes a typed Settings visibility subscription; `main.ts` explicitly wires it to `BabylonRenderingRuntime.setSettingsOverlayOpen`. There are no DOM-selector polls, CSS visibility guesses or test-only toggles in the render loop. The UI remains responsive while a static last-rendered taxi frame is held behind Settings; this is normal game-menu pause behavior, not a change in game time, save semantics or controls.
+
+The render lifecycle keeps the existing start/dispose guards and is idempotent across repeated open/close. Its browser acceptance contract remains unchanged: actual Settings keyboard Escape/focus/persistence plus real touch action must pass. No test timeout, retry, bundle budget or render-cost limit has been relaxed. Because `src/main.ts` is also used by adjacent gameplay branches, this connection must be reconciled with pending gameplay PRs before any merge (do not fork a parallel game bootstrap).
+
 ## QA #81 — product-level high-DPI 3D drawing-buffer cap
 
 The repeat of reduced-raster v0.3 (doc-only head `edc7e430b488bdea5ba4ecb38a0248d2a214a99f`, [CI #38145438902](https://github.com/MohamedXIV/outsider-driver/actions/runs/38145438902)) **was not fully stable**: **287/287 unit tests/build passed**, **17/18 browser smokes passed**, but the Chromium **compact-touch** UI test hit its 30-second whole-test timeout again. Desktop Chromium Settings passed. **Thus smaller art texture raster alone is NOT a complete fix**, and the original one-time 18/18 v0.3 result cannot be called a definitive root-cause proof.
