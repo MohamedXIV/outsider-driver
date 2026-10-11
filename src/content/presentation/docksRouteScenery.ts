@@ -9,7 +9,6 @@ type Asset = TaxiSceneDefinition['assets'][number];
 type Vec3 = [number, number, number];
 type Shape = Asset['kind'];
 
-const teal: Vec3 = [0.37, 0.62, 0.59];
 const paintedRoadTint: Vec3 = [0.88, 0.96, 0.93];
 const wornTeal: Vec3 = [0.86, 0.90, 0.81];
 const cream: Vec3 = [0.91, 0.82, 0.66];
