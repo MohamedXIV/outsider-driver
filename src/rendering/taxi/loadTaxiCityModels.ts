@@ -30,7 +30,7 @@ export async function loadTaxiCityModels(
   });
 
   // Import only when authored GLBs are present: preserve small initial entry.
-  await import('@babylonjs/loaders/glTF');
+  await import('./registerGltfLoader.mjs');
   if (isCancelled()) return;
 
   const grouped = new Map<string, AuthoredModel[]>();
