@@ -32,19 +32,54 @@ function pngChunk(name, data) {
   return Buffer.concat([head, src, tail]);
 }
 function paintedPng() {
-  const w = 128;
-  const h = 128;
+  // One editable image recipe serves BOTH the glTF 2.0 texture and Babylon's
+  // optimized runtime projection. Hand-painted directional CEL bands are baked
+  // into the albedo, not computed by a city-wide shader or dynamic shadow maps.
+  const w = 256;
+  const h = 256;
   const data = Buffer.alloc(h * (w * 4 + 1));
+  const palette = [
+    [224, 210, 174], // facing warm light
+    [194, 193, 165], // neutral illustrated midtone
+    [153, 174, 164], // cool muted shadow
+  ];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const pixel = y * (w * 4 + 1) + 1 + x * 4;
-      const fleck = ((x * 19 + y * 37 + x * y * 7) % 17) - 8;
-      const panel = (x % 48 < 2 || y % 55 < 2) ? -17 : 0;
-      const wash = y > 100 ? -19 : y < 25 ? 10 : 0;
-      const delta = fleck + panel + wash;
-      data[pixel] = 192 + delta;
-      data[pixel + 1] = 190 + delta;
-      data[pixel + 2] = 158 + delta;
+      const base = palette[x < 77 ? 0 : x < 184 ? 1 : 2];
+      // Low-frequency handpainted brushwork, with sparse flecks rather than
+      // high-frequency noise/dithering that would shimmer from the taxi.
+      const paint = (Math.floor(x / 8) * 13 + Math.floor(y / 9) * 19 +
+        Math.floor(x / 29) * Math.floor(y / 25) * 7) % 19 - 9;
+      const pigment = Math.trunc(paint * 0.78);
+      const wear = y > 225 ? -14 : y < 17 ? 8 : 0;
+      const seam = (x % 64 <= 2 || y % 64 <= 2) ? -32 : 0;
+      const rivetX = x % 64, rivetY = y % 64;
+      const rivet = rivetX > 6 && rivetX < 12 && rivetY > 6 && rivetY < 12
+        ? -34 : 0;
+      // Glazed oval cargo windows: strongly painted shapes at screen-scale,
+      // with an inked border and tiny amber practical light. No extra meshes.
+      let windowColor;
+      const centerX = [44, 127, 209];
+      const centerY = [86, 171];
+      for (const cx of centerX) {
+        for (const cy of centerY) {
+          const d = ((x - cx) / 20) ** 2 + ((y - cy) / 12) ** 2;
+          if (d <= 1.55 && d >= 1) windowColor = [51, 77, 75];
+          else if (d < 1) {
+            const lit = x < cx - 4 && y < cy;
+            windowColor = lit ? [218, 159, 93] : [53, 112, 116];
+          }
+        }
+      }
+      const value = windowColor ?? [
+        base[0] + pigment + wear + seam + rivet,
+        base[1] + pigment + wear + seam + rivet,
+        base[2] + pigment + wear + seam + rivet,
+      ];
+      for (let channel = 0; channel < 3; channel++) {
+        data[pixel + channel] = Math.max(0, Math.min(255, value[channel]));
+      }
       data[pixel + 3] = 255;
     }
   }
