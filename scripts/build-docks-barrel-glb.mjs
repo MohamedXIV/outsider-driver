@@ -3,6 +3,7 @@
  * Generates a valid self-contained glTF 2.0 binary with embedded painted PNG.
  * No randomness, external services, or additional npm dependencies.
  */
+import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
