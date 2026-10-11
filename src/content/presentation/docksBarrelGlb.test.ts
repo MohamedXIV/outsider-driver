@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CompiledCityMeshSchema } from './CompiledCityMesh';
 
 const binaryPath = new URL('../../../public/city/docks-barrel-terminal.glb', import.meta.url);
 const builderScript = new URL('../../../scripts/build-docks-barrel-glb.mjs', import.meta.url);
@@ -97,4 +98,24 @@ describe('source-owned Docks barrel GLB asset', () => {
       }
     }
   });
+  it('projects the same source into strictly validated lightweight Babylon geometry and texture', () => {
+    buildAndRead();
+    const compiledText = readFileSync(
+      new URL('../../../public/city/docks-barrel-terminal.render.json', import.meta.url),
+      'utf8',
+    );
+    const data: unknown = JSON.parse(compiledText);
+    const compiled = CompiledCityMeshSchema.parse(data);
+    expect(compiled.schemaVersion).toBe(1);
+    expect(compiled.id).toBe('bld_ind_barrel_terminal');
+    expect(compiled.parts).toHaveLength(6);
+    expect(compiled.parts.map((part) => part.name)).toEqual([
+      'painted_barrel', 'front_bulkhead', 'rear_bulkhead',
+      'front_trim', 'rear_trim', 'freight_aperture',
+    ]);
+    const png = readFileSync(new URL('../../../public/city/docks-enamel.png', import.meta.url));
+    expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    expect(compiled.paintedTexture).toBe('/city/docks-enamel.png');
+  });
+
 });
