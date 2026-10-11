@@ -41,6 +41,14 @@ The current solution is instead a **source-owned build-time projection**:
 
 **Scope limit:** this is a single optimized, deterministic authoring format — **not** general runtime import of arbitrary third-party GLBs. A general model pipeline for artist-supplied Blender exports must design a separate **build-time conversion** with format validation. This deliberately preserves texture-driven, low-overdraw Babylon rendering without bundling the expensive general glTF loader in the player application.
 
+## QA #81 — complete green render-pause browser checkpoint
+
+[CI #38146830737](https://github.com/MohamedXIV/outsider-driver/actions/runs/38146830737) on code + exact documentation head `2c1cbbc671041bb697de9a618bca42d901b5a7e8` completed **SUCCESS**: **290/290 unit tests across 71 files**, strict lint/typecheck, production build and the original JS budgets (total gzip **448,279 / 500,000 bytes**), **18/18 cross-browser Playwright tests** including previously flaky Desktop Settings keyboard dismissal and Compact Touch touch interaction with its new real canvas resolution assertion. Screenshot capture/metrics also **SUCCESS**. No skipped tests, increased timeouts, additional render infrastructure or relaxed budgets.
+
+[Fixed-camera evidence artifact #11704913440](https://github.com/MohamedXIV/outsider-driver/actions/runs/38146830737/artifacts/11704913440) recorded **279 meshes, 31 materials, 17 textures, 9,012 nominal triangles and 24 compact GLB-source-derived meshes**. The 1600×900 driver-cockpit PNG is **pixel-for-pixel identical** to low-raster v0.3 pre-menu-pause capture, as expected because the menu is closed during capture. The art style and visible road did not change. Single startup-ready marker sample 360.5ms. Headless SwiftShader timing probe saw 33 of 60 requested scene frames in 15 seconds: median interval 421.3ms, median CPU render 1.7ms. Not a device FPS or GPU-time benchmark.
+
+**QA status:** a genuine mitigation of rendering contention has now passed full browser CI once. Because earlier same-art runner results alternated between 18/18 and 17/18, one repeat ordinary CI pass is useful before declaring #81 **stably** resolved. This documentation-only update naturally triggers a fresh PR CI run; do not schedule a separate manual rerun just for optics. Preserve the QA issue until that result is known.
+
 ## QA #81 — Settings modal explicitly pauses background 3D rendering
 
 The next scoped [CI #38146042284](https://github.com/MohamedXIV/outsider-driver/actions/runs/38146042284) with the High-DPI backing-buffer cap confirmed the compact-touch **test (including actual raster-density assertion) passed**, but Chromium Desktop Settings **timed out again**, for 17/18. This establishes that GPU pixel density is not the sole cause of Chromium UI latency on constrained software-renderer workers; **#81 remains open**.
