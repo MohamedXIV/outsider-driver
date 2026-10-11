@@ -32,6 +32,26 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
+      # Temporary, branch-scoped lockfile resolution artifact. GitHub repo
+      # source files are not mutated; generated lock is reviewed via connector.
+      - name: Resolve pinned Babylon GLB loader lockfile
+        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
+        run: |
+          mkdir -p /tmp/outsider-loader-lock
+          cp package.json package-lock.json /tmp/outsider-loader-lock/
+          cd /tmp/outsider-loader-lock
+          npm install @babylonjs/loaders@9.28.0 --save-exact --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Upload loader lockfile for GitHub review
+        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docks-loader-lockfile-review
+          path: |
+            /tmp/outsider-loader-lock/package.json
+            /tmp/outsider-loader-lock/package-lock.json
+          retention-days: 1
+
       - name: Verify production foundation
         run: npm run check
 
