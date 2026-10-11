@@ -20,17 +20,15 @@ export async function loadTaxiCityModels(
 ): Promise<void> {
   if (models.length === 0) return;
 
-  const abort = new AbortController();
   const containers: AssetContainer[] = [];
   scene.onDisposeObservable.add(() => {
-    abort.abort();
     for (const container of containers) container.dispose();
     containers.length = 0;
   });
 
   // Import only when authored GLBs are present: preserve small initial entry.
   await import('@babylonjs/loaders/glTF');
-  if (abort.signal.aborted) return;
+  if (scene.isDisposed) return;
 
   const grouped = new Map<string, AuthoredModel[]>();
   for (const model of models) {
@@ -40,24 +38,24 @@ export async function loadTaxiCityModels(
   }
 
   for (const [url, references] of grouped) {
-    if (abort.signal.aborted) return;
+    if (scene.isDisposed) return;
     let source: AssetContainer;
     try {
       // Absolute and allowlisted URLs come from the Zod scene contract.
       source = await loadContainer(url, scene);
     } catch (error) {
       // Disposing the taxi while fetching must not emit a stale-scene failure.
-      if (abort.signal.aborted) return;
+      if (scene.isDisposed) return;
       throw error;
     }
-    if (abort.signal.aborted) {
+    if (scene.isDisposed) {
       source.dispose();
       return;
     }
     containers.push(source);
 
     for (const model of references) {
-      if (abort.signal.aborted) return;
+      if (scene.isDisposed) return;
       const mount = new TransformNode(`taxi-model-${model.id}`, scene);
       mount.parent = worldRoot;
       applyLocalTransform(mount, model.transform);
