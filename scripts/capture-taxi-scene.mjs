@@ -1,4 +1,4 @@
-/* global document, performance */
+/* global document, performance, setTimeout, clearTimeout */
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
