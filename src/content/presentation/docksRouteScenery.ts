@@ -64,7 +64,7 @@ function addRoad(assets: Asset[]): void {
     assets.push(part(`sidewalk-${which}`, [1.6, 0.07, 176], [side * 7.5, -0.17, 77], dark));
   }
   for (let i = 0; i < 24; i++) {
-    assets.push(part(`lane-marking-${String(i)}`, [0.11, 0.012, 2], [0, -0.277, 5 + i * 6], cream));
+    assets.push(part(`lane-marking-${String(i)}`, [0.1, 0.014, 2], [0, -0.276, 5 + i * 6], cream));
   }
 }
 
