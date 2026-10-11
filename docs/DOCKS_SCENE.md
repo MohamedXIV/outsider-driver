@@ -37,6 +37,21 @@ The current implementation is **a real Babylon primitive/texture assembly**, not
 
 **Pending:** Node 24 `npm run check`, full browser visual screenshot comparison and perceptual art approval. Do not merge a draft PR before canonical dependencies, checks and visual acceptance.
 
+## Browser evidence and corrective art pass — 2026-10-11
+
+A real Vite/Chromium fixed-camera capture at commit `9fb7d05df969299b8bbdc06c451b5a95408e9b71` was archived in [CI run 38136763916](https://github.com/MohamedXIV/outsider-driver/actions/runs/38136763916), artifact [Docks taxi-camera art evidence](https://github.com/MohamedXIV/outsider-driver/actions/runs/38136763916/artifacts/11701510798). The ZIP contains `cockpit.png` 1600×900, `passenger.png` 1600×900, `compact.png` 900×900, plus metrics; artifact retention is only **3 days**. Full-resolution PNG bytes have not been permanently imported into the repo, though Git tracks this evidence link and review.
+
+Measured screenshot pass (not GPU timing): **279 meshes/instances, 26 materials, 14 textures, 7,932 nominal triangles, 413ms startup-ready performance mark**. Babylon screenshot is valid but art-direction acceptance is **NOT** satisfied:
+
+- Cockpit remains readable; the actual road and industrial silhouettes are visible.
+- Painted teal roadway was too dark to communicate the approved district-specific colored street identity.
+- Ten mostly upright cylindrical warehouses were repetitive and low-contrast; the concept's barrel warehouses and practical multi-era city layers did not read.
+- Passenger-inspection screenshot checks the seat/cabin alone, not a rendered live passenger. Do not mistake it for character cohesion approval.
+
+**Corrective implementation:** commits following this capture lighten *painted albedo/ambient emissive base* on road tiles and facades without adding Point Lights/shadowmaps/postprocessing; three older depot shells change to grounded elongated barrel-like warehouse silhouettes rather than only vertical cylinders. Shared texture and geometry instancing remain intact. The same fixed-camera screenshot must be captured again; the original metrics are a **before** snapshot, not a measurement of the revised art.
+
+**Verification caveat:** original visual branch commit `fc1bd1e` passed all 279/279 unit tests/68 files and build/size budgets but had 17 browser passes, 1 compact-touch 30s timeout. Capture commit `9fb7d05` likewise passed foundation and produced screenshots, but Playwright reported **16 passed, 2 timed-out UI/browser tests** under SwiftShader. Base cockpit PR #73 previously passed all 18 tests in its own CI. This is not evidence that the visual branch is browser-green or that timeouts should be relaxed. New exact-head checks required; keep PR Draft.
+
 ## Next pass (once cockpit base is ready)
 
 1. Render the first playable Docks route with a fixed taxi camera; inspect the scene rather than inferring quality from the authored primitives.
