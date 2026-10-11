@@ -49,14 +49,14 @@ describe('source-owned Docks barrel GLB asset', () => {
     const { json, bin } = decodeGlb(buildAndRead());
     expect(json.asset).toMatchObject({ version: '2.0' });
     expect(json.nodes).toEqual([{ mesh: 0, name: 'bld_ind_barrel_terminal' }]);
-    const meshes = json.meshes as Array<{ name: string; primitives: Array<{
+    const meshes = json.meshes as { name: string; primitives: {
       attributes: { POSITION: number; NORMAL: number; TEXCOORD_0: number };
       indices: number; material: number; mode: number;
-    }> }>;
-    const views = json.bufferViews as Array<{ byteOffset: number; byteLength: number }>;
-    const accessors = json.accessors as Array<{ bufferView: number; count: number; componentType: number; type: string }>;
-    const images = json.images as Array<{ mimeType: string; bufferView: number }>;
-    const materials = json.materials as Array<{ name: string }>;
+    }[] }[];
+    const views = json.bufferViews as { byteOffset: number; byteLength: number }[];
+    const accessors = json.accessors as { bufferView: number; count: number; componentType: number; type: string }[];
+    const images = json.images as { mimeType: string; bufferView: number }[];
+    const materials = json.materials as { name: string }[];
     expect(meshes[0]?.name).toBe('bld_ind_barrel_terminal');
     expect(meshes[0]?.primitives).toHaveLength(6);
     expect(materials.map((m) => m.name)).toEqual([
