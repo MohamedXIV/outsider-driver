@@ -25,6 +25,7 @@ export class BabylonRenderingRuntime
     this.#engine.resize();
   };
   #started = false;
+  #settingsOverlayOpen = false;
   #disposed = false;
 
   public constructor(
@@ -66,6 +67,19 @@ export class BabylonRenderingRuntime
     this.#scenes.refreshPersonalSpaceFlags(resolveFlag);
   }
 
+  /** Modal settings keep the last taxi frame, without unnecessary 3D redraws. */
+  public setSettingsOverlayOpen(open: boolean): void {
+    this.#assertAlive();
+    if (this.#settingsOverlayOpen === open) return;
+    this.#settingsOverlayOpen = open;
+    if (!this.#started) return;
+    if (open) {
+      this.#engine.stopRenderLoop(this.#renderFrame);
+    } else {
+      this.#engine.runRenderLoop(this.#renderFrame);
+    }
+  }
+
   public start(): void {
     this.#assertAlive();
 
@@ -74,7 +88,7 @@ export class BabylonRenderingRuntime
     }
 
     window.addEventListener('resize', this.#resize);
-    this.#engine.runRenderLoop(this.#renderFrame);
+    if (!this.#settingsOverlayOpen) this.#engine.runRenderLoop(this.#renderFrame);
     this.#started = true;
   }
 
