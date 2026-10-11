@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { CompiledCityMeshSchema } from './CompiledCityMesh';
 
@@ -98,6 +99,30 @@ describe('source-owned Docks barrel GLB asset', () => {
       }
     }
   });
+  it('paints three discrete warm-to-cool cel bands, outlined alien glazing and structural seams in the shared PNG', () => {
+    buildAndRead();
+    const png = readFileSync(new URL('../../../public/city/docks-enamel.png', import.meta.url));
+    const width = png.readUInt32BE(16);
+    const height = png.readUInt32BE(20);
+    expect([width, height]).toEqual([256, 256]);
+    const idatBytes = png.readUInt32BE(33);
+    expect(png.subarray(37, 41).toString('ascii')).toBe('IDAT');
+    const raw = inflateSync(png.subarray(41, 41 + idatBytes));
+    expect(raw.length).toBe(height * (width * 4 + 1));
+    const pixel = (x: number, y: number): [number, number, number] => {
+      const offset = y * (width * 4 + 1) + 1 + x * 4;
+      expect(raw[y * (width * 4 + 1)]).toBe(0); // unfiltered PNG row
+      return [raw[offset] ?? 0, raw[offset + 1] ?? 0, raw[offset + 2] ?? 0];
+    };
+    const warm = pixel(20, 28);
+    const cool = pixel(240, 28);
+    const window = pixel(44, 86);
+    const wall = pixel(44, 110);
+    expect(warm[0] - cool[0]).toBeGreaterThan(45);
+    expect(window[1]).toBeLessThan(wall[1] - 35);
+    expect(pixel(64, 44)[0]).toBeLessThan(pixel(70, 44)[0] - 15);
+  });
+
   it('projects the same source into strictly validated lightweight Babylon geometry and texture', () => {
     buildAndRead();
     const compiledText = readFileSync(
