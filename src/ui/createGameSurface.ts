@@ -5,6 +5,8 @@ import type {
 
 export interface GameSurface {
   readonly canvas: HTMLCanvasElement;
+  /** Subscribe to modal Settings visibility without coupling UI to Babylon. */
+  subscribeSettingsVisibility(listener: (open: boolean) => void): () => void;
   dispose(): void;
 }
 
@@ -211,16 +213,23 @@ export function createGameSurface(
   );
   root.replaceChildren(shell);
 
+  const visibilityListeners = new Set<(open: boolean) => void>();
+  const notifySettingsVisibility = (open: boolean): void => {
+    for (const listener of visibilityListeners) listener(open);
+  };
+
   const closePanel = (): void => {
     panel.hidden = true;
     settingsButton.setAttribute('aria-expanded', 'false');
     settingsButton.focus();
+    notifySettingsVisibility(false);
   };
 
   const openPanel = (): void => {
     panel.hidden = false;
     settingsButton.setAttribute('aria-expanded', 'true');
     uiScale.input.focus();
+    notifySettingsVisibility(true);
   };
 
   const togglePanel = (): void => {
@@ -333,7 +342,13 @@ export function createGameSurface(
 
   return {
     canvas,
+    subscribeSettingsVisibility: (listener: (open: boolean) => void): (() => void) => {
+      visibilityListeners.add(listener);
+      listener(!panel.hidden);
+      return (): void => { visibilityListeners.delete(listener); };
+    },
     dispose: (): void => {
+      visibilityListeners.clear();
       unsubscribe();
       settingsButton.removeEventListener(
         'click',
