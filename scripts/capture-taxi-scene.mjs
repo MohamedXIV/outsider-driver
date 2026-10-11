@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 // Capture the production taxi through the normal entry URL, using Vite's existing
 // Engine module instance. Camera adjustments stay in this review tool, not the app.
 const url = process.env.TAXI_CAPTURE_URL ?? 'http://127.0.0.1:5173/';
-const output = resolve('docs/visuals/66');
+const output = resolve(process.env.TAXI_CAPTURE_OUTPUT ?? 'docs/visuals/66');
 await mkdir(output, { recursive: true });
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 const browser = await chromium.launch({
