@@ -26,6 +26,7 @@ try {
     const { Engine } = await import(moduleUrl);
     const scene = Engine.Instances.at(-1).scenes.find((candidate) => candidate.activeCamera?.name === 'taxi-driver-camera');
     if (scene === undefined) throw new Error('Production taxi scene is not active.');
+    await scene.metadata?.cityModelsReady;
     await scene.whenReadyAsync();
   }, engineUrl);
   await page.screenshot({ path: resolve(output, 'cockpit.png') });
@@ -51,7 +52,10 @@ try {
   await page.waitForFunction(() => performance.getEntriesByName('outsider-driver:startup-ready').length > 0);
   await page.evaluate(async (moduleUrl) => {
     const { Engine } = await import(moduleUrl);
-    await Engine.Instances.at(-1).scenes.find((candidate) => candidate.activeCamera?.name === 'taxi-driver-camera').whenReadyAsync();
+    const scene = Engine.Instances.at(-1).scenes.find((candidate) => candidate.activeCamera?.name === 'taxi-driver-camera');
+    if (scene === undefined) throw new Error('Taxi scene missing after reload');
+    await scene.metadata?.cityModelsReady;
+    await scene.whenReadyAsync();
   }, engineUrl);
   await page.screenshot({ path: resolve(output, 'compact.png') });
   if (errors.length > 0) throw new Error(errors.join('\n'));
