@@ -51,7 +51,7 @@ function part(
 
 /** Each route tile has its own UVs, so painted asphalt does not stretch 160m. */
 function addRoad(assets: Asset[]): void {
-  assets.push(part('road-bed', [12, 0.08, 160], [0, -0.34, 65], dark));
+  assets.push(part('road-bed', [12, 0.08, 176], [0, -0.34, 77], dark));
   for (let i = 0; i < 20; i++) {
     const z = 1 + i * 8;
     assets.push(part(`road-colored-tile-${i}`, [11.5, 0.012, 8], [0, -0.292, z], teal, {
@@ -60,8 +60,8 @@ function addRoad(assets: Asset[]): void {
   }
   for (const side of [-1, 1]) {
     const which = side < 0 ? 'left' : 'right';
-    assets.push(part(`curb-${which}`, [1.3, 0.22, 160], [side * 6.25, -0.21, 65], cream));
-    assets.push(part(`sidewalk-${which}`, [1.6, 0.07, 160], [side * 7.5, -0.17, 65], dark));
+    assets.push(part(`curb-${which}`, [1.3, 0.22, 176], [side * 6.25, -0.21, 77], cream));
+    assets.push(part(`sidewalk-${which}`, [1.6, 0.07, 176], [side * 7.5, -0.17, 77], dark));
   }
   for (let i = 0; i < 24; i++) {
     assets.push(part(`lane-marking-${i}`, [0.11, 0.012, 2], [0, -0.277, 5 + i * 6], cream));
@@ -155,7 +155,7 @@ function addCargoVehicle(assets: Asset[], number: number, x: number, z: number):
 
 function addPortDetails(assets: Asset[]): void {
   // Low river surface and the crane are viewed across the left dock.
-  assets.push(part('docks-water', [45, 0.04, 160], [-32, -0.38, 65], sea));
+  assets.push(part('docks-water', [45, 0.04, 176], [-32, -0.38, 77], sea));
   assets.push(
     part('docks-crane-base', [2.5, 0.5, 2.5], [-17.5, -0.04, 37], dark),
     part('docks-crane-tower', [0.8, 13, 0.85], [-17.5, 6.65, 37], brass),
