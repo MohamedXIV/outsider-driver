@@ -48,8 +48,9 @@ The repository is intentionally code-first. Babylon.js is an adapter behind an a
 See:
 
 - [Game Design](docs/GAME_DESIGN.md)
-- [Visual Style Bible v0.2 — approved direction, draft implementation](docs/STYLE_BIBLE.md)
+- [Visual Style Bible v0.3 — approved direction, draft implementation](docs/STYLE_BIBLE.md)
 - [District Visual Exploration Boards v0.1 — concepts pending review](docs/DISTRICT_BOARDS.md)
+- [Production Asset Sheet v0.1 — modular art proposals, not yet GLBs](docs/ASSET_SHEET.md)
 - [Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)
 - [Engineering Rules](docs/ENGINEERING_RULES.md)
 - [Data Contracts](docs/DATA_CONTRACTS.md)
