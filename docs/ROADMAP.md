@@ -28,7 +28,7 @@ The [Visual Style Bible v0.1](STYLE_BIBLE.md) records the **approved concept dir
 1. Define and preserve the first-person taxi cockpit/exterior route composition and silhouette hierarchy, with restrained detail and good road/passenger readability.
 2. Compare the chosen **hybrid** treatment with useful painterly and soft-cel controls on the **same** representative camera/time/light composition. Do not presume a complex bespoke shader is necessary.
 3. Extend the same material language to garage/home and to the currently evaluated expressive 2D passenger solution; keep the puppet technology decision separate from the art direction.
-4. Record **three distinct district exploration boards** (industrial Docks, commercial/market, elevated/civic), then a modular **asset exploration sheet**; preserve revisions in Git rather than waiting for a final art bible.
+4. **District draft v0.1 recorded:** [three district exploration boards](DISTRICT_BOARDS.md) (industrial Docks, commercial/market, elevated/civic), pending visual review. Next create a modular **asset exploration sheet**; preserve revisions in Git rather than waiting for a final art bible.
 5. Validate representative GLB/material/lighting implementation in Babylon with browser captures, startup/rendering cost, asset memory, readability and visual cohesion. Visual work must not block the first playable shift without a justified dependency.
 
 ### Shared acceptance / stop conditions
