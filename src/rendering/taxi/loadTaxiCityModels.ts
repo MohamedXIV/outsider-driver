@@ -64,6 +64,7 @@ export async function loadTaxiCityModels(
       const imported = source.instantiateModelsToScene(
         (sourceName) => `taxi-model-${model.id}-${sourceName}`,
         false,
+        { doNotInstantiate: false },
       );
       for (const root of imported.rootNodes) root.parent = mount;
     }
