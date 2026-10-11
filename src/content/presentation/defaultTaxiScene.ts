@@ -1,4 +1,4 @@
-import { createDocksRouteScenery } from './docksRouteScenery';
+import { createDocksRouteModels, createDocksRouteScenery } from './docksRouteScenery';
 import {
   TaxiSceneDefinitionSchema,
   type TaxiSceneDefinition,
@@ -139,4 +139,5 @@ export const defaultTaxiSceneDefinition: TaxiSceneDefinition = TaxiSceneDefiniti
   lighting: { ambientDirection: [0.2, 1, -0.25], ambientColor: [0.56, 0.65, 0.72], ambientIntensity: 0.55, cabinColor: [1, 0.82, 0.57], cabinIntensity: 1.1, headlights: [-0.75, 0.75].map((x) => ({position: [x, 0.45, 3.2], direction: [0, -0.24, 1], color: [1, 0.86, 0.63], intensity: 1.4, range: 32, angleRadians: 0.7})) },
   environment: { clearColor: [0.035, 0.063, 0.087, 1] },
   assets,
+  models: createDocksRouteModels(),
 });
