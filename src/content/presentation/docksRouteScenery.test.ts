@@ -42,7 +42,7 @@ describe('authored Docks route scenery', () => {
   it('provides two visibly supported bridges, grounded cargo carriers and alien signage', () => {
     const assets = createDocksRouteScenery();
     for (const number of [0, 1]) {
-      const prefix = `docks-overpass-${number}`;
+      const prefix = `docks-overpass-${String(number)}`;
       const deck = assets.find((asset) => asset.id === `${prefix}-deck`);
       expect(deck).toBeDefined();
       for (const side of ['left', 'right']) {
@@ -55,7 +55,7 @@ describe('authored Docks route scenery', () => {
       }
     }
     for (const number of [0, 1]) {
-      const wheels = assets.filter((asset) => asset.id.startsWith(`docks-cargo-${number}-wheel-`));
+      const wheels = assets.filter((asset) => asset.id.startsWith(`docks-cargo-${String(number)}-wheel-`));
       expect(wheels).toHaveLength(4);
       expect(wheels.every((wheel) => wheel.kind === 'cylinder')).toBe(true);
     }
@@ -77,7 +77,8 @@ describe('authored Docks route scenery', () => {
       expect(wheel).not.toBeNull();
       expect(panel?.parent).toBe(handle.worldRoot);
       expect(building?.parent).toBe(handle.worldRoot);
-      expect(handle.cabinLight.canAffectMesh(panel!)).toBe(false);
+      if (panel === null) throw new Error('Docks road panel not mounted');
+      expect(handle.cabinLight.canAffectMesh(panel)).toBe(false);
       expect(panel?.material).toBeInstanceOf(StandardMaterial);
       if (!(panel?.material instanceof StandardMaterial)) throw new Error('Road material missing');
       expect(panel.material.diffuseTexture?.name).toBe('/taxi/docks-road.svg');
