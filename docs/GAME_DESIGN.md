@@ -18,11 +18,13 @@ The city should feel like a future with its own history. Vehicles, terminals, in
 - Lighting, shapes, textures, typography, interfaces, and props should communicate place, social class, ownership, and risk, not just visual spectacle.
 - Preserve clear legibility inside the first-person taxi, particularly at night and during conversations; visual effects should not obstruct passengers, routes, controls, or choices.
 
-### Rendering style is still exploratory
+### Visual direction selected; implementation remains exploratory
 
-The **world identity above is a direction to honor now**; the exact rendering treatment is **not yet decided**. Stylized low-poly geometry, illustrated/pixel-art-influenced textures, anime/toon/cel lighting, selective outlines, and restrained dithering are candidates for look-development comparisons, not requirements or an approved art bible. Avoid visually unstable retro-rendering artifacts as a default aesthetic.
+The concept-level visual direction is now documented in the [Visual Style Bible v0.1](STYLE_BIBLE.md): **Hybrid Illustrative Alien Retro-Futurism** — rounded and varied non-human architecture; grounded vehicles on physically supported roads; hand-painted textured low-/mid-poly assets; soft cel lighting; selective ink; and occasional muted, **colored road surfaces** rather than universal gray asphalt.
 
-Make look decisions using representative in-engine captures of the taxi cockpit (interior and street view), with shared material/lighting experiments in the garage or home and coherent presentation beside important Inochi2D passengers. Judge readability, performance, atmosphere, asset-authoring cost, and distinctiveness before adopting a renderer-wide technique. Do not confuse a sophisticated shader with finished environment modeling, framing, materials, and lighting.
+The city was built by alien civilizations, not by humans. **Humans are prohibited**, and the player's status as a concealed illegal human is fundamental to its worldbuilding. Most of the exterior city exists as authored moving scenery viewed from the taxi, not as freely explorable streets.
+
+These are approved **art-direction principles**, not confirmation of a finished Babylon shader, specific font, finalized district map, in-engine performance or passenger puppet technology. Keep look-development comparisons with representative matched camera/time/light captures, coherent home/garage and illustrated-passenger treatment, and measured readability/performance before adopting a production-wide material pipeline. Avoid visually unstable retro-rendering artifacts as the default aesthetic.
 
 ## Core fantasy
 
