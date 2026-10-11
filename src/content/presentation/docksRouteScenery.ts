@@ -81,32 +81,9 @@ function addDockBuildings(assets: Asset[]): void {
       const height = 5.5 + (i % 3) * 2;
       const x = side * (11.7 + (i % 2) * 1.7);
       const stem = `docks-${which}-${String(i)}`;
-      // Older freight warehouses are horizontal barrel volumes, not one more
-      // identical round tower. Both types share the same hand-painted finish.
-      if (i % 3 === 1) {
-        const diameter = 5.9;
-        const length = 13.4;
-        assets.push(
-          part(`${stem}-shell`, [diameter, length, diameter], [x, diameter / 2 - 0.29, z], wornTeal, {
-            kind: 'cylinder', rotation: [Math.PI / 2, 0, 0],
-            texture: '/taxi/docks-enamel.svg', tessellation: 16, emissive: facadeFill,
-          }),
-          part(`${stem}-barrel-band-front`, [diameter * 1.1, 0.24, diameter * 1.1], [x, diameter / 2 - 0.29, z + length / 2 - 0.65], teal, {
-            kind: 'cylinder', rotation: [Math.PI / 2, 0, 0], tessellation: 16,
-          }),
-          part(`${stem}-barrel-band-rear`, [diameter * 1.1, 0.24, diameter * 1.1], [x, diameter / 2 - 0.29, z - length / 2 + 0.65], teal, {
-            kind: 'cylinder', rotation: [Math.PI / 2, 0, 0], tessellation: 16,
-          }),
-          part(`${stem}-service-pod`, [2.6, 2.4, 3.2], [x - side * (diameter / 2 + 0.45), 0.91, z], cream, {
-            texture: '/taxi/docks-enamel.svg', emissive: [0.03, 0.034, 0.028],
-          }),
-          part(`${stem}-porthole`, [1.0, 1.55, 0.07], [x - side * (diameter / 2 + 0.08), 2.2, z], [1, 1, 1], {
-            kind: 'plane', rotation: [0, side * Math.PI / 2, 0],
-            texture: '/taxi/docks-glyph.svg', emissive: [0.24, 0.22, 0.16],
-          }),
-        );
-        continue;
-      }
+      // Barrel depot variants are imported from the reusable authored GLB
+      // rather than rebuilt as multiple Babylon primitives.
+      if (i % 3 === 1) continue;
       assets.push(
         part(`${stem}-shell`, [radius * 2, height, radius * 2], [x, height / 2 - 0.29, z], wornTeal, {
           kind: 'cylinder', texture: '/taxi/docks-enamel.svg', tessellation: 16, emissive: facadeFill,
@@ -223,4 +200,23 @@ export function createDocksRouteScenery(): Asset[] {
   addCargoVehicle(assets, 1, -2.8, 91);
   addPortDetails(assets);
   return assets;
+}
+
+/** GLB records use stable names; these are presentation resources, not saves. */
+export function createDocksRouteModels(): NonNullable<TaxiSceneDefinition['models']> {
+  const models: NonNullable<TaxiSceneDefinition['models']> = [];
+  for (const side of [-1, 1]) {
+    const which = side < 0 ? 'left' : 'right';
+    for (const i of [1, 4]) {
+      const z = 13 + i * 27;
+      const x = side * (11.7 + (i % 2) * 1.7);
+      models.push({
+        id: `docks-${which}-${String(i)}-barrel`,
+        src: '/city/docks-barrel-terminal.glb',
+        space: 'world',
+        transform: { position: [x, 0, z], rotation: [0, 0, 0], scale: [1, 1, 1] },
+      });
+    }
+  }
+  return models;
 }
