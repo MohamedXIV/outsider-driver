@@ -3,7 +3,7 @@
 **Version:** 0.1.0 — exploratory draft  
 **Recorded:** 2026-10-11  
 **Status:** Proposed district-specific designs; **not individually approved**, not final map or canonical district taxonomy.  
-**Parent direction:** [Visual Style Bible v0.1](STYLE_BIBLE.md)  
+**Parent direction:** [Visual Style Bible](STYLE_BIBLE.md)  
 **Tracking:** [Epic #63](https://github.com/MohamedXIV/outsider-driver/issues/63) / [visual calibration #70](https://github.com/MohamedXIV/outsider-driver/issues/70)
 
 ## Purpose and shared requirements
@@ -150,7 +150,7 @@ The *textual design briefs below* are the versioned, authoritative record of **p
 ## Production handoff (after user review)
 
 1. Select the strongest and weakest design elements from each visual region; revise **this versioned document** and the [Style Bible](STYLE_BIBLE.md).
-2. Create a **production-oriented asset sheet** of normalized categories (buildings, supported bridge segments, modular colored roads, vehicles, street furniture, alien billboard silhouettes) with shared texture atlas/trim-sheet families and GLB-ready IDs.
+2. **Drafted:** [production-oriented modular asset sheet](ASSET_SHEET.md) v0.1, with building/road/vehicle/prop families, reusable material directions and proposed GLB IDs. Final shapes and actual modeled assets remain pending.
 3. Integrate one validated Docks route environment into Babylon with a representative moving taxi, not a new gameplay architecture.
 4. Compare near/mid/far treatments in real browser screenshots with fixed camera/exposure; record actual material use, draw calls, GPU/CPU frame metrics where measurable, and do not claim completion solely from generated concept illustrations.
 5. Continue first playable shift work as Track A priority; no reason to defer gameplay integration for art expansion.
