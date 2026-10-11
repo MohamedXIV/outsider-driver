@@ -1,3 +1,4 @@
+import { createDocksRouteScenery } from './docksRouteScenery';
 import {
   TaxiSceneDefinitionSchema,
   type TaxiSceneDefinition,
@@ -122,32 +123,9 @@ for (const asset of assets) {
   if (asset.id.startsWith('passenger-')) asset.transform.position[2] -= 0.9;
 }
 
-// A composed night street supplies depth before route-specific scenery is mounted.
-assets.push(part('road-bed', [12, 0.08, 160], [0, -0.34, 65], [0.19, 0.22, 0.23], {world: true}));
-for (const side of [-1, 1]) {
-  assets.push(part(`curb-${side < 0 ? 'left' : 'right'}`, [1.4, 0.2, 150], [side * 5.1, -0.23, 65], [0.29, 0.31, 0.3], {world: true}));
-  for (let block = 0; block < 9; block++) {
-    const z = 8 + block * 12;
-    const height = 4 + (block % 3) * 2.6;
-    const prefix = `city-${side < 0 ? 'left' : 'right'}-${String(block)}`;
-    const facade: Triple = side < 0 ? [0.24, 0.3, 0.31] : [0.34, 0.29, 0.23];
-    assets.push(
-      part(`${prefix}-building`, [5, height, 9], [side * 8.4, height / 2 - 0.3, z], facade, {world: true}),
-      part(`${prefix}-awning`, [0.8, 0.18, 6.5], [side * 5.65, 1.8, z], olive, {world: true}),
-      part(`${prefix}-lamp-post`, [0.08, 3.7, 0.08], [side * 4.4, 1.6, z + 3], rubber, {world: true}),
-      part(`${prefix}-lamp`, [0.4, 0.13, 0.4], [side * 4.4, 3.45, z + 3], amber, {world: true, emission: [0.9, 0.61, 0.3]}),
-      part(`${prefix}-shop-sign`, [0.035, 0.5, 2.3], [side * 5.88, 2.4, z], [0.4, 0.35, 0.2], {world: true, emission: [0.35, 0.22, 0.08]}),
-    );
-    for (let floor = 0; floor < Math.floor(height / 1.7); floor++) {
-      for (let window = 0; window < 4; window++) {
-        assets.push(part(`${prefix}-window-${String(floor)}-${String(window)}`, [0.025, 0.72, 0.85], [side * 5.88, 0.9 + floor * 1.7, z - 3 + window * 2], [0.31, 0.38, 0.35], {world: true, emission: (window + floor + block) % 3 === 0 ? [0.44, 0.3, 0.14] : [0.065, 0.105, 0.11]}));
-      }
-    }
-  }
-}
-for (let dash = 0; dash < 24; dash++) {
-  assets.push(part(`lane-marking-${String(dash)}`, [0.1, 0.014, 2], [0, -0.291, 5 + dash * 6], cream, {world: true, emission: [0.06, 0.055, 0.03]}));
-}
+// The authored route vista is replaceable presentation data, independent of
+// taxi movement, conversation, and persistent gameplay state.
+assets.push(...createDocksRouteScenery());
 
 export const defaultTaxiSceneDefinition: TaxiSceneDefinition = TaxiSceneDefinitionSchema.parse({
   schemaVersion: 1,
