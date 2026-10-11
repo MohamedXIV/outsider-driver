@@ -1,6 +1,6 @@
 import { AssetContainer } from '@babylonjs/core/assetContainer';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
-import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { Scene } from '@babylonjs/core/scene';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -25,10 +25,10 @@ describe('loadTaxiCityModels', () => {
           animationGroups: [],
         };
       });
-    const load = vi.spyOn(SceneLoader, 'LoadAssetContainerAsync').mockResolvedValue(container);
+    const load = vi.fn(async () => container);
     try {
       const models = createDocksRouteModels();
-      await loadTaxiCityModels(scene, root, models);
+      await loadTaxiCityModels(scene, root, models, load);
       expect(load).toHaveBeenCalledTimes(1);
       expect(imported).toHaveBeenCalledTimes(models.length);
       for (const model of models) {
@@ -55,10 +55,10 @@ describe('loadTaxiCityModels', () => {
     const pending = new Promise<AssetContainer>((resolve) => {
       finish = resolve;
     });
-    const load = vi.spyOn(SceneLoader, 'LoadAssetContainerAsync').mockReturnValue(pending);
+    const load = vi.fn(() => pending);
     try {
-      const loading = loadTaxiCityModels(scene, root, createDocksRouteModels());
-      await vi.waitFor(() => expect(load).toHaveBeenCalled(), { timeout: 10_000 });
+      const loading = loadTaxiCityModels(scene, root, createDocksRouteModels(), load);
+      await vi.waitFor(() => { expect(load).toHaveBeenCalled(); }, { timeout: 10_000 });
       scene.dispose();
       if (finish === undefined) throw new Error('GLB request was not created');
       finish(container);
