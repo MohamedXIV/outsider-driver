@@ -72,6 +72,8 @@ describe('authored Docks route scenery', () => {
     expect(road?.material.diffuseColor[0]).toBeGreaterThan(0.8);
     expect(road?.material.emissiveColor[1]).toBeGreaterThan(0.05);
     expect(tower?.kind).toBe('cylinder');
+    expect(tower?.material.textureUrl).toBe('/taxi/docks-warehouse.svg');
+    expect(assets.find((asset) => asset.id === 'docks-cargo-0-tank')?.material.textureUrl).toBe('/taxi/docks-enamel.svg');
     expect(barrel?.src).toBe('/city/docks-barrel-terminal.glb');
     expect(tower?.transform.rotation[0]).toBe(0);
     expect(barrel?.transform.position[0]).toBeLessThan(0);
