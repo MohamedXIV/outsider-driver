@@ -2,7 +2,7 @@ import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { describe, expect, it } from 'vitest';
 import { TaxiSceneDefinitionSchema } from './TaxiSceneDefinition';
-import { createDocksRouteScenery } from './docksRouteScenery';
+import { createDocksRouteModels, createDocksRouteScenery } from './docksRouteScenery';
 import { defaultTaxiSceneDefinition } from './defaultTaxiScene';
 import { createTaxiScene } from '../../rendering/taxi/createTaxiScene';
 
@@ -67,16 +67,37 @@ describe('authored Docks route scenery', () => {
     const assets = createDocksRouteScenery();
     const road = assets.find((asset) => asset.id === 'road-colored-tile-0');
     const tower = assets.find((asset) => asset.id === 'docks-left-0-shell');
-    const barrel = assets.find((asset) => asset.id === 'docks-left-1-shell');
+    const barrel = createDocksRouteModels().find((model) => model.id === 'docks-left-1-barrel');
     expect(road?.material.textureUrl).toBe('/taxi/docks-road.svg');
     expect(road?.material.diffuseColor[0]).toBeGreaterThan(0.8);
     expect(road?.material.emissiveColor[1]).toBeGreaterThan(0.05);
     expect(tower?.kind).toBe('cylinder');
-    expect(barrel?.kind).toBe('cylinder');
+    expect(barrel?.src).toBe('/city/docks-barrel-terminal.glb');
     expect(tower?.transform.rotation[0]).toBe(0);
-    expect(barrel?.transform.rotation[0]).toBe(Math.PI / 2);
+    expect(barrel?.transform.position[0]).toBeLessThan(0);
     expect(tower?.material.emissiveColor[0]).toBeGreaterThan(0);
-    expect(barrel?.material.emissiveColor[0]).toBeGreaterThan(0);
+    expect(createDocksRouteModels()).toHaveLength(4);
+    expect(assets.some((asset) => asset.id === 'docks-left-1-shell')).toBe(false);
+  });
+
+  it('validates four source-owned GLB references as strict presentation-only content', () => {
+    const models = createDocksRouteModels();
+    expect(models.map((model) => model.id)).toEqual([
+      'docks-left-1-barrel',
+      'docks-left-4-barrel',
+      'docks-right-1-barrel',
+      'docks-right-4-barrel',
+    ]);
+    expect(new Set(models.map((model) => model.src)).size).toBe(1);
+    expect(defaultTaxiSceneDefinition.models).toEqual(models);
+    expect(TaxiSceneDefinitionSchema.safeParse({
+      ...defaultTaxiSceneDefinition,
+      models: [...models, models[0]],
+    }).success).toBe(false);
+    expect(TaxiSceneDefinitionSchema.safeParse({
+      ...defaultTaxiSceneDefinition,
+      models: [{ ...models[0], src: 'https://evil.example/model.glb' }],
+    }).success).toBe(false);
   });
 
   it('renders as real Babylon world meshes without lighting the street from the cabin', () => {
