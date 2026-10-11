@@ -174,8 +174,8 @@ function buildBinary(parts, image) {
   bin.copy(out, 28 + json.length);
   return out;
 }
-export function buildDocksBarrelTerminalGlb() {
-  const pieces = [
+function authoredParts() {
+  return [
     cylinder('painted_barrel', 0, WIDTH, HEIGHT, -LENGTH/2, LENGTH/2),
     face('front_bulkhead', 0, LENGTH/2, WIDTH, HEIGHT, CENTER_Y, true),
     face('rear_bulkhead', 0, -LENGTH/2, WIDTH, HEIGHT, CENTER_Y, false),
@@ -183,12 +183,48 @@ export function buildDocksBarrelTerminalGlb() {
     cylinder('rear_trim', 1, WIDTH*1.035, HEIGHT*1.035, -LENGTH/2+0.16, -LENGTH/2+0.36),
     face('freight_aperture', 2, LENGTH/2+0.028, 1.35, 1.55, 1.65, true),
   ];
-  return buildBinary(pieces, paintedPng());
+}
+
+export function buildDocksBarrelTerminalGlb() {
+  return buildBinary(authoredParts(), paintedPng());
+}
+
+/**
+ * Optimized Babylon runtime representation from the EXACT same authoring
+ * source as the GLB. It is not a general glTF decoder; never parse arbitrary
+ * external GLBs on the client. Complex artist-supplied GLBs need an approved
+ * build-time conversion pipeline before being used in the city.
+ */
+export function buildDocksBarrelRuntimeData() {
+  return {
+    schemaVersion: 1,
+    id: 'bld_ind_barrel_terminal',
+    paintedTexture: '/city/docks-enamel.png',
+    materials: [
+      { id: 'painted_enamel', color: [1, 1, 1] },
+      { id: 'teal_trim', color: [0.45, 0.74, 0.7] },
+      { id: 'cargo_aperture', color: [0.2, 0.34, 0.39] },
+    ],
+    parts: authoredParts().map((mesh) => ({
+      name: mesh.name,
+      material: mesh.material,
+      positions: mesh.p,
+      normals: mesh.n,
+      uvs: mesh.uv,
+      indices: mesh.triangles,
+    })),
+  };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const binary = buildDocksBarrelTerminalGlb();
+  const runtime = JSON.stringify(buildDocksBarrelRuntimeData());
   await mkdir(dirname(PATH), { recursive: true });
-  await writeFile(PATH, binary);
-  process.stdout.write('Built ' + PATH + ' (' + String(binary.length) +
-    ' bytes; SHA256=' + createHash('sha256').update(binary).digest('hex') + ')\n');
+  await Promise.all([
+    writeFile(PATH, binary),
+    writeFile(resolve('public/city/docks-barrel-terminal.render.json'), runtime),
+    writeFile(resolve('public/city/docks-enamel.png'), paintedPng()),
+  ]);
+  process.stdout.write('Built source GLB + compact Babylon runtime mesh (' +
+    String(binary.length) + ' GLB bytes; SHA256=' +
+    createHash('sha256').update(binary).digest('hex') + ')\n');
 }
