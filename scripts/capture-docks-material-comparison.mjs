@@ -47,6 +47,7 @@ try {
         diffuseColor: material.diffuseColor.clone(),
         emissiveColor: material.emissiveColor.clone(),
         diffuseTexture: material.diffuseTexture,
+        emissiveTexture: material.emissiveTexture,
         disableLighting: material.disableLighting,
       }));
     if (originals.length < 8) throw new Error('Insufficient real world materials to compare');
@@ -81,6 +82,7 @@ try {
   ];
 
   const report = [];
+  const images = new Map();
   for (const treatment of treatments) {
     const stat = await page.evaluate((id) => {
       const snapshots = Reflect.get(window, '__docksComparisonOriginals');
@@ -91,17 +93,27 @@ try {
         material.diffuseColor.copyFrom(original.diffuseColor);
         material.emissiveColor.copyFrom(original.emissiveColor);
         material.diffuseTexture = original.diffuseTexture;
+        material.emissiveTexture = original.emissiveTexture;
         material.disableLighting = original.disableLighting;
         // Keep authored emissive signage readable. Only adjust surface paints.
-        if (id !== 'hybrid-production' && material.emissiveTexture === null) {
+        if (id !== 'hybrid-production' && original.emissiveTexture === null) {
+          // StandardMaterial with disabled lighting and *zero* emission renders
+          // dark on SwiftShader. Use its emissive path as the unlit control:
+          // a texture-backed emissive for painted art, a flat emissive color for
+          // the graphic control. These are not actual stepped toon lights.
           material.disableLighting = true;
-          material.emissiveColor.copyFromFloats(0, 0, 0);
-          if (id === 'flat-graphic-control') {
-            const value = (material.diffuseColor.r + material.diffuseColor.g + material.diffuseColor.b) / 3;
-            material.diffuseTexture = null;
-            if (value < 0.37) material.diffuseColor.copyFromFloats(0.27, 0.40, 0.39);
-            else if (value < 0.67) material.diffuseColor.copyFromFloats(0.59, 0.65, 0.55);
-            else material.diffuseColor.copyFromFloats(0.88, 0.80, 0.62);
+          material.diffuseColor.copyFromFloats(0, 0, 0);
+          material.diffuseTexture = null;
+          if (id === 'painted-unlit') {
+            material.emissiveTexture = original.diffuseTexture;
+            material.emissiveColor.copyFrom(original.diffuseColor);
+          } else {
+            material.emissiveTexture = null;
+            const c = original.diffuseColor;
+            const value = (c.r + c.g + c.b) / 3;
+            if (value < 0.37) material.emissiveColor.copyFromFloats(0.27, 0.40, 0.39);
+            else if (value < 0.67) material.emissiveColor.copyFromFloats(0.59, 0.65, 0.55);
+            else material.emissiveColor.copyFromFloats(0.88, 0.80, 0.62);
           }
           changed++;
         }
@@ -113,7 +125,16 @@ try {
     if (treatment.id !== 'hybrid-production' && stat.changedWorldMaterials < 4) {
       throw new Error('Material treatment did not affect real world surfaces');
     }
-    await page.screenshot({ path: resolve(output, treatment.id + '.png') });
+    const pixels = await page.screenshot({ path: resolve(output, treatment.id + '.png') });
+    images.set(treatment.id, pixels);
+    if (treatment.id !== 'hybrid-production' &&
+        pixels.equals(images.get('hybrid-production'))) {
+      throw new Error('Review treatment produced identical pixels to original; capture is invalid');
+    }
+    if (treatment.id === 'flat-graphic-control' &&
+        pixels.equals(images.get('painted-unlit'))) {
+      throw new Error('Graphic and painted-unlit controls are identical; material comparison invalid');
+    }
     report.push({ ...treatment, ...stat, image: treatment.id + '.png' });
   }
   await page.close();
