@@ -25,7 +25,7 @@ describe('loadTaxiCityModels', () => {
           animationGroups: [],
         };
       });
-    const load = vi.fn(async () => container);
+    const load = vi.fn(() => Promise.resolve(container));
     try {
       const models = createDocksRouteModels();
       await loadTaxiCityModels(scene, root, models, load);
