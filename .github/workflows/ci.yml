@@ -55,6 +55,7 @@ jobs:
             sleep 1
           done
           TAXI_CAPTURE_OUTPUT=docs/visuals/80 node scripts/capture-taxi-scene.mjs > docs/visuals-80-metrics.json
+          TAXI_MATERIAL_OUTPUT=docs/visuals/80-material-compare node scripts/capture-docks-material-comparison.mjs > docs/visuals-80-material-compare-metrics.json
 
       - name: Upload Docks art evidence
         if: ${{ always() && github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
@@ -64,6 +65,8 @@ jobs:
           path: |
             docs/visuals/80/
             docs/visuals-80-metrics.json
+            docs/visuals/80-material-compare/
+            docs/visuals-80-material-compare-metrics.json
           if-no-files-found: warn
           retention-days: 3
 
