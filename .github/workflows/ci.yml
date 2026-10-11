@@ -38,11 +38,14 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
-      # Temporary evidence capture for the Docks concept -> runtime art gate.
+      - name: Cross-browser smoke
+        run: npm run test:browser
+
+      # Branch-scoped art capture AFTER browser smoke to isolate CI browser load.
       # A real Vite/Chromium screenshot, not a generated illustration.
       # Limit this to the visual-review branch, not every normal PR.
       - name: Capture Docks taxi-camera art evidence
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
+        if: ${{ always() && github.event_name == 'pull_request' && github.head_ref == 'feat/70-docks-authored-scenery' }}
         run: |
           npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/outsider-docks-vite.log 2>&1 &
           server_pid=$!
@@ -63,9 +66,6 @@ jobs:
             docs/visuals-80-metrics.json
           if-no-files-found: warn
           retention-days: 3
-
-      - name: Cross-browser smoke
-        run: npm run test:browser
 
       # Preserve failing Playwright traces/screenshots for root-cause analysis.
       # No test, browser, retry, or product-performance thresholds are relaxed.
