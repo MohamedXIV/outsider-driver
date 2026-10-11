@@ -63,6 +63,22 @@ describe('authored Docks route scenery', () => {
     expect(assets.every((asset) => !asset.id.includes('hover'))).toBe(true);
   });
 
+  it('keeps illuminated road color and varied barrel-vs-tower silhouettes in authored data', () => {
+    const assets = createDocksRouteScenery();
+    const road = assets.find((asset) => asset.id === 'road-colored-tile-0');
+    const tower = assets.find((asset) => asset.id === 'docks-left-0-shell');
+    const barrel = assets.find((asset) => asset.id === 'docks-left-1-shell');
+    expect(road?.material.textureUrl).toBe('/taxi/docks-road.svg');
+    expect(road?.material.diffuseColor[0]).toBeGreaterThan(0.8);
+    expect(road?.material.emissiveColor[1]).toBeGreaterThan(0.05);
+    expect(tower?.kind).toBe('cylinder');
+    expect(barrel?.kind).toBe('cylinder');
+    expect(tower?.transform.rotation[0]).toBe(0);
+    expect(barrel?.transform.rotation[0]).toBe(Math.PI / 2);
+    expect(tower?.material.emissiveColor[0]).toBeGreaterThan(0);
+    expect(barrel?.material.emissiveColor[0]).toBeGreaterThan(0);
+  });
+
   it('renders as real Babylon world meshes without lighting the street from the cabin', () => {
     const engine = new NullEngine();
     const handle = createTaxiScene(engine, defaultTaxiSceneDefinition);
