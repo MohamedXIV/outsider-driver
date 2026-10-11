@@ -1,4 +1,4 @@
-import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
 import type { AssetContainer } from '@babylonjs/core/assetContainer';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
@@ -16,20 +16,23 @@ export async function loadTaxiCityModels(
   scene: Scene,
   worldRoot: TransformNode,
   models: readonly AuthoredModel[],
+  loadContainer: (path: string, scene: Scene) => Promise<AssetContainer> = LoadAssetContainerAsync,
 ): Promise<void> {
   if (models.length === 0) return;
 
-  let cancelled = false;
-  const containers: AssetContainer[] = [];
+  const ownership: { cancelled: boolean; containers: AssetContainer[] } = {
+    cancelled: false,
+    containers: [],
+  };
   scene.onDisposeObservable.add(() => {
-    cancelled = true;
-    for (const container of containers) container.dispose();
-    containers.length = 0;
+    ownership.cancelled = true;
+    for (const container of ownership.containers) container.dispose();
+    ownership.containers.length = 0;
   });
 
   // Import only when authored GLBs are present: preserve small initial entry.
   await import('@babylonjs/loaders/glTF');
-  if (cancelled) return;
+  if (ownership.cancelled) return;
 
   const grouped = new Map<string, AuthoredModel[]>();
   for (const model of models) {
@@ -39,24 +42,24 @@ export async function loadTaxiCityModels(
   }
 
   for (const [url, references] of grouped) {
-    if (cancelled) return;
+    if (ownership.cancelled) return;
     let source: AssetContainer;
     try {
       // Absolute and allowlisted URLs come from the Zod scene contract.
-      source = await SceneLoader.LoadAssetContainerAsync('/', url.slice(1), scene);
+      source = await loadContainer(url, scene);
     } catch (error) {
       // Disposing the taxi while fetching must not emit a stale-scene failure.
-      if (cancelled) return;
+      if (ownership.cancelled) return;
       throw error;
     }
-    if (cancelled) {
+    if (ownership.cancelled) {
       source.dispose();
       return;
     }
-    containers.push(source);
+    ownership.containers.push(source);
 
     for (const model of references) {
-      if (cancelled) return;
+      if (ownership.cancelled) return;
       const mount = new TransformNode(`taxi-model-${model.id}`, scene);
       mount.parent = worldRoot;
       applyLocalTransform(mount, model.transform);
