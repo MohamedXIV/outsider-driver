@@ -41,6 +41,14 @@ The current solution is instead a **source-owned build-time projection**:
 
 **Scope limit:** this is a single optimized, deterministic authoring format — **not** general runtime import of arbitrary third-party GLBs. A general model pipeline for artist-supplied Blender exports must design a separate **build-time conversion** with format validation. This deliberately preserves texture-driven, low-overdraw Babylon rendering without bundling the expensive general glTF loader in the player application.
 
+## QA #81 — product-level high-DPI 3D drawing-buffer cap
+
+The repeat of reduced-raster v0.3 (doc-only head `edc7e430b488bdea5ba4ecb38a0248d2a214a99f`, [CI #38145438902](https://github.com/MohamedXIV/outsider-driver/actions/runs/38145438902)) **was not fully stable**: **287/287 unit tests/build passed**, **17/18 browser smokes passed**, but the Chromium **compact-touch** UI test hit its 30-second whole-test timeout again. Desktop Chromium Settings passed. **Thus smaller art texture raster alone is NOT a complete fix**, and the original one-time 18/18 v0.3 result cannot be called a definitive root-cause proof.
+
+The new product fix caps Babylon's 3D backing surface to **1.5 physical pixels per CSS pixel** across high-DPI devices. The test's emulated Pixel 5 previously drew an approximately **1080×1999 canvas behind a ~393px-wide CSS surface** (~2.75x density), multiplying expensive SwiftShader pixel work without changing touch coordinates. A 1.5x density targets ~590px width and substantially fewer shaded pixels, while desktop DPR 1 remains unchanged. The UI itself, gesture/touch coordinates, accessibility settings, tests, and CPU/GPU budgets are **not** scaled or relaxed. `BabylonRenderingRuntime` applies the cap on initialization and resize; `hardwareScalingForDpr` has desktop/retina/invalid-DPR unit tests, and the existing compact-touch browser contract now asserts the actual WebGL backing resolution relative to the canvas CSS width.
+
+This is a **production rendering optimization for low-end and high-DPI hardware**, not a CI-only branch or suppressed assertion. The exact-head browser test must verify its effectiveness and touch behavior; do not close #81 simply because the cap was committed. Game-canvas sharpness on actual Android must still be assessed visually.
+
 ## QA #81 — reduced raster-cost A/B (2026-10-11)
 
 The prior `bba7e8d` run (small paint textures) passed 18/18 browser smokes; v0.2 enlarged barrel paint 128→256 pixels and introduced a warehouse facade at SVG native 512×512. Two Chromium settings/touch tests then repeatedly timed out **both with and without profiling preceding the smoke suite**, while Firefox/WebKit and foundation passed. This does not prove a particular texture caused the slowdown.
