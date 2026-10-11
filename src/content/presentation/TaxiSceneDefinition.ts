@@ -56,6 +56,17 @@ export const TaxiSceneDefinitionSchema = z
         ambientIntensity: z.number().min(0),
         cabinColor: normalizedColorSchema,
         cabinIntensity: z.number().min(0),
+        headlights: z.array(z.object({
+          position: vector3Schema,
+          direction: vector3Schema.refine(
+            (direction) => direction.some((value) => value !== 0),
+            'Beam direction must be nonzero.',
+          ),
+          color: normalizedColorSchema,
+          intensity: z.number().min(0),
+          range: z.number().positive(),
+          angleRadians: z.number().positive().max(Math.PI / 2),
+        }).strict()).max(2).default([]),
       })
       .strict(),
     environment: z
@@ -72,13 +83,16 @@ export const TaxiSceneDefinitionSchema = z
       z
         .object({
           id: presentationIdSchema,
-          kind: z.literal('box'),
+          kind: z.enum(['box', 'cylinder', 'torus', 'plane']),
+          tessellation: z.number().int().min(6).max(32).default(16),
+          tubeRatio: z.number().min(0.02).max(0.4).default(0.1),
           space: z.enum(['taxi-interior', 'world']),
           size: positiveVector3Schema,
           transform: LocalTransformSchema,
           material: z
             .object({
               diffuseColor: normalizedColorSchema,
+              textureUrl: z.string().regex(/^\/taxi\/[a-z0-9-]+\.svg$/).optional(),
               emissiveColor: normalizedColorSchema.default([0, 0, 0]),
             })
             .strict(),

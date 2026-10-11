@@ -20,10 +20,10 @@ describe('PassengerLightingBridge', () => {
 
     const state = resolvePassengerLighting(taxi);
 
-    expect(state.ambientColor).toEqual([0.28, 0.34, 0.48]);
-    expect(state.ambientIntensity).toBeCloseTo(0.55);
-    expect(state.keyColor).toEqual([0.95, 0.42, 0.18]);
-    expect(state.keyIntensity).toBeCloseTo(1.3);
+    expect(state.ambientColor).toEqual(productionContent.taxiScene.lighting.ambientColor);
+    expect(state.ambientIntensity).toBeCloseTo(productionContent.taxiScene.lighting.ambientIntensity);
+    expect(state.keyColor).toEqual(productionContent.taxiScene.lighting.cabinColor);
+    expect(state.keyIntensity).toBeCloseTo(productionContent.taxiScene.lighting.cabinIntensity);
     expect(
       Math.hypot(...state.keyDirection),
     ).toBeCloseTo(1);
