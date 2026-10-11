@@ -15,6 +15,10 @@ The game is **taxi-first, authored-route-based and not an open-world driving gam
 
 **Non-negotiable:** All normal vehicles run **in physical contact with supported streets, ramps or bridges**; no flying/hovering vehicles. The city is alien-built, not a human city. Roads can be painted or manufactured in **muted non-gray colors**, not standardized black asphalt. Heavy citywide PBR/GI/shadows are not required.
 
+### Git-native schematic reference
+
+A small [asset silhouette and material map](art/asset-silhouette-map-v0.1.svg) is now versioned as **editable SVG source in GitHub**. It deliberately simplifies concept art into building/road/vehicle silhouette families and colored roadway swatches; this SVG is **not** the generated full-resolution illustration or production GLB content.
+
 ### Versioned concept reference and limits
 
 An illustrated 1536×1024 asset exploration sheet was generated in this conversation on 2026-10-11 with building silhouettes, modular pieces, roads, grounded vehicles, props, signage, texture swatches and district palettes. The generated image **has not been uploaded to GitHub as an original PNG** by this docs commit; the exact original PNG SHA-256 is:
@@ -183,7 +187,8 @@ Do not delay existing Track A playable-shift integration to implement this styli
 - [x] Written draft families and naming proposals captured in Git history.
 - [x] Concept-level production exploration sheet generated (PNG **not** in repo).
 - [ ] User review / approval of individual asset silhouettes and palettes.
-- [ ] Original board artwork source binaries committed to GitHub through suitable tooling.
+- [x] Companion lightweight SVG **schematic** committed to GitHub as reviewable source.
+- [ ] Original generated concept PNG artwork/source binaries committed to GitHub through suitable tooling.
 - [ ] Reusable Blender source meshes and production-ready textured GLBs authored.
 - [ ] Authentic Babylon taxi-eye scene assembled from approved assets.
 - [ ] Browser captures and comparative visual/art evaluation completed.
