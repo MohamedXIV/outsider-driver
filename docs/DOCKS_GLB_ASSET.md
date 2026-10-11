@@ -41,6 +41,14 @@ The current solution is instead a **source-owned build-time projection**:
 
 **Scope limit:** this is a single optimized, deterministic authoring format — **not** general runtime import of arbitrary third-party GLBs. A general model pipeline for artist-supplied Blender exports must design a separate **build-time conversion** with format validation. This deliberately preserves texture-driven, low-overdraw Babylon rendering without bundling the expensive general glTF loader in the player application.
 
+## QA #81 — reduced raster-cost A/B (2026-10-11)
+
+The prior `bba7e8d` run (small paint textures) passed 18/18 browser smokes; v0.2 enlarged barrel paint 128→256 pixels and introduced a warehouse facade at SVG native 512×512. Two Chromium settings/touch tests then repeatedly timed out **both with and without profiling preceding the smoke suite**, while Firefox/WebKit and foundation passed. This does not prove a particular texture caused the slowdown.
+
+This diagnostic v0.3 changes **only the raster load of the painted assets** relative to v0.2: the barrel albedo outputs 128×128 pixels (sampling the same authored three-band, cargo-oval/seam recipe at half resolution) and the SVG facade declares 256×256 raster dimensions while retaining the complete original 512-unit vector design/viewBox. Runtime geometry, material definitions, scene/test logic, and budgets are unchanged. The pixel-level asset tests sample the corresponding physical positions at half size.
+
+**Decision gate:** run the full unchanged browser suite on this exact commit and compare against v0.2 16/18 and old v0.1 18/18. If it remains slow, do not claim the resolution change fixed anything or keep re-running Action jobs speculatively. Use targeted local A/B and trace/resource profiling next. Keep #81 open until root cause or a stable validated correction is demonstrated.
+
 ## Art calibration v0.2 — selective painted cel tone (2026-10-11)
 
 **New proposed pass — pending screenshot review:** the deterministic barrel texture has moved from a mostly uniform 128×128 enamel surface to a **256×256 illustrated atlas** with three intentional warm/neutral/cool directional tone regions, low-frequency brush wear, panel seams/rivets and bold oval amber/teal glazed openings. All details are baked into the SAME texture used by the exported authoring GLB and the compact Babylon runtime model. No new loader, global shader, outline post-process, dynamic light or shadow map is added.
