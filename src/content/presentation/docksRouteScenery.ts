@@ -23,7 +23,7 @@ const sea: Vec3 = [0.13, 0.31, 0.37];
 interface Options {
   readonly kind?: Shape;
   readonly rotation?: Vec3;
-  readonly texture?: '/taxi/docks-road.svg' | '/taxi/docks-enamel.svg' | '/taxi/docks-glyph.svg';
+  readonly texture?: '/taxi/docks-road.svg' | '/taxi/docks-enamel.svg' | '/taxi/docks-glyph.svg' | '/taxi/docks-warehouse.svg';
   readonly emissive?: Vec3;
   readonly tessellation?: number;
 }
@@ -85,7 +85,7 @@ function addDockBuildings(assets: Asset[]): void {
       if (i % 3 === 1) continue;
       assets.push(
         part(`${stem}-shell`, [radius * 2, height, radius * 2], [x, height / 2 - 0.29, z], wornTeal, {
-          kind: 'cylinder', texture: '/taxi/docks-enamel.svg', tessellation: 16, emissive: facadeFill,
+          kind: 'cylinder', texture: '/taxi/docks-warehouse.svg', tessellation: 16, emissive: facadeFill,
         }),
         part(`${stem}-lower-ring`, [radius * 2.25, 0.3, radius * 2.25], [x, 1.72, z], dark, {
           kind: 'cylinder', tessellation: 16,
