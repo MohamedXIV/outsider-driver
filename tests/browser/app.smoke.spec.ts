@@ -509,12 +509,17 @@ test('compact touch profile remains usable without horizontal overflow', async (
   expect(response?.ok()).toBe(true);
   expect(await expectRuntimeOutcome(page)).toBe('game');
 
-  const metrics = await page.evaluate(() => ({
-    innerWidth: window.innerWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-    maxTouchPoints: navigator.maxTouchPoints,
-    coarsePointer: window.matchMedia('(pointer: coarse)').matches,
-  }));
+  const metrics = await page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas.game-canvas');
+    return {
+      innerWidth: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      maxTouchPoints: navigator.maxTouchPoints,
+      coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+      canvasPixelsWide: canvas?.width ?? 0,
+      canvasCssPixelsWide: canvas?.getBoundingClientRect().width ?? 0,
+    };
+  });
 
   expect(metrics.innerWidth).toBeLessThanOrEqual(500);
   expect(metrics.scrollWidth).toBeLessThanOrEqual(
@@ -522,6 +527,8 @@ test('compact touch profile remains usable without horizontal overflow', async (
   );
   expect(metrics.maxTouchPoints).toBeGreaterThan(0);
   expect(metrics.coarsePointer).toBe(true);
+  expect(metrics.canvasCssPixelsWide).toBeGreaterThan(0);
+  expect(metrics.canvasPixelsWide / metrics.canvasCssPixelsWide).toBeLessThanOrEqual(1.55);
 
   const settingsButton = page.getByRole('button', {
     name: 'Accessibility and controls settings',
