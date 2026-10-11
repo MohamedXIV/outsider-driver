@@ -1,5 +1,7 @@
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import '@babylonjs/core/Meshes/instancedMesh';
+import type { InstancedMesh } from '@babylonjs/core/Meshes/instancedMesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
@@ -89,7 +91,7 @@ export async function loadTaxiCityModels(
       applyLocalTransform(mount, model.transform);
       for (const [partIndex, part] of compiled.parts.entries()) {
         const name = `taxi-model-${model.id}-${part.name}`;
-        let mesh;
+        let mesh: Mesh | InstancedMesh;
         if (index === 0) {
           mesh = new Mesh(name, scene);
           const data = new VertexData();
