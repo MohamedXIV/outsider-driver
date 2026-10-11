@@ -20,12 +20,30 @@ The flat graphic control is deliberately labeled accurately. No conclusion about
 
 The same initial artifact also contains **real Garage and Home production-scene screenshots**, obtained using their existing dedicated probe entry points. They reveal a material quality disparity: these spaces remain minimal dark blockout boxes with isolated strong highlights, visibly behind the taxi and Docks. They are *not* compatible evidence for claiming cross-scene art cohesion.
 
+## Corrected material comparison — valid evidence
+
+The corrected capture-only `StandardMaterial` controls explicitly route their painted albedo through `emissiveTexture` (or graphic palette through `emissiveColor`) rather than setting emission to zero. The script now **rejects byte-identical screenshots**, so an ineffective material experiment cannot silently pass as three valid looks. [Exact-head CI #38153222627](https://github.com/MohamedXIV/outsider-driver/actions/runs/38153222627) is **SUCCESS** (290/290 unit tests, 71 files, strict lint/typecheck, production build and budgets, 18/18 Playwright, fixed-camera comparison/garage/home capture). [Corrected real-browser artifact #11707811581](https://github.com/MohamedXIV/outsider-driver/actions/runs/38153222627/artifacts/11707811581) contains all five named material/bounded-space screenshots and metrics.
+
+**Visual findings at the exact same driver camera, scene, materials source and lighting setup:**
+
+| Treatment | What the screenshots actually show | Decision |
+| --- | --- | --- |
+| `hybrid-production` | The muted teal/pigmented road remains identifiable, painted oval-window/barrel depots show material wear and volume, and warm taxi controls are legible in context. Night scene still looks simplified and darker than the concept board. | **Keep as current production look** and calibrate selectively. |
+| `painted-unlit` | Replacing world lighting with full emissive painted texture makes concrete, road and barrels nearly white; flattens depth and destroys night-time hierarchy. | **Reject as universal treatment.** Cheap distant/backdrop emissive impostors may still work after separate exposure calibration. |
+| `flat-graphic-control` | A reduced three-value palette preserves big silhouettes but loses the actual painted windows, wear and colored-road nuance; looks more like simplified untextured blockout geometry. | **Reject as an all-world replacement.** It does not test normal-dependent toon shading. |
+
+In a clearly defined approximate road/building viewport ROI (pixels `x=300..1449, y=110..469` of the **1600×900** fixed camera), pixel luminance over **220/255** occupies **0% hybrid, 38.25% painted-unlit, 0% flat graphic**. This is a screen-space exposure diagnostic to support the visible overexposure, **not** a texture/GPU performance measurement or universal art-quality score.
+
+**Cross-scene cohesion:** actual Garage and Home screenshots still show extremely sparse dark blockout scenes with isolated emissive highlights. Their baseline and practical calibration work are tracked by [#82](https://github.com/MohamedXIV/outsider-driver/issues/82), taking care not to edit the ongoing gameplay navigation PR #74. **Do not mark #70 complete** while those scenes remain incoherent with the taxi or while actual Inochi passenger-in-cabin screenshot evidence is absent.
+
+**Renderer recommendation for this slice:** retain **hand-painted texture + restrained soft scene-lighting** as the visual north star, with selective emissive functional displays and potentially cheap painted distant impostors. A *real* cel shader, if ever pursued, must be compared on the same camera with a real stepped normal-dependent lighting implementation, not mislabeled as this flat control. Avoid broad shader architecture without a justified benefit.
+
 ## Decision gates
 
 - [x] Captures use real Babylon geometry and fixed in-game camera.
 - [x] The hybrid/prod screenshot is a valid baseline.
-- [ ] Corrected textured-unlit and flat-graphic controls look meaningfully distinct and readable; replace superseded comparisons.
-- [ ] Compare composition, colored asphalt, silhouette hierarchy, line/detail readability and emissive/signage integrity side by side.
+- [x] Corrected controls produce distinct actual browser images; initial broken controls excluded; unlit and flat control not selected.
+- [x] Side-by-side fixed-camera review completed with documented colored asphalt, exposure, silhouette and detail tradeoffs.
 - [ ] Establish a **small authored Garage/Home calibration pass** instead of inventing a separate engine pipeline.
 - [ ] Capture actual puppet-in-cabin cohesion separately; a passenger-inspection camera of an empty seat is NOT puppet lighting acceptance.
 - [ ] Decide final renderer material recipe only after inspecting actual corrected fixed-camera comparisons and bounded-space cohesion.
