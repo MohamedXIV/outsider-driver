@@ -21,12 +21,15 @@ Work on two coordinated tracks, prioritizing a usable game loop over broad visua
 3. Connect actual state-driven UI for job selection, ride progress, conversation choices, basic radio/translator access, and resulting facts/relationships/suspicion where the authored content exercises them.
 4. Make the first supported journey replayable without debug query parameters, console hooks, or test-specific state fabrication. Keep systems generic; use a small amount of validated authored content, not a separate vertical-slice architecture.
 
-### Track B — Small, representative look-development benchmark (parallel)
+### Track B — Approved visual direction, measured in-engine calibration (parallel)
 
-1. Define the initial composition, visibility hierarchy, and silhouette language of the first-person taxi cockpit and its exterior route view; replace diagnostic boxes only where needed to read the space.
-2. Compare a small number of **retro-futuristic** lighting/material treatments on exactly the same representative scene. Test toon/cel shading, textured low-poly, and outline approaches as options rather than committing to a bespoke shader pipeline first.
-3. Reuse a small set of materials, props, and lighting conventions in garage/home to check consistency, and verify cohesion with an Inochi2D passenger.
-4. Capture named screenshots with fixed cameras/time/lighting; evaluate identity, readability, performance, and asset production cost before writing a more prescriptive art bible.
+The [Visual Style Bible v0.1](STYLE_BIBLE.md) records the **approved concept direction**, including rounded alien-built retro-futurism, grounded vehicles, colored street materials and hybrid painterly/soft-cel/selective-ink treatment. It does **not** claim that the final shader, asset set, passenger rendering technology or runtime performance is already proven.
+
+1. Define and preserve the first-person taxi cockpit/exterior route composition and silhouette hierarchy, with restrained detail and good road/passenger readability.
+2. Compare the chosen **hybrid** treatment with useful painterly and soft-cel controls on the **same** representative camera/time/light composition. Do not presume a complex bespoke shader is necessary.
+3. Extend the same material language to garage/home and to the currently evaluated expressive 2D passenger solution; keep the puppet technology decision separate from the art direction.
+4. Record **three distinct district exploration boards** (industrial Docks, commercial/market, elevated/civic), then a modular **asset exploration sheet**; preserve revisions in Git rather than waiting for a final art bible.
+5. Validate representative GLB/material/lighting implementation in Babylon with browser captures, startup/rendering cost, asset memory, readability and visual cohesion. Visual work must not block the first playable shift without a justified dependency.
 
 ### Shared acceptance / stop conditions
 
@@ -36,7 +39,7 @@ Work on two coordinated tracks, prioritizing a usable game loop over broad visua
 - Neither a fully polished asset set nor a complex final toon shader blocks integration. Conversely, do not postpone all visual decisions until after extensive content production.
 - Validate at least one real local/browser walkthrough before expanding the next content batch. Do not mark the entire game complete based only on system-level test success.
 
-See `docs/GAME_DESIGN.md` for the retro-futuristic identity constraint. The exact art bible, palette, decade influences, and rendering style remain open until measured look-development work.
+See `docs/GAME_DESIGN.md` for the retro-futuristic identity constraint. The concept-level art direction is recorded in `docs/STYLE_BIBLE.md`; detailed palette, asset choices and renderer-wide implementation remain subject to measured look-development work.
 
 ## Phase 0 — Repository and production foundation
 
