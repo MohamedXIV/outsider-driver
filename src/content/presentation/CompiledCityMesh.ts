@@ -7,9 +7,9 @@ import * as z from 'zod';
 const partSchema = z.object({
   name: z.string().min(1),
   material: z.number().int().min(0),
-  positions: z.array(z.number().finite()).min(9),
-  normals: z.array(z.number().finite()).min(9),
-  uvs: z.array(z.number().finite()).min(6),
+  positions: z.array(z.number()).min(9),
+  normals: z.array(z.number()).min(9),
+  uvs: z.array(z.number()).min(6),
   indices: z.array(z.number().int().min(0)).min(3),
 }).strict().superRefine((part, ctx) => {
   const vertexCount = part.positions.length / 3;
