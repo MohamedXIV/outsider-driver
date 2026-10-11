@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@babylonjs/core": "9.28.0",
+    "@babylonjs/loaders": "9.28.0",
     "inkjs": "2.4.0",
     "zod": "4.6.5"
   },
