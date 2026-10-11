@@ -1,6 +1,6 @@
 # Outsider Driver — Visual Style Bible
 
-**Version:** 0.1.0 (first repository draft)  
+**Version:** 0.2.0 (district exploration documented; asset approval pending)  
 **Recorded:** 2026-10-11  
 **Decision status:** Core visual direction approved in concept; design details remain revisable.  
 **Implementation status:** Not an in-engine art/performance acceptance, shader implementation specification, or release sign-off.  
@@ -114,12 +114,14 @@ Avoid:
 
 **Next sequence:**
 
-1. Produce three **distinct district exploration boards** using this same visual language: industrial **The Docks**, a commercial/market setting, and an elevated/civic corridor. These are exploration labels, not a declaration that every district name or world layout is finalized.
+1. **Drafted:** three distinct [district exploration boards](DISTRICT_BOARDS.md): industrial **The Docks**, a commercial/market setting, and an elevated/civic corridor. These are exploration labels, not a declaration that every district name or world layout is finalized. **Review/acceptance is pending.**
 2. Record decisions and rejected alternatives here, with dated revisions.
 3. Produce a **production-oriented asset sheet** (building archetypes, grounded vehicles, road modules, signage, lamps, alien billboard actors) and specify asset source/export metadata.
 4. Integrate a representative route and taxi environment into **Babylon.js**, verify visual cohesion, viewport readability, asset memory, draw calls and real frame performance before scaling.
 5. Keep player-facing shift integration from the [Roadmap](ROADMAP.md) the gameplay priority; visual production must not block it without a proven need.
 
 ## Revision notes
+
+- **v0.2.0 — 2026-10-11:** Linked first versioned three-district exploration; individual palettes, names, model families and concept renderings remain draft pending review.
 
 - **v0.1.0 — 2026-10-11:** First committed draft: direction approved in conversation; in-engine calibration and final asset selection pending.
