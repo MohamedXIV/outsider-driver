@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<title>The Docks — hand-painted oxidized enamel and repair bands</title>
+<rect width="256" height="256" fill="#D6D1B3"/>
+<path d="M0 31H256M0 233H256" stroke="#547B7A" stroke-width="13"/>
+<path d="M0 42H256M0 223H256" stroke="#FAE7C3" stroke-width="2" opacity=".7"/>
+<path d="M66 0V256M190 0V256" stroke="#657F76" stroke-width="4" opacity=".38"/>
+<path d="M12 119q24-18 57-9t63-11q55-23 115 0" stroke="#9DB1A5" stroke-width="15" opacity=".28" fill="none"/>
+<path d="M15 64l66 4 21 16-37-6-34 9ZM154 174l71 8-10 24-34-9-21 1Z" fill="#5A9491" opacity=".42"/>
+<path d="M32 134l53-12M116 205l42-6M186 58l41 16M9 192l35-7" stroke="#8A7458" stroke-width="3" opacity=".65"/>
+<g fill="#9D7457" opacity=".5">
+<circle cx="43" cy="58" r="3"/><circle cx="199" cy="116" r="3"/><circle cx="128" cy="146" r="1.8"/><circle cx="91" cy="221" r="2.2"/><circle cx="230" cy="225" r="2.4"/>
+</g><g fill="#556D70"><circle cx="69" cy="39" r="2.8"/><circle cx="190" cy="39" r="2.8"/><circle cx="69" cy="229" r="2.8"/><circle cx="190" cy="229" r="2.8"/></g>
+</svg>
