@@ -1,4 +1,4 @@
-/* global document, performance */
+/* global document, performance, setTimeout, clearTimeout */
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 // Capture the production taxi through the normal entry URL, using Vite's existing
 // Engine module instance. Camera adjustments stay in this review tool, not the app.
 const url = process.env.TAXI_CAPTURE_URL ?? 'http://127.0.0.1:5173/';
-const output = resolve('docs/visuals/66');
+const output = resolve(process.env.TAXI_CAPTURE_OUTPUT ?? 'docs/visuals/66');
 await mkdir(output, { recursive: true });
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 const browser = await chromium.launch({
@@ -26,6 +26,7 @@ try {
     const { Engine } = await import(moduleUrl);
     const scene = Engine.Instances.at(-1).scenes.find((candidate) => candidate.activeCamera?.name === 'taxi-driver-camera');
     if (scene === undefined) throw new Error('Production taxi scene is not active.');
+    await scene.metadata?.cityModelsReady;
     await scene.whenReadyAsync();
   }, engineUrl);
   await page.screenshot({ path: resolve(output, 'cockpit.png') });
@@ -37,6 +38,74 @@ try {
       triangles: scene.meshes.reduce((total, mesh) => total + mesh.getTotalIndices() / 3, 0),
       startupReadyMs: performance.getEntriesByName('outsider-driver:startup-ready')[0].startTime,
       canvas: { width: document.querySelector('canvas').width, height: document.querySelector('canvas').height } };
+  }, engineUrl);
+  // Browser/SwiftShader samples are diagnostic ONLY. We distinguish intervals
+  // between scene frames from CPU work in scene.render(); neither is GPU time.
+  // Reuse the same fixed driver camera after art/model readiness, and do not
+  // alter real gameplay timing or the project's performance budgets.
+  const frameTiming = await page.evaluate(async (moduleUrl) => {
+    const { Engine } = await import(moduleUrl);
+    const scene = Engine.Instances.at(-1).scenes.find(
+      (candidate) => candidate.activeCamera?.name === 'taxi-driver-camera',
+    );
+    if (scene === undefined) throw new Error('Taxi scene missing for frame profiling');
+    function stats(values) {
+      if (values.length === 0) return null;
+      const sorted = [...values].sort((a, b) => a - b);
+      return {
+        medianMs: Math.round(sorted[Math.floor((sorted.length - 1) * 0.5)] * 100) / 100,
+        p95Ms: Math.round(sorted[Math.floor((sorted.length - 1) * 0.95)] * 100) / 100,
+        meanMs: Math.round((values.reduce((sum, v) => sum + v, 0) / values.length) * 100) / 100,
+      };
+    }
+    return await new Promise((resolve) => {
+      const warmupFrames = 15;
+      const targetSamples = 60;
+      const intervals = [];
+      const cpuDurations = [];
+      let count = 0;
+      let before = null;
+      let previous = null;
+      let finished = false;
+      let timer;
+      const startObserver = scene.onBeforeRenderObservable.add(() => { before = performance.now(); });
+      const endObserver = scene.onAfterRenderObservable.add(() => {
+        const now = performance.now();
+        if (count >= warmupFrames) {
+          if (before !== null) cpuDurations.push(now - before);
+          if (previous !== null) intervals.push(now - previous);
+        }
+        previous = now;
+        count++;
+        if (intervals.length >= targetSamples) finish('sampled');
+      });
+      function finish(reason) {
+        if (finished) return;
+        finished = true;
+        scene.onBeforeRenderObservable.remove(startObserver);
+        scene.onAfterRenderObservable.remove(endObserver);
+        clearTimeout(timer);
+        resolve({
+          environment: 'GitHub CI headless Chromium / SwiftShader when run on CI',
+          sampleCount: intervals.length,
+          warmupFrames,
+          targetSamples,
+          status: reason,
+          sceneFrameInterval: stats(intervals),
+          sceneCpuRender: stats(cpuDurations),
+          note: 'Frame intervals include scheduling and throttling; CPU render durations are not GPU frame times or device FPS',
+        });
+      }
+      timer = setTimeout(() => finish('timeout'), 15000);
+    });
+  }, engineUrl);
+  metrics.frameTiming = frameTiming;
+  metrics.glbDerivedMeshes = await page.evaluate(async (moduleUrl) => {
+    const { Engine } = await import(moduleUrl);
+    const scene = Engine.Instances.at(-1).scenes.find(
+      (candidate) => candidate.activeCamera?.name === 'taxi-driver-camera',
+    );
+    return scene.meshes.filter((mesh) => mesh.name.startsWith('taxi-model-docks-')).length;
   }, engineUrl);
   await page.evaluate(async (moduleUrl) => {
     const { Engine } = await import(moduleUrl);
@@ -51,7 +120,10 @@ try {
   await page.waitForFunction(() => performance.getEntriesByName('outsider-driver:startup-ready').length > 0);
   await page.evaluate(async (moduleUrl) => {
     const { Engine } = await import(moduleUrl);
-    await Engine.Instances.at(-1).scenes.find((candidate) => candidate.activeCamera?.name === 'taxi-driver-camera').whenReadyAsync();
+    const scene = Engine.Instances.at(-1).scenes.find((candidate) => candidate.activeCamera?.name === 'taxi-driver-camera');
+    if (scene === undefined) throw new Error('Taxi scene missing after reload');
+    await scene.metadata?.cityModelsReady;
+    await scene.whenReadyAsync();
   }, engineUrl);
   await page.screenshot({ path: resolve(output, 'compact.png') });
   if (errors.length > 0) throw new Error(errors.join('\n'));

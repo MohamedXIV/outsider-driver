@@ -79,6 +79,14 @@ export const TaxiSceneDefinitionSchema = z
         ]),
       })
       .strict(),
+    // Optional GLB references are presentation-only and are not save data.
+    // Imported models are authored by stable IDs, never arbitrary URLs.
+    models: z.array(z.object({
+      id: presentationIdSchema,
+      src: z.string().regex(/^\/city\/[a-z0-9-]+\.glb$/),
+      space: z.literal('world'),
+      transform: LocalTransformSchema,
+    }).strict()).max(32).optional(),
     assets: z.array(
       z
         .object({
@@ -103,8 +111,9 @@ export const TaxiSceneDefinitionSchema = z
   .strict()
   .refine(
     (definition) =>
-      new Set(definition.assets.map((asset) => asset.id)).size ===
-      definition.assets.length,
+      new Set([...definition.assets.map((asset) => asset.id),
+        ...(definition.models ?? []).map((model) => model.id)]).size ===
+      definition.assets.length + (definition.models?.length ?? 0),
     {
       message: 'Taxi scene asset IDs must be unique.',
       path: ['assets'],

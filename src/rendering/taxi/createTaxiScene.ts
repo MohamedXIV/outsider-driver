@@ -17,6 +17,7 @@ import {
   type TaxiSceneDefinition,
 } from '../../content/presentation/TaxiSceneDefinition';
 import { applyLocalTransform } from './applyLocalTransform';
+import { loadTaxiCityModels } from './loadTaxiCityModels';
 
 export interface TaxiSceneAnchors {
   readonly passengerSeat: TransformNode;
@@ -36,6 +37,8 @@ export interface TaxiSceneHandle {
   readonly anchors: TaxiSceneAnchors;
   readonly ambientLight: HemisphericLight;
   readonly cabinLight: PointLight;
+  /** Resolves only when referenced GLBs are mounted, rejects on a live loading error. */
+  readonly modelLoading: Promise<void>;
 }
 
 function vector3(tuple: readonly [number, number, number]): Vector3 {
@@ -212,7 +215,18 @@ export function createTaxiScene(
     light.excludedMeshes = interiorRoot.getChildMeshes();
   }
 
+  const modelLoading = loadTaxiCityModels(scene, worldRoot, definition.models ?? []);
+  // The inspection helper waits for this before taking fixed-camera captures.
+  // Real load failures must reach both the caller and the browser error console.
+  scene.metadata = { cityModelsReady: modelLoading };
+  let disposed = false;
+  scene.onDisposeObservable.add(() => { disposed = true; });
+  void modelLoading.catch((error: unknown) => {
+    if (!disposed) console.error('Failed to load authored taxi city models:', error);
+  });
+
   return {
+    modelLoading,
     scene,
     worldRoot,
     taxiMotionRoot,

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 512 512">
+<title>The Docks — illustrated cylindrical warehouse facade, painted enamel and cargo portholes</title>
+<defs>
+<linearGradient id="paint" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#D5C7A5"/><stop offset=".36" stop-color="#C0C4AA"/>
+<stop offset=".73" stop-color="#A2B6AD"/><stop offset="1" stop-color="#668C89"/>
+</linearGradient>
+<pattern id="wear" width="77" height="113" patternUnits="userSpaceOnUse">
+<path d="M9 14l29-4M46 51l21 6M18 94l27-2M59 104l11-5" stroke="#557C79" stroke-width="3" opacity=".23"/>
+<path d="M4 29l21-3M23 66l16 4M54 85l14-2" stroke="#F0D8A8" stroke-width="2" opacity=".3"/>
+<circle cx="11" cy="78" r="2" fill="#8A765C" opacity=".5"/>
+<circle cx="50" cy="35" r="3" fill="#8A765C" opacity=".33"/>
+</pattern>
+</defs>
+<rect width="512" height="512" fill="url(#paint)"/>
+<rect width="512" height="512" fill="url(#wear)"/>
+<g fill="#325F65" opacity=".55">
+<rect x="0" y="22" width="512" height="12"/>
+<rect x="0" y="185" width="512" height="19"/>
+<rect x="0" y="435" width="512" height="16"/>
+</g>
+<g stroke="#566B66" stroke-width="6" opacity=".58">
+<path d="M1 0v512M128 0v512M256 0v512M384 0v512M511 0v512"/>
+</g>
+<g stroke="#E7D0A5" stroke-width="3" opacity=".67">
+<path d="M14 34v148M140 34v148M269 34v148M395 34v148"/>
+</g>
+<g stroke="#A18B68" stroke-width="5" fill="none" opacity=".6">
+<path d="M25 245q25-18 51-4l38-7M296 392l25-16 42 8M409 79l34 6 33-11"/>
+</g>
+<!-- Large painted oval warehouse vents/alien windows: silhouette first. -->
+<g>
+<ellipse cx="69" cy="301" rx="44" ry="60" fill="#344C50"/>
+<ellipse cx="69" cy="301" rx="37" ry="53" fill="#3B777E" stroke="#D5A66F" stroke-width="8"/>
+<path d="M48 281q25-29 46-7" fill="none" stroke="#D7B782" stroke-width="8" opacity=".62"/>
+<ellipse cx="197" cy="301" rx="44" ry="60" fill="#344C50"/>
+<ellipse cx="197" cy="301" rx="37" ry="53" fill="#3B777E" stroke="#D5A66F" stroke-width="8"/>
+<path d="M175 281q25-29 47-7" fill="none" stroke="#D7B782" stroke-width="8" opacity=".62"/>
+<ellipse cx="325" cy="301" rx="44" ry="60" fill="#344C50"/>
+<ellipse cx="325" cy="301" rx="37" ry="53" fill="#3B777E" stroke="#D5A66F" stroke-width="8"/>
+<path d="M303 281q25-29 47-7" fill="none" stroke="#D7B782" stroke-width="8" opacity=".62"/>
+<ellipse cx="453" cy="301" rx="44" ry="60" fill="#344C50"/>
+<ellipse cx="453" cy="301" rx="37" ry="53" fill="#3B777E" stroke="#D5A66F" stroke-width="8"/>
+<path d="M431 281q25-29 47-7" fill="none" stroke="#D7B782" stroke-width="8" opacity=".62"/>
+</g>
+<g stroke="#D3AF78" stroke-width="5" stroke-linecap="round" fill="none" opacity=".94">
+<!-- Non-human cargo/civic pictograms, no Earth lettering. -->
+<path d="M42 93l27-28 27 28-27 27zM67 66v55"/>
+<path d="M173 92q25-44 50 0-25 43-50 0zM199 54v75"/>
+<path d="M299 75l25-20 25 20-25 33zM299 118h50"/>
+<path d="M423 111l28-48 27 48M439 97h25"/>
+</g>
+<g fill="#6F7768">
+<circle cx="14" cy="16" r="4"/><circle cx="128" cy="16" r="4"/><circle cx="256" cy="16" r="4"/>
+<circle cx="384" cy="16" r="4"/><circle cx="496" cy="16" r="4"/>
+<circle cx="14" cy="445" r="4"/><circle cx="128" cy="445" r="4"/><circle cx="256" cy="445" r="4"/>
+</g>
+</svg>

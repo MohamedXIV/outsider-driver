@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<title>The Docks — modular teal painted road surface</title>
+<rect width="256" height="256" fill="#9BB9AC"/>
+<path d="M0 24H256M0 230H256" stroke="#DAD4B6" stroke-width="4" opacity=".48"/>
+<path d="M0 47H256M0 146H256M0 190H256" stroke="#5B918D" stroke-width="4" opacity=".37"/>
+<path d="M22 0V256M231 0V256" stroke="#4B7E7D" stroke-width="3" opacity=".38"/>
+<path d="M41 55l49 5 10 13-38-4ZM135 171l79-8 18 11-56 2ZM0 216l65-9 22 11-87 15Z" fill="#C1B996" opacity=".34"/>
+<path d="M12 101l52-11 27 9M116 34l71 16 42-10M56 198l41-18 58 12M178 226l39-10" fill="none" stroke="#527F7D" stroke-width="2" opacity=".45"/>
+<g fill="#465E5D" opacity=".45">
+<circle cx="25" cy="71" r="2"/><circle cx="74" cy="182" r="1.8"/><circle cx="171" cy="78" r="2.4"/>
+<circle cx="190" cy="208" r="1.5"/><circle cx="109" cy="116" r="1.2"/><circle cx="239" cy="132" r="1.7"/>
+<circle cx="37" cy="222" r="1.9"/><circle cx="146" cy="23" r="1.2"/>
+</g>
+</svg>

@@ -8,6 +8,7 @@ import type {
 import type { PersonalSpaceDefinition } from '../content/spaces/PersonalSpaceContracts';
 import { productionContent } from '../content/production/ProductionContent';
 import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
+import { hardwareScalingForDpr } from './hardwareScalingForDpr';
 
 export class BabylonRenderingRuntime
   implements RenderingRuntimePort, PersonalSpacePresentationPort
@@ -19,16 +20,20 @@ export class BabylonRenderingRuntime
     this.#scenes.render();
   };
   readonly #resize = (): void => {
+    // CSS viewport coordinates remain unchanged; only 3D backing pixels cap.
+    this.#engine.setHardwareScalingLevel(hardwareScalingForDpr(window.devicePixelRatio));
     this.#engine.resize();
   };
   #started = false;
+  #settingsOverlayOpen = false;
   #disposed = false;
 
   public constructor(
     canvas: HTMLCanvasElement,
     preferences: AccessibilityPreferencesStore,
   ) {
-    this.#engine = new Engine(canvas, true, { stencil: true }, true);
+    this.#engine = new Engine(canvas, true, { stencil: true }, false);
+    this.#resize();
     this.#scenes = new BabylonSceneOrchestrator(this.#engine);
     this.#unsubscribePreferences = preferences.subscribe(
       (state) => {
@@ -62,6 +67,19 @@ export class BabylonRenderingRuntime
     this.#scenes.refreshPersonalSpaceFlags(resolveFlag);
   }
 
+  /** Modal settings keep the last taxi frame, without unnecessary 3D redraws. */
+  public setSettingsOverlayOpen(open: boolean): void {
+    this.#assertAlive();
+    if (this.#settingsOverlayOpen === open) return;
+    this.#settingsOverlayOpen = open;
+    if (!this.#started) return;
+    if (open) {
+      this.#engine.stopRenderLoop(this.#renderFrame);
+    } else {
+      this.#engine.runRenderLoop(this.#renderFrame);
+    }
+  }
+
   public start(): void {
     this.#assertAlive();
 
@@ -70,7 +88,7 @@ export class BabylonRenderingRuntime
     }
 
     window.addEventListener('resize', this.#resize);
-    this.#engine.runRenderLoop(this.#renderFrame);
+    if (!this.#settingsOverlayOpen) this.#engine.runRenderLoop(this.#renderFrame);
     this.#started = true;
   }
 

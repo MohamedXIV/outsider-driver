@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<title>Non-human Docks cargo marker — symbolic wayfinding, no human text</title>
+<rect width="256" height="256" rx="22" fill="#315D68"/>
+<rect x="15" y="16" width="226" height="224" rx="18" fill="none" stroke="#D1AA67" stroke-width="7"/>
+<circle cx="128" cy="65" r="29" stroke="#EBD09E" stroke-width="9" fill="none"/>
+<path d="M128 94v66m0-30-39 29m39-29 39 29" fill="none" stroke="#D6B47A" stroke-width="11" stroke-linecap="round"/>
+<path d="M89 159l-24 31 32 15 31-22 30 22 33-15-24-31" stroke="#D6B47A" stroke-width="9" fill="none" stroke-linejoin="round"/>
+<circle cx="46" cy="64" r="8" fill="#EEC57E"/><circle cx="210" cy="64" r="8" fill="#EEC57E"/>
+</svg>

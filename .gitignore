@@ -11,3 +11,8 @@ test-results/
 !.env.example
 public/vendor/inochi2d/
 public/build-metadata.json
+
+# Generated, deterministic city GLBs (versioned authoring source under scripts/)
+public/city/*.glb
+public/city/*.render.json
+public/city/*.png
