@@ -104,7 +104,7 @@ describe('source-owned Docks barrel GLB asset', () => {
     const png = readFileSync(new URL('../../../public/city/docks-enamel.png', import.meta.url));
     const width = png.readUInt32BE(16);
     const height = png.readUInt32BE(20);
-    expect([width, height]).toEqual([256, 256]);
+    expect([width, height]).toEqual([128, 128]);
     const idatBytes = png.readUInt32BE(33);
     expect(png.subarray(37, 41).toString('ascii')).toBe('IDAT');
     const raw = inflateSync(png.subarray(41, 41 + idatBytes));
@@ -114,13 +114,13 @@ describe('source-owned Docks barrel GLB asset', () => {
       expect(raw[y * (width * 4 + 1)]).toBe(0); // unfiltered PNG row
       return [raw[offset] ?? 0, raw[offset + 1] ?? 0, raw[offset + 2] ?? 0];
     };
-    const warm = pixel(20, 28);
-    const cool = pixel(240, 28);
-    const window = pixel(44, 86);
-    const wall = pixel(44, 110);
+    const warm = pixel(10, 14);
+    const cool = pixel(120, 14);
+    const window = pixel(22, 43);
+    const wall = pixel(22, 55);
     expect(warm[0] - cool[0]).toBeGreaterThan(45);
     expect(window[1]).toBeLessThan(wall[1] - 35);
-    expect(pixel(64, 44)[0]).toBeLessThan(pixel(70, 44)[0] - 15);
+    expect(pixel(32, 22)[0]).toBeLessThan(pixel(35, 22)[0] - 15);
   });
 
   it('projects the same source into strictly validated lightweight Babylon geometry and texture', () => {
