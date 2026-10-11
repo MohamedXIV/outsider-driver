@@ -1,67 +1,68 @@
-import { AssetContainer, InstantiatedEntries } from '@babylonjs/core/assetContainer';
 import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
-
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { Scene } from '@babylonjs/core/scene';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { CompiledCityMesh } from '../../content/presentation/CompiledCityMesh';
 import { createDocksRouteModels } from '../../content/presentation/docksRouteScenery';
 import { loadTaxiCityModels } from './loadTaxiCityModels';
 
-afterEach(() => vi.restoreAllMocks());
+const mockModel: CompiledCityMesh = {
+  schemaVersion: 1,
+  id: 'bld_ind_barrel_terminal',
+  paintedTexture: '/city/docks-enamel.png',
+  materials: [{ id: 'painted_enamel', color: [1, 1, 1] }],
+  parts: [{
+    name: 'test_triangle',
+    material: 0,
+    positions: [0, 0, 0, 1, 0, 0, 0, 1, 0],
+    normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+    uvs: [0, 0, 1, 0, 0, 1],
+    indices: [0, 1, 2],
+  }],
+};
 
 describe('loadTaxiCityModels', () => {
-  it('loads a shared GLB once, parents all instances into worldRoot, and disposes the container', async () => {
+  it('fetches compiled source once, instances four GLB-derived meshes, and retains worldRoot ownership', async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
-    const root = new TransformNode('test-world-root', scene);
-    const container = new AssetContainer(scene);
-    const dispose = vi.spyOn(container, 'dispose');
-    const imported = vi.spyOn(container, 'instantiateModelsToScene')
-      .mockImplementation(() => {
-        const node = new TransformNode('test-import', scene);
-        const entries = new InstantiatedEntries();
-        entries.rootNodes.push(node);
-        return entries;
-      });
-    const load = vi.fn(() => Promise.resolve(container));
+    const world = new TransformNode('test-world-root', scene);
+    const read = vi.fn(() => Promise.resolve(mockModel));
     try {
       const models = createDocksRouteModels();
-      await loadTaxiCityModels(scene, root, models, load);
-      expect(load).toHaveBeenCalledTimes(1);
-      expect(imported).toHaveBeenCalledTimes(models.length);
-      for (const model of models) {
+      await loadTaxiCityModels(scene, world, models, read);
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(read).toHaveBeenCalledWith('/city/docks-barrel-terminal.render.json');
+      for (const [i, model] of models.entries()) {
         const mount = scene.getTransformNodeByName(`taxi-model-${model.id}`);
-        expect(mount?.parent).toBe(root);
+        const mesh = scene.getMeshByName(`taxi-model-${model.id}-test_triangle`);
+        expect(mount?.parent).toBe(world);
         expect(mount?.position.asArray()).toEqual(model.transform.position);
-        expect(mount?.getChildren()).toHaveLength(1);
+        expect(mesh?.parent).toBe(mount);
+        expect(mesh?.getClassName()).toBe(i === 0 ? 'Mesh' : 'InstancedMesh');
       }
       scene.dispose();
-      expect(dispose).toHaveBeenCalled();
+      expect(engine.scenes).toHaveLength(0);
     } finally {
       if (!scene.isDisposed) scene.dispose();
       engine.dispose();
     }
   });
 
-  it('discards an in-flight import when the taxi scene is replaced', async () => {
+  it('does not mount a late decoded mesh into a disposed scene', async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
-    const root = new TransformNode('test-world-root', scene);
-    const container = new AssetContainer(scene);
-    const dispose = vi.spyOn(container, 'dispose');
-    let finish: ((container: AssetContainer) => void) | undefined;
-    const pending = new Promise<AssetContainer>((resolve) => {
-      finish = resolve;
-    });
-    const load = vi.fn(() => pending);
+    const world = new TransformNode('test-world-root', scene);
+    let finish: ((value: CompiledCityMesh) => void) | undefined;
+    const pending = new Promise<CompiledCityMesh>((resolve) => { finish = resolve; });
+    const read = vi.fn(() => pending);
     try {
-      const loading = loadTaxiCityModels(scene, root, createDocksRouteModels(), load);
-      await vi.waitFor(() => { expect(load).toHaveBeenCalled(); }, { timeout: 10_000 });
+      const loading = loadTaxiCityModels(scene, world, createDocksRouteModels(), read);
+      await vi.waitFor(() => { expect(read).toHaveBeenCalledTimes(1); }, { timeout: 5_000 });
       scene.dispose();
-      if (finish === undefined) throw new Error('GLB request was not created');
-      finish(container);
+      if (finish === undefined) throw new Error('Source read was not requested');
+      finish(mockModel);
       await expect(loading).resolves.toBeUndefined();
-      expect(dispose).toHaveBeenCalled();
+      expect(engine.scenes).toHaveLength(0);
     } finally {
       if (!scene.isDisposed) scene.dispose();
       engine.dispose();
