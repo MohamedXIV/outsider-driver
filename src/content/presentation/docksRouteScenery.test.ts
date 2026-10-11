@@ -79,8 +79,8 @@ describe('authored Docks route scenery', () => {
       expect(building?.parent).toBe(handle.worldRoot);
       if (panel === null) throw new Error('Docks road panel not mounted');
       expect(handle.cabinLight.canAffectMesh(panel)).toBe(false);
-      expect(panel?.material).toBeInstanceOf(StandardMaterial);
-      if (!(panel?.material instanceof StandardMaterial)) throw new Error('Road material missing');
+      expect(panel.material).toBeInstanceOf(StandardMaterial);
+      if (!(panel.material instanceof StandardMaterial)) throw new Error('Road material missing');
       expect(panel.material.diffuseTexture?.name).toBe('/taxi/docks-road.svg');
       expect(panel.material.emissiveTexture).toBeNull();
       handle.scene.render();
