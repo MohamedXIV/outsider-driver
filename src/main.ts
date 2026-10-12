@@ -136,7 +136,7 @@ function bootstrapSupportedGame(
     session.dispose();
     throw error;
   }
-  let stopPreferencePersistence = (): void => {};
+  let stopPreferencePersistence: () => void = () => undefined;
   let surface: ReturnType<typeof createGameSurface> | null = null;
   let rendering: BabylonRenderingRuntime | null = null;
   let application: GameApplication | null = null;
@@ -166,11 +166,6 @@ function bootstrapSupportedGame(
     }
     surface?.dispose();
     throw error;
-  }
-
-  if (application === null || surface === null) {
-    session.dispose();
-    throw new Error('Game bootstrap did not finish constructing its runtime.');
   }
 
   const activeApplication = application;
