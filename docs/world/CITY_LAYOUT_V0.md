@@ -25,9 +25,9 @@ The physical terrain is important. The Docks are at low water level. Older work 
 | Old Junction | central | old arterial knot; multilingual market concourse | commercial mixing, dispatch swaps, families and street trades | crowded jurisdiction overlap, local favoritism |
 | Civic Core | central-east | charter square; registry halls; official transit exchange | administration, courts, registered health, civic media | public ID scans, formal taxi rules |
 | Upper Terraces | NE high slope | arc terraces; research/estate gates | finance, private research, influence, premium fares | private access and public license restrictions |
-| Outer Margin | SE edge | sublet housing; last-mile bus turnaround; reclaimed floodchannel | newcomers, affordable rooms, makeshift retail | irregular public services, selective enforcement |
+| Outer Margin | SE edge | dense lived-in flats; local street market and clinics; Patchworks repair frontage; reclaimed drainage corridor | severely poor residents, migrants, fugitives and outcasts; functioning informal services; **player lives here** | neighborhood mutual aid and protection rackets, blackmail, intermittent ID sweeps; not a ruined no-go zone |
 
-**Proposed player geography:** the garage may sit near Worker Belt's southern interface with Old Junction, while the room/home is in the seam between Old Junction and Outer Margin. *Neither position is canon or part of #65 navigation/content yet.* This makes working life legible without putting both sites unrealistically next door.
+**Player geography (user direction):** the protagonist **lives inside Outer Margin**, the dangerous but thriving low-income district, rather than on an Old Junction border. The current draft places a modest inhabited room in the Lantern Row residential interior and a repair garage at the Patchworks frontage, close to a legal feeder road toward Old Junction. These subareas and garage details remain draft; neither home nor garage coordinates are live #65/PR #74 navigation data. The district's social fabric, physical services and risk asymmetry are developed in [Outer Margin v0.1](OUTER_MARGIN_DISTRICT_V0.md).
 
 ## Ground transport hierarchy (not separate playable floors)
 
@@ -83,7 +83,15 @@ A district never becomes fully safe/unsafe just because it has a label. Routes, 
 
 **Worker Belt → Upper Terraces:** machines and congested workforce roads give way to cleaner, slower permit roads; differences in labor/housing and class become physical.
 
-**Old Junction → Outer Margin:** painted repair strips, thinner lighting, older bus queues and reclaimed infrastructure; residents are not all criminals and not automatically friendly to illegal humans.
+**Old Junction → Outer Margin:** a busy mixed-income junction gradually narrows into **compact but inhabited housing**, repaired old enamel road patches, community utility kiosks, improvised storefronts, bus queues and local food markets. The district is severely poor and dangerous because of **precarious rights, extortion, informal obligations and inconsistent enforcement** — not because every street is rubble or every resident is a criminal. The taxi approaches the garage from the Patchworks repair frontage and eventually the player's modest rental deeper in Lantern Row; neither route is yet implemented.
+
+## Outer Margin in the spatial plan — inhabited risk
+
+The eastern/southeastern patch of the overhead diagram is *not* an empty wasteland outside the city's functioning economy. It sits **within the city-state**, alongside the last-mile arrival road and the old drainage cut. It has denser small footprints, household services, community protection and functioning but stressed infrastructure.
+
+Potential map inset labels are **Lantern Row (home, ordinary families)**, **Patchworks (garage and repair work)** and **The Cut (drainage-edge isolation and opportunistic extortion)**. At the macro-map scale we mark only the player's **Home** and **Garage** as proposed locations; these are not added to game registries and should not be confused with the already implemented Docks Taxi Rank and Night Clinic.
+
+At the city-wide scale, danger is a **jurisdictional gradient**: the Civic Core has legal and permit scrutiny; The Docks has customs inspections; Outer Margin has low-status living, personal leverage and sporadic ID raids. A poor resident can still have a functioning business, a stable social circle, and moral agency. See [Outer Margin District Profile](OUTER_MARGIN_DISTRICT_V0.md) for the city identity and gameplay consequences.
 
 ## Next stage: move from macro-map to route/sector diagrams
 
