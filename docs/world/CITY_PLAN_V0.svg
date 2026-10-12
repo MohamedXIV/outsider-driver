@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" role="img" aria-labelledby="title desc">
 <title id="title">Outsider Driver — provisional aerial city-layout map, v0</title>
-<desc id="desc">Top-down diagram of an alien self-governing charter-port city with six draft districts. Physical cargo basin west, the docks southwest, worker belt northwest, historic junction center, civic core east, rich upper terraces northeast and outer margin southeast. Roads, supported viaducts and checkpoints connect sectors. Not a navigable open world or an approved canon map.</desc>
+<desc id="desc">Top-down diagram of an alien self-governing charter-port city with six draft districts. Physical cargo basin west, the docks southwest, worker belt northwest, historic junction center, civic core east, rich upper terraces northeast and a dense, functioning but precarious Outer Margin southeast where the undocumented player lives. Roads, supported viaducts and checkpoints connect sectors. Not a navigable open world or an approved canon map.</desc>
 <defs>
  <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0e6ce"/><stop offset="1" stop-color="#d5c8a7"/></linearGradient>
  <linearGradient id="sea" x1="0" y1="0" x2="1" y2=".6"><stop stop-color="#153c50"/><stop offset="1" stop-color="#37798a"/></linearGradient>
@@ -38,7 +38,7 @@
 <text x="1080" y="333" class="sub" text-anchor="middle">Private access · influence</text>
 <path d="M797 662L1064 647L1243 742L1197 837L878 843L761 765Z" fill="#b1aa86" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
 <text x="1000" y="733" class="district" text-anchor="middle">OUTER MARGIN</text>
-<text x="1000" y="757" class="sub" text-anchor="middle">Margins · arrivals</text>
+<text x="1000" y="757" class="sub" text-anchor="middle">Homes · mutual aid · risk</text>
 <path d="M299 560L537 529L607 675L530 839L289 838L248 724Z" fill="#c1a783" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
 <text x="421" y="705" class="district" text-anchor="middle">THE DOCKS</text>
 <text x="421" y="729" class="sub" text-anchor="middle">Freight · customs</text>
@@ -73,6 +73,19 @@
  </g>
  <!-- Historic market concentric symbol -->
  <g transform="translate(674 598)"><circle r="29" fill="#ccb178" stroke="#53706c" stroke-width="4"/><circle r="15" fill="none" stroke="#46666a" stroke-width="4"/><path d="M-40 0H40M0-40V40" stroke="#46666a" stroke-width="3"/></g>
+ <!-- Proposed Outer Margin resident landmarks; NOT runtime canonical content -->
+ <g transform="translate(915 793)">
+  <circle r="15" fill="#f1dfae" stroke="#31505a" stroke-width="3"/>
+  <path d="M-8-1L0-9L8-1V8H-8Z" fill="#557e76" stroke="#31505a" stroke-width="2"/>
+  <path d="M-2 8V1H3V8" fill="none" stroke="#ecdebc" stroke-width="2"/>
+ </g>
+ <text x="888" y="825" class="minor">GARAGE*</text>
+ <g transform="translate(1109 791)">
+  <circle r="15" fill="#f1dfae" stroke="#31505a" stroke-width="3"/>
+  <path d="M-8-1L0-9L8-1V8H-8Z" fill="#557e76" stroke="#31505a" stroke-width="2"/>
+  <path d="M-4 0H4V7H-4Z" fill="#dfbf83"/>
+ </g>
+ <text x="1084" y="825" class="minor">HOME*</text>
  <!-- points anchored in EXISTING production fixture (placement conceptual) -->
  <g transform="translate(393 752)"><circle r="10" fill="#f9e7bc" stroke="#133b46" stroke-width="4"/><circle r="3" fill="#133b46"/></g>
  <text x="331" y="783" class="minor">TAXI RANK</text>
@@ -94,5 +107,5 @@
 <g transform="translate(109 886)"><path d="M0 0H68" stroke="#536d72" stroke-width="17"/><path d="M0 0H68" stroke="#e4cc93" stroke-width="2" stroke-dasharray="7 10"/><text x="80" y="5" class="boxText">Ground arterials</text></g>
 <g transform="translate(381 886)"><path d="M0 0H68" stroke="#70867c" stroke-width="17"/><path d="M0 0H68" stroke="#fff0ca" stroke-width="2" stroke-dasharray="7 10"/><text x="80" y="5" class="boxText">Supported viaduct</text></g>
 <g transform="translate(681 886)"><circle r="11" fill="#e4a35b" stroke="#334d53" stroke-width="3"/><text x="26" y="5" class="boxText">Proposed check node</text></g>
-<text x="109" y="924" class="note">Not to scale · District borders and road lines are hypotheses · No hover transport · No open-world traversal promised</text>
+<text x="109" y="924" class="note">Not to scale · Home* and Garage* are planned in the living Outer Margin, not shipped locations · No hover transport</text>
 </svg>
