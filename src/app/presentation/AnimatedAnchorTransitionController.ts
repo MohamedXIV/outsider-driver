@@ -113,8 +113,7 @@ export class AnimatedAnchorTransitionController {
     try {
       this.#overlay.showLoading(arrival);
       const stage = await this.#factory.create(arrival, request.signal);
-      if (this.#disposed || this.#state.phase !== 'loading' ||
-          this.#state.request !== request) {
+      if (!this.#isCurrentRequest(request)) {
         stage.dispose();
         return false;
       }
@@ -138,8 +137,7 @@ export class AnimatedAnchorTransitionController {
       }
     } catch (error: unknown) {
       // Failure of a stale, aborted request must not overwrite the new view.
-      if (this.#disposed || this.#state.phase !== 'loading' ||
-          this.#state.request !== request) return false;
+      if (!this.#isCurrentRequest(request)) return false;
       this.#state = { phase: 'idle' };
       this.#overlay.showError(errorMessage(error));
       return false;
@@ -193,6 +191,12 @@ export class AnimatedAnchorTransitionController {
     this.#state = { phase: 'idle' };
     this.#overlay.clear();
     this.#releaseWorld();
+  }
+
+  /** Read mutable async state at the instant a deferred resource returns. */
+  #isCurrentRequest(request: AbortController): boolean {
+    return !this.#disposed && this.#state.phase === 'loading' &&
+      this.#state.request === request;
   }
 
   #cancelLoading(): void {
