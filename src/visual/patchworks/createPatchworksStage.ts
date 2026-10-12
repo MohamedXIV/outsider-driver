@@ -182,6 +182,9 @@ export async function createPatchworksStage(
   let elapsed = 0;
   let updates = 0;
   let expression: PatchworksExpression = 'neutral';
+  // Keep diagnostics detached from Pixi transforms: destroy(true) releases them.
+  let streetOffset = 0;
+  let passerX = -50;
   const setExpression = (next: PatchworksExpression): void => {
     if (destroyed) return;
     expression = next;
@@ -200,10 +203,12 @@ export async function createPatchworksStage(
     if (reducedMotion) return;
     fan.rotation += 0.032 * ticker.deltaTime;
     // Slow depth drift and an occasional pedestrian, physically behind glass.
-    street.x = Math.sin(elapsed * 0.006) * 2.5;
+    streetOffset = Math.sin(elapsed * 0.006) * 2.5;
+    street.x = streetOffset;
     const passingCycle = elapsed % 560;
     passer.visible = passingCycle < 410;
-    passer.x = -50 + passingCycle * 0.65;
+    passerX = -50 + passingCycle * 0.65;
+    passer.x = passerX;
     warmGlow.alpha = 0.06 + 0.025 * Math.sin(elapsed * 0.061) +
       (Math.sin(elapsed * 0.191) > 0.91 ? 0.045 : 0);
     lampCore.alpha = 0.77 + 0.16 * Math.sin(elapsed * 0.082);
@@ -249,8 +254,8 @@ export async function createPatchworksStage(
       warmLightAlpha: warmGlow.alpha,
       reducedMotion,
       expression,
-      streetOffset: street.x,
-      passerX: passer.x,
+      streetOffset,
+      passerX,
     }),
   };
 }
