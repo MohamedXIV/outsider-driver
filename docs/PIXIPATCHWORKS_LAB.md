@@ -9,7 +9,7 @@ The dependency `pixi.js@8.22.0` is **exact-version locked in a genuine npm-produ
 - A 960×540 single Pixi canvas composes the shop's counter, roadside window, refurbished parts shelves, analog monitor, sign/practical lamp and alien partskeeper silhouette.
 - A private ticker animates an overhead fan, screen scanline, fluctuating amber lamp, breathing/blinking character, drifting vapor and fine dust. The window now masks a gently drifting street depth layer and an intermittent ground-level alien passer.
 - HTML expression probes ask about a rotor or inspections and update the vendor's rendered eyes/brow/head attitude without modifying Ink, trust or persistent world state. The scene remains a prototype, **not a playable narrative merchant**.
-- The lab defaults its reduced-motion checkbox to the OS preference, allows a user override, and suspends its scene ticker for hidden documents. These are explicit scene-graph transformations; **no physically accurate light simulation** is claimed.
+- The lab defaults its reduced-motion checkbox to the OS preference, allows a user override, and suspends its scene ticker for hidden documents. With Reduced Motion active, the compositor renders a static frame and **never starts the continuous ticker**; user-driven expression changes trigger a single explicit redraw. These are explicit scene-graph transformations; **no physically accurate light simulation** is claimed.
 - Text, buttons, focus, reduced-motion control and technical status remain native HTML outside the GPU canvas.
 - `AnimatedAnchorTransitionController` handles the lab's entry/loading/scene ownership and teardown. The lab's arrival and Babylon suspension ports are **fixtures**; it does NOT simulate an actual taxi arrival.
 - No authoritative credits, inventory, time, Ink transactions or persistent state are connected yet. Do **not** suggest that clicking a button purchases anything in the game.
@@ -26,13 +26,13 @@ The dependency `pixi.js@8.22.0` is **exact-version locked in a genuine npm-produ
 
 **Limits:** the scene art is **minimal flat-color blockout**, not an approved high-fidelity hand-painted character/environment. The CI timing is Chromium with software-rendered SwiftShader, *not an actual-device GPU FPS test*. Canvas load and context memory must be profiled on hardware before the second renderer is accepted broadly.
 
-## Stronger artifact checks — pending exact-head verification
+## Follow-up browser evidence
 
-The capture utility additionally verifies that two actual **Pixi canvas screenshots** differ while animation is enabled, and are identical after Reduced Motion is selected. It checks repeat enter→exit (two suspension releases, no stale canvas), plus a real mobile touch exit. These checks must pass on the new exact head before calling the pixel assertions verified; previous successful CI proves animation counters only.
+[Exact-head CI #38287312094](https://github.com/MohamedXIV/outsider-driver/actions/runs/38287312094) **passed** at `8d6cbe23` with 277 unit tests, 18 browser smoke tests and the dedicated Chromium Pixi proof. The [browser artifact](https://github.com/MohamedXIV/outsider-driver/actions/runs/38287312094/artifacts/11763807531) captures desktop, wary expression and compact touch, with JSON metrics. The actual animated canvas pixels changed, and the Reduced Motion canvas pixels remained identical; the synthetic hidden-tab test stopped updates and restored them after visibility returned. Two scene entries and exits released their fixture suspension and left no mounted canvas.
 
-## Follow-up implementation pending verification
+## Pending verification — zero-ticker reduced-motion enhancement
 
-A subsequent branch increment adds animated window parallax + street silhouette, three presentation-only shopkeeper expressions, accessibility text choices, OS reduced-motion default, and screenshot checks for dialogue/expression and synthetic visibilitychange ticker suspension/resume. These changes require a **new exact-head CI pass** before being marked proven. No genuine painterly asset pack, city arrival, or purchase was added.
+Reduced-motion `start()` now deliberately avoids activating Pixi's continuous ticker, and presentation-only HTML expression changes redraw once on demand. Scalar metrics are kept independent from Pixi's destroyed transforms; the browser probe additionally checks the ticker stays stopped, static frames remain pixel-identical, and the curious expression changes/reverts canvas pixels without a live animation loop. **This enhancement needs its own exact-head CI result before being marked proven.** No painted assets, canonical arrival or purchase is implied.
 
 ## Next integration gate (do not skip)
 

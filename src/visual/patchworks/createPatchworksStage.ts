@@ -15,6 +15,8 @@ export interface PatchworksStage extends AnimatedAnchorStage {
     readonly expression: PatchworksExpression;
     readonly streetOffset: number;
     readonly passerX: number;
+    readonly tickerRunning: boolean;
+    readonly destroyed: boolean;
   };
 }
 
@@ -181,6 +183,9 @@ export async function createPatchworksStage(
 
   let elapsed = 0;
   let updates = 0;
+  // Store scalar diagnostics independently: Pixi releases transforms on destroy.
+  let fanAngleValue = fan.rotation;
+  let warmLightValue = warmGlow.alpha;
   let expression: PatchworksExpression = 'neutral';
   // Keep diagnostics detached from Pixi transforms: destroy(true) releases them.
   let streetOffset = 0;
@@ -193,7 +198,8 @@ export async function createPatchworksStage(
     leftEye.scale.y = next === 'wary' ? 0.62 : 1;
     rightEye.scale.y = next === 'wary' ? 0.62 : 1;
     vendor.rotation = next === 'curious' ? 0.035 : next === 'wary' ? -0.02 : 0;
-    if (!playing) app.render();
+    // Reduced motion presents a static scene; expressions redraw on demand.
+    if (!playing || reducedMotion) app.render();
   };
   let playing = false;
   let destroyed = false;
@@ -201,7 +207,8 @@ export async function createPatchworksStage(
     elapsed += Math.min(ticker.deltaTime, 2);
     updates++;
     if (reducedMotion) return;
-    fan.rotation += 0.032 * ticker.deltaTime;
+    fanAngleValue += 0.032 * ticker.deltaTime;
+    fan.rotation = fanAngleValue;
     // Slow depth drift and an occasional pedestrian, physically behind glass.
     streetOffset = Math.sin(elapsed * 0.006) * 2.5;
     street.x = streetOffset;
@@ -209,8 +216,9 @@ export async function createPatchworksStage(
     passer.visible = passingCycle < 410;
     passerX = -50 + passingCycle * 0.65;
     passer.x = passerX;
-    warmGlow.alpha = 0.06 + 0.025 * Math.sin(elapsed * 0.061) +
+    warmLightValue = 0.06 + 0.025 * Math.sin(elapsed * 0.061) +
       (Math.sin(elapsed * 0.191) > 0.91 ? 0.045 : 0);
+    warmGlow.alpha = warmLightValue;
     lampCore.alpha = 0.77 + 0.16 * Math.sin(elapsed * 0.082);
     vendor.y = 325 + Math.sin(elapsed * 0.032) * 2.5;
     blink.alpha = Math.sin(elapsed * 0.12) > 0.985 ? 1 : 0;
@@ -232,12 +240,13 @@ export async function createPatchworksStage(
     start: () => {
       if (destroyed || playing) return;
       playing = true;
-      app.start();
+      // Static reduced-motion stages never start a continuous GPU draw loop.
+      if (!reducedMotion) app.start();
     },
     stop: () => {
       if (destroyed || !playing) return;
       playing = false;
-      app.stop();
+      if (!reducedMotion) app.stop();
     },
     dispose: () => {
       if (destroyed) return;
@@ -250,12 +259,14 @@ export async function createPatchworksStage(
     setExpression,
     getMetrics: () => ({
       updates,
-      fanAngle: fan.rotation,
-      warmLightAlpha: warmGlow.alpha,
+      fanAngle: fanAngleValue,
+      warmLightAlpha: warmLightValue,
       reducedMotion,
       expression,
       streetOffset,
       passerX,
+      tickerRunning: playing && !reducedMotion && !destroyed,
+      destroyed,
     }),
   };
 }

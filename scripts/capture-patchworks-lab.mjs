@@ -44,7 +44,8 @@ try {
   if (earlyCanvas.equals(lateCanvas)) {
     throw new Error('Pixi canvas pixels did not change between animated frames');
   }
-  if (animated.phase !== 'active' || animated.updates <= start.updates ||
+  if (animated.phase !== 'active' || !animated.tickerRunning ||
+      animated.updates <= start.updates ||
       Math.abs(animated.fanAngle - start.fanAngle) < 0.001) {
     throw new Error('Pixi scene or rotating fan failed to animate: ' + JSON.stringify({ start, animated }));
   }
@@ -85,7 +86,8 @@ try {
     throw new Error('Scene canvas remained after exit');
   }
   const left = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
-  if (left.phase !== 'idle' || left.pauseCount !== 1 || left.resumeCount !== 1) {
+  if (left.phase !== 'idle' || left.pauseCount !== 1 || left.resumeCount !== 1 ||
+      left.tickerRunning || !left.destroyed) {
     throw new Error('World suspend/release contract failed: ' + JSON.stringify(left));
   }
 
@@ -100,15 +102,31 @@ try {
   if (!reducedEarlyCanvas.equals(reducedLateCanvas)) {
     throw new Error('Reduced-motion mode changed rendered Pixi pixels');
   }
-  if (!reducedEnd.reducedMotion || reducedEnd.updates <= reducedStart.updates ||
+  if (!reducedEnd.reducedMotion || reducedEnd.tickerRunning ||
+      reducedEnd.updates !== reducedStart.updates ||
       reducedEnd.fanAngle !== reducedStart.fanAngle) {
-    throw new Error('Reduced-motion scene still animated or stopped drawing: ' +
+    throw new Error('Reduced-motion scene continued its ticker: ' +
       JSON.stringify({ reducedStart, reducedEnd }));
+  }
+  // Reduced motion must still permit accessible user-driven expression redraws.
+  await page.locator('[data-expression="curious"]').click();
+  const reducedCurious = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  const reducedCuriousCanvas = await page.locator('#visual-stage canvas').screenshot();
+  if (reducedCurious.expression !== 'curious' || reducedCurious.tickerRunning ||
+      reducedCurious.updates !== reducedStart.updates ||
+      reducedEarlyCanvas.equals(reducedCuriousCanvas)) {
+    throw new Error('Static stage failed to render a user-driven expression without a ticker');
+  }
+  await page.locator('[data-expression="neutral"]').click();
+  const reducedRestoredCanvas = await page.locator('#visual-stage canvas').screenshot();
+  if (!reducedEarlyCanvas.equals(reducedRestoredCanvas)) {
+    throw new Error('Neutral pose did not restore identical static artwork');
   }
   await page.locator('#exit').click();
   const secondExit = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
   if (secondExit.phase !== 'idle' || secondExit.pauseCount !== 2 ||
       secondExit.resumeCount !== 2 || secondExit.departureCount !== 2 ||
+      secondExit.tickerRunning || !secondExit.destroyed ||
       await page.locator('#visual-stage canvas').count() !== 0) {
     throw new Error('Repeated open/close lifecycle leaked: ' + JSON.stringify(secondExit));
   }
@@ -139,8 +157,11 @@ try {
     pixelMotionProof: {
       animatedFramesDiffer: true,
       reducedMotionFramesIdentical: true,
+      reducedMotionTickerStopped: true,
+      reducedMotionExpressionRendersOnDemand: true,
       comparison: 'Actual Pixi canvas screenshots, not tick counters alone',
     },
+    reducedCurious,
     repeatedExit: secondExit,
     caveats: ['No real Babylon suspension in isolated lab', 'No GameSession transaction', 'CI SwiftShader timing is NOT player GPU FPS'],
   };
