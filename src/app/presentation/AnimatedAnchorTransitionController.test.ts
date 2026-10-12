@@ -61,7 +61,8 @@ describe('AnimatedAnchorTransitionController', () => {
     expect(await controller.enter('location:patchworks-parts')).toBe(true);
     expect(controller.phase).toBe('active');
     expect(access.authorizeArrival).toHaveBeenCalledWith('location:patchworks-parts');
-    expect(world.suspend).toHaveBeenCalledExactlyOnceWith('location-anchor');
+    expect(world.suspend).toHaveBeenCalledTimes(1);
+    expect(world.suspend).toHaveBeenCalledWith('location-anchor');
     expect(overlay.showScene).toHaveBeenCalledWith(scene.canvas, {
       locationId: 'location:patchworks-parts',
       districtId: 'district:outer-margin',
@@ -75,7 +76,8 @@ describe('AnimatedAnchorTransitionController', () => {
     expect(access.confirmDeparture).toHaveBeenCalledTimes(1);
     expect(scene.stop).toHaveBeenCalledTimes(1);
     expect(scene.dispose).toHaveBeenCalledTimes(1);
-    expect(world.resume).toHaveBeenCalledExactlyOnceWith('location-anchor');
+    expect(world.resume).toHaveBeenCalledTimes(1);
+    expect(world.resume).toHaveBeenCalledWith('location-anchor');
     expect(controller.phase).toBe('idle');
     expect(controller.exit()).toBe(false);
     controller.dispose();
@@ -224,8 +226,8 @@ describe('AnimatedAnchorTransitionController', () => {
     controller.dispose();
     finish(scene);
     expect(await entered).toBe(false);
-    expect(scene.dispose).toHaveBeenCalledOnce();
+    expect(scene.dispose).toHaveBeenCalledTimes(1);
     expect(world.suspend).not.toHaveBeenCalled();
-    expect(() => controller.enter('location:shop')).toThrow('disposed');
+    await expect(controller.enter('location:shop')).rejects.toThrow('disposed');
   });
 });
