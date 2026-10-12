@@ -19,6 +19,12 @@ export interface PatchworksStage extends AnimatedAnchorStage {
     readonly destroyed: boolean;
     readonly illustratedLayerCount: number;
     readonly ownedTextureCount: number;
+    /** Wall-clock measurements from this one Pixi entry, not a GPU benchmark. */
+    readonly rendererInitMs: number;
+    readonly illustrationDecodeMs: number;
+    readonly firstFrameRenderMs: number;
+    /** Width × height × 4; excludes staging/mipmaps/format/renderer overhead. */
+    readonly estimatedDecodedRgbaBytes: number;
   };
 }
 
@@ -34,6 +40,25 @@ const ILLUSTRATION_URLS = [
   '/visual/patchworks/counter-foreground.svg',
 ] as const;
 
+/** The network abort signal must interrupt slow SVG decode, not only fetch. */
+async function decodeWithAbort(image: HTMLImageElement, signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted();
+  let onAbort: (() => void) | undefined;
+  try {
+    await Promise.race([
+      image.decode(),
+      new Promise<never>((_resolve, reject) => {
+        onAbort = () => reject(signal.reason ?? new DOMException('Patchworks decode aborted.', 'AbortError'));
+        signal.addEventListener('abort', onAbort, { once: true });
+        if (signal.aborted) onAbort();
+      }),
+    ]);
+    signal.throwIfAborted();
+  } finally {
+    if (onAbort) signal.removeEventListener('abort', onAbort);
+  }
+}
+
 async function loadOwnedIllustration(url: string, signal: AbortSignal): Promise<Texture> {
   const response = await fetch(url, { signal });
   if (!response.ok || !response.headers.get('content-type')?.includes('image/svg+xml')) {
@@ -45,8 +70,7 @@ async function loadOwnedIllustration(url: string, signal: AbortSignal): Promise<
   try {
     const image = new Image();
     image.src = objectUrl;
-    await image.decode();
-    signal.throwIfAborted();
+    await decodeWithAbort(image, signal);
     return Texture.from(image);
   } finally {
     URL.revokeObjectURL(objectUrl);
@@ -76,6 +100,7 @@ export async function createPatchworksStage(
 ): Promise<PatchworksStage> {
   if (signal.aborted) throw new Error('Patchworks scene request aborted.');
   const isAborted = (): boolean => signal.aborted;
+  const initStart = performance.now();
   const app = new Application();
   await app.init({
     width: 960,
@@ -87,11 +112,13 @@ export async function createPatchworksStage(
     resolution: 1,
     background: 0x192c34,
   });
+  const rendererInitMs = performance.now() - initStart;
   if (isAborted()) {
     app.destroy(true, { children: true });
     throw new Error('Patchworks scene request aborted.');
   }
 
+  const illustrationStarted = performance.now();
   const ownedTextures: Texture[] = [];
   try {
     // Sequential decoding also makes aborted entries cheap to unwind.
@@ -103,6 +130,11 @@ export async function createPatchworksStage(
     app.destroy(true, { children: true });
     throw error;
   }
+  const illustrationDecodeMs = performance.now() - illustrationStarted;
+  const estimatedDecodedRgbaBytes = ownedTextures.reduce(
+    (total, texture) => total + texture.width * texture.height * 4,
+    0,
+  );
   const [backplateTexture, streetTexture, portraitTexture, counterTexture] = ownedTextures;
   if (!backplateTexture || !streetTexture || !portraitTexture || !counterTexture) {
     throw new Error('Patchworks illustration layer manifest is incomplete.');
@@ -258,7 +290,9 @@ export async function createPatchworksStage(
     });
   };
   app.ticker.add(tick);
+  const firstFrameStart = performance.now();
   app.render();
+  const firstFrameRenderMs = performance.now() - firstFrameStart;
 
   return {
     canvas: app.canvas,
@@ -296,6 +330,10 @@ export async function createPatchworksStage(
       destroyed,
       illustratedLayerCount: ILLUSTRATION_URLS.length,
       ownedTextureCount: destroyed ? 0 : ownedTextures.length,
+      rendererInitMs,
+      illustrationDecodeMs,
+      firstFrameRenderMs,
+      estimatedDecodedRgbaBytes,
     }),
   };
 }

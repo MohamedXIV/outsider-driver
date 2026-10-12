@@ -76,8 +76,12 @@ const controller = new AnimatedAnchorTransitionController(
   },
   {
     showLoading: () => {
-      liveStatus.textContent = 'Loading animated stage…';
+      liveStatus.textContent = 'Loading animated stage… You can cancel before it finishes.';
       stageHost.replaceChildren();
+      enter.disabled = true;
+      leave.textContent = 'Cancel loading';
+      leave.disabled = false;
+      setChoicesEnabled(false);
     },
     showScene: (canvas) => {
       canvas.setAttribute('aria-label', 'Animated Patchworks parts shop artwork');
@@ -87,6 +91,7 @@ const controller = new AnimatedAnchorTransitionController(
       liveStatus.textContent = 'Scene active. All transactions are disabled in this art lab.';
       enter.disabled = true;
       leave.disabled = false;
+      leave.textContent = 'Leave shop';
       setChoicesEnabled(true);
       showExpression('neutral');
       leave.focus();
@@ -96,6 +101,7 @@ const controller = new AnimatedAnchorTransitionController(
       liveStatus.textContent = 'Scene failed: ' + message;
       enter.disabled = false;
       leave.disabled = true;
+      leave.textContent = 'Leave shop';
       setChoicesEnabled(false);
     },
     clear: () => {
@@ -103,6 +109,7 @@ const controller = new AnimatedAnchorTransitionController(
       liveStatus.textContent = 'Scene closed. No game-world state was changed.';
       enter.disabled = false;
       leave.disabled = true;
+      leave.textContent = 'Leave shop';
       setChoicesEnabled(false);
       showExpression('neutral');
     },

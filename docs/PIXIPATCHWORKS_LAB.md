@@ -43,6 +43,12 @@ The dedicated Chromium probe now requires all four illustrated layers to load, r
 
 Reduced-motion `start()` now deliberately avoids activating Pixi's continuous ticker, and presentation-only HTML expression changes redraw once on demand. Scalar metrics are kept independent from Pixi's destroyed transforms; the browser probe additionally checks the ticker stays stopped, static frames remain pixel-identical, and the curious expression changes/reverts canvas pixels without a live animation loop. **This enhancement needs its own exact-head CI result before being marked proven.** No painted assets, canonical arrival or purchase is implied.
 
+## Entry profiling and cancellation hardening — pending exact-head verification
+
+The stage measures `rendererInitMs`, `illustrationDecodeMs` and `firstFrameRenderMs` using wall-clock `performance.now()` deltas. It also reports `estimatedDecodedRgbaBytes` from texture dimensions × four color channels (not actual GPU memory). **No frame rate or actual-device/dual-renderer budget is inferred from these numbers.** The screenshot probe exports these observations to `metrics.json` for comparing subsequent changes.
+
+A native `Cancel loading` action is now visible during asset acquisition. Aborting a delayed image decode races `image.decode()` with the caller's abort signal, removes its listener and revokes the temporary Blob URL. A Chromium fixture holds an SVG request, cancels before entry, proves no world suspension/partial canvas, allows the delayed request to settle, then re-enters and departs normally with four owned textures released. **This new flow needs an exact-head CI pass before being treated as verified.**
+
 ## Next integration gate (do not skip)
 
 1. Reconcile GameSession and navigation PRs #72/#74; only a physically valid authored arrival may open a destination and only the canonical session can authorize departure.

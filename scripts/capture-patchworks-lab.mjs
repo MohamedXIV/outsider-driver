@@ -40,6 +40,11 @@ try {
   if (start.illustratedLayerCount !== 4 || start.ownedTextureCount !== 4) {
     throw new Error('Illustrated shop did not own all four source SVG textures: ' + JSON.stringify(start));
   }
+  const renderTimings = ['rendererInitMs', 'illustrationDecodeMs', 'firstFrameRenderMs'];
+  if (!renderTimings.every((name) => Number.isFinite(start[name]) && start[name] >= 0) ||
+      start.estimatedDecodedRgbaBytes <= 0) {
+    throw new Error('Pixi entry timings or decoded-pixel estimate invalid: ' + JSON.stringify(start));
+  }
   const earlyCanvas = await page.locator('#visual-stage canvas').screenshot();
   await page.waitForTimeout(700);
   const animated = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
@@ -167,6 +172,53 @@ try {
     throw new Error('Illustration failure did not recover cleanly: ' + JSON.stringify(failedAsset));
   }
   await unavailable.close();
+  // Deliberately stall the second SVG response, cancel while controller is
+  // loading, then re-enter successfully. No Babylon suspension is permitted.
+  const cancelled = await browser.newPage({ viewport: { width: 1100, height: 790 } });
+  cancelled.on('pageerror', (error) => errorLog.push(error.message));
+  let resolveDelayedRequest;
+  const requestedIllustration = new Promise((resolve) => { resolveDelayedRequest = resolve; });
+  await cancelled.route('**/visual/patchworks/street-vista.svg', async (route) => {
+    resolveDelayedRequest();
+    await new Promise((resolve) => setTimeout(resolve, 2200));
+    // The pending request may already have been aborted by the scene exit.
+    await route.continue().catch(() => {});
+  });
+  await cancelled.goto(url);
+  await cancelled.locator('#enter').click();
+  await requestedIllustration;
+  if (!await cancelled.locator('#exit').isEnabled() ||
+      await cancelled.locator('#exit').textContent() !== 'Cancel loading') {
+    throw new Error('Loading overlay did not offer an accessible cancel action');
+  }
+  await cancelled.locator('#exit').click();
+  const cancelImmediate = await cancelled.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (cancelImmediate.phase !== 'idle' || cancelImmediate.pauseCount !== 0 ||
+      cancelImmediate.resumeCount !== 0 || cancelImmediate.departureCount !== 0 ||
+      await cancelled.locator('#visual-stage canvas').count() !== 0) {
+    throw new Error('Cancelling asset load affected world or canvas: ' + JSON.stringify(cancelImmediate));
+  }
+  await cancelled.unroute('**/visual/patchworks/street-vista.svg');
+  await cancelled.waitForTimeout(2400);
+  const cancelSettled = await cancelled.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (cancelSettled.phase !== 'idle' || cancelSettled.errorCount !== 0 ||
+      await cancelled.locator('#visual-stage canvas').count() !== 0) {
+    throw new Error('Aborted entry mounted a stale stage: ' + JSON.stringify(cancelSettled));
+  }
+  await cancelled.locator('#enter').click();
+  await cancelled.locator('#visual-stage canvas').waitFor({ timeout: 20000 });
+  const recoveredEntry = await cancelled.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (recoveredEntry.phase !== 'active' || recoveredEntry.ownedTextureCount !== 4 ||
+      recoveredEntry.pauseCount !== 1) {
+    throw new Error('Re-entry after cancellation failed: ' + JSON.stringify(recoveredEntry));
+  }
+  await cancelled.locator('#exit').click();
+  const recoveredExit = await cancelled.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (recoveredExit.phase !== 'idle' || recoveredExit.ownedTextureCount !== 0 ||
+      recoveredExit.resumeCount !== 1 || recoveredExit.departureCount !== 1) {
+    throw new Error('Re-entry after cancellation did not clean up: ' + JSON.stringify(recoveredExit));
+  }
+  await cancelled.close();
   if (errorLog.length) throw new Error('Page errors: ' + errorLog.join(' | '));
 
   const summary = { kind: 'PixiJS standalone isolated visual probe', start, animated, left, reducedStart, reducedEnd, mobile,
@@ -182,6 +234,14 @@ try {
     },
     reducedCurious,
     repeatedExit: secondExit,
+    entryTimingDiagnostics: {
+      rendererInitMs: start.rendererInitMs,
+      illustrationDecodeMs: start.illustrationDecodeMs,
+      firstFrameRenderMs: start.firstFrameRenderMs,
+      estimatedDecodedRgbaBytes: start.estimatedDecodedRgbaBytes,
+      label: 'Chromium SwiftShader software path; single sample only, not hardware FPS',
+    },
+    cancellationRecovery: { cancelImmediate, cancelSettled, recoveredEntry, recoveredExit },
     illustratedAssets: {
       sourceOwnedSvgLayers: 4,
       allFourLoaded: true,
