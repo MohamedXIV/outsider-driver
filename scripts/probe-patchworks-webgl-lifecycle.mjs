@@ -1,4 +1,4 @@
-/* global window, HTMLCanvasElement, WeakSet, WeakRef, Reflect */
+/* global window, HTMLCanvasElement */
 import { resolve } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 
