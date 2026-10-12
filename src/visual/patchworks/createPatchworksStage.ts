@@ -33,6 +33,7 @@ export async function createPatchworksStage(
   reducedMotion = false,
 ): Promise<PatchworksStage> {
   if (signal.aborted) throw new Error('Patchworks scene request aborted.');
+  const isAborted = (): boolean => signal.aborted;
   const app = new Application();
   await app.init({
     width: 960,
@@ -44,7 +45,7 @@ export async function createPatchworksStage(
     resolution: 1,
     background: 0x192c34,
   });
-  if (signal.aborted) {
+  if (isAborted()) {
     app.destroy(true, { children: true });
     throw new Error('Patchworks scene request aborted.');
   }
