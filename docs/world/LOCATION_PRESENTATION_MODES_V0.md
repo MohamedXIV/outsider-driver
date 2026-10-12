@@ -32,7 +32,7 @@ Typical examples:
 - Translator/communications kiosk: illustrated terminal and a domain-backed app-like purchasing interface.
 - Café, repair cooperative, transport office, landlord or community contact: illustrated VN location, with recurring characters, hours, relationships and availability.
 
-**Art grammar:** one or a few high-detail illustrated backgrounds; localized state changes (open/closed, busy/empty, inspection underway, light at night), optional shallow parallax/ambient motion, sprites/portraits/expression transitions, contextual UI and Ink choices. Avoid building a full 3D room just to purchase an item or hear a short line. Character rendering technology remains **implementation-agnostic** (portrait/sprite/puppet as appropriate, not mandated Inochi2D).
+**Art grammar — clarified user requirement:** the 2D/VN anchors should be **living animated scenes, not merely static illustrations**. Authored layered painted backgrounds support moving mechanical props, gently pulsing/flickering practical lights, ambient steam/dust/reflections, window silhouettes, controlled parallax, animated portrait idle/blinks and expression changes, together with contextual UI and Ink choices. Simple fake 2D glow/overlays are initially preferable to introducing full real-time 2D lighting. Avoid modeling full 3D interiors for brief interactions. Portrait/sprite/puppet tech remains **implementation-agnostic** (do not mandate Inochi2D).
 
 For some anchors the 3D road environment stays visible behind a window/overlay; for others a full 2D/VN scene takes the screen. This is a presentation decision based on narrative weight and UX, not a different simulation.
 
@@ -81,12 +81,18 @@ An especially effective way to make Outer Margin feel inhabited is to stage **ma
 
 The UI can show discovered anchors from a district/location screen *after the player has arrived or learned a legitimate connection*, but must not treat the map as free instant travel across the city. Availability can depend on time, who runs the shop, trust, route threats and local legal status.
 
+## Animated 2D rendering proposal
+
+The recommended first experiment is **lazy-loaded PixiJS for the animated scene compositor**, **existing HTML/CSS for readable dialogue/shops/choices**, and **inkjs with canonical GameSession state**. Babylon retains the 3D city, car, home and garage. Pause Babylon redraws when the Pixi anchor is active, stop Pixi on exit; the two engines may still own distinct WebGL contexts, so manage assets and measure VRAM/entry latency rather than assuming there is no overhead.
+
+The [Animated Anchors Technical Architecture v0.1](ANIMATED_ANCHORS_TECH_V0.md) spells out the transition/lifecycle contract, stale-load cancellation, layered lighting tricks, reduced-motion/accessibility and an Outer Margin parts-shop vertical slice. This is an **architecture proposal only**; PixiJS is **not installed** on this documentation branch. Use Phaser only if a future location develops genuine 2D movement/collision gameplay that needs a game framework.
+
 ## 7. Review/implementation gates
 
 **Locked design intent:**
 - The streets, districts, plazas, bridges, architecture, vehicles and driving ambience are 3D.
 - Home and garage are **still** bounded 3D spaces.
-- Most destination interiors, small businesses, shops, offices, side errands and short interactions are **2D/VN-like anchors** with high illustration/story density.
+- Most destination interiors, small businesses, shops, offices, side errands and short interactions are **lively animated 2D/VN-like anchors** with high illustration/story density, practical light movement and atmosphere.
 - Long-term world facts, money, routes, inventory, character relationships and legal/social risks are shared across those presentations.
 
 **Open decisions:**
