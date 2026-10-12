@@ -44,6 +44,14 @@ A powerful shot: a patched but beautiful street full of life under a large **phy
 
 These are everyday zones with gradients. At midday The Cut can be safe for a familiar resident; late at night a well-lit main road can be dangerous during an identification sweep. Poverty is not a direct deterministic danger rating.
 
+## How this living neighborhood becomes playable without 3D interiors everywhere
+
+**Confirmed:** The Margin is experienced from an actual **3D street/taxi** setting, while **most small enterprises, services and short social visits are 2D/VN location anchors**. The player recognizes a repair sign or storefront facade along an authored road; once they arrive at a legal/known stopping point, an illustrated counter, merchant portrait and Ink/service dialogue can present a rich experience without building a full 3D interior. These spots retain their place in the neighborhood and their prices, risks and owners across visits.
+
+**Personal exceptions:** the player's **home and personal garage remain real 3D** spaces. A different vendor's workshop or a shop beside the garage usually needs only a 2D illustrated scene. Lantern Row food shops and local clinic, Patchworks used-parts vendors or gray dispatch desks, and a suspicious counter by The Cut can each support detailed 2D interactions. This is proposed content, not a new shipped shop system.
+
+The most important social fact survives the transition: the vendor remembers the driver, debts and trust persist, and a transaction or mistaken phrase can create a story consequence or police exposure. None of these is a disconnected VN economy. See [Location Presentation Modes](LOCATION_PRESENTATION_MODES_V0.md).
+
 ## Who keeps the place functioning?
 
 **Residents and shopkeepers** organize informal protection, utility repairs, care, food and local dispute resolution. Neighborhood networks can protect newcomers who contribute, while shutting out unknown outsiders. Residents retain **agency, dignity and internal political disagreement**.
