@@ -37,8 +37,13 @@ try {
   await page.locator('#visual-stage canvas').waitFor({ timeout: 20000 });
   await page.waitForTimeout(500);
   const start = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  const earlyCanvas = await page.locator('#visual-stage canvas').screenshot();
   await page.waitForTimeout(700);
   const animated = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  const lateCanvas = await page.locator('#visual-stage canvas').screenshot();
+  if (earlyCanvas.equals(lateCanvas)) {
+    throw new Error('Pixi canvas pixels did not change between animated frames');
+  }
   if (animated.phase !== 'active' || animated.updates <= start.updates ||
       Math.abs(animated.fanAngle - start.fanAngle) < 0.001) {
     throw new Error('Pixi scene or rotating fan failed to animate: ' + JSON.stringify({ start, animated }));
@@ -60,14 +65,25 @@ try {
   await page.locator('#enter').click();
   await page.locator('#visual-stage canvas').waitFor();
   const reducedStart = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  const reducedEarlyCanvas = await page.locator('#visual-stage canvas').screenshot();
   await page.waitForTimeout(500);
   const reducedEnd = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  const reducedLateCanvas = await page.locator('#visual-stage canvas').screenshot();
+  if (!reducedEarlyCanvas.equals(reducedLateCanvas)) {
+    throw new Error('Reduced-motion mode changed rendered Pixi pixels');
+  }
   if (!reducedEnd.reducedMotion || reducedEnd.updates <= reducedStart.updates ||
       reducedEnd.fanAngle !== reducedStart.fanAngle) {
     throw new Error('Reduced-motion scene still animated or stopped drawing: ' +
       JSON.stringify({ reducedStart, reducedEnd }));
   }
   await page.locator('#exit').click();
+  const secondExit = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (secondExit.phase !== 'idle' || secondExit.pauseCount !== 2 ||
+      secondExit.resumeCount !== 2 || secondExit.departureCount !== 2 ||
+      await page.locator('#visual-stage canvas').count() !== 0) {
+    throw new Error('Repeated open/close lifecycle leaked: ' + JSON.stringify(secondExit));
+  }
 
   const compact = await browser.newPage({
     viewport: { width: 393, height: 852 },
@@ -83,10 +99,19 @@ try {
   await compact.screenshot({ path: resolve(output, 'patchworks-compact.png'), fullPage: true });
   if (mobile.phase !== 'active') throw new Error('Mobile touch could not enter Pixi scene');
   await compact.locator('#exit').tap();
+  if (await compact.locator('#visual-stage canvas').count() !== 0) {
+    throw new Error('Compact touch exit left a Pixi canvas mounted');
+  }
   if (errorLog.length) throw new Error('Page errors: ' + errorLog.join(' | '));
 
   const summary = { kind: 'PixiJS standalone isolated visual probe', start, animated, left, reducedStart, reducedEnd, mobile,
     screenshots: ['patchworks-desktop.png', 'patchworks-compact.png'],
+    pixelMotionProof: {
+      animatedFramesDiffer: true,
+      reducedMotionFramesIdentical: true,
+      comparison: 'Actual Pixi canvas screenshots, not tick counters alone',
+    },
+    repeatedExit: secondExit,
     caveats: ['No real Babylon suspension in isolated lab', 'No GameSession transaction', 'CI SwiftShader timing is NOT player GPU FPS'],
   };
   await writeFile(resolve(output, 'metrics.json'), JSON.stringify(summary, null, 2));
