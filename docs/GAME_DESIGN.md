@@ -26,6 +26,18 @@ The city was built by alien civilizations, not by humans. **Humans are prohibite
 
 These are approved **art-direction principles**, not confirmation of a finished Babylon shader, specific font, finalized district map, in-engine performance or passenger puppet technology. Keep look-development comparisons with representative matched camera/time/light captures, coherent home/garage and illustrated-passenger treatment, and measured readability/performance before adopting a production-wide material pipeline. Avoid visually unstable retro-rendering artifacts as the default aesthetic.
 
+## World presentation architecture — 3D travel, 2D/VN destination anchors
+
+**User-confirmed design principle (2026-10-12):** **3D for Presence & Travel — 2D/VN for Detail & Interaction.** The 3D city still delivers its street grid, roads, plazas, supported bridges, buildings and visible destinations, grounded traffic, taxi ambience and district character. The taxi and vehicles remain 3D; the **player's home and personal garage remain bounded 3D** personal places.
+
+**Most secondary destinations do not need complete 3D interiors.** Stores, workshops other than the player's personal garage, clinics, public counters, markets, cafés and minor errands can instead become **geographically anchored 2D/VN location interactions**: an authored illustrated background, speaker portraits/expressions, Ink dialogue, service UI, item purchases or consequential choices. These can deliver rich environmental detail faster than building physical interiors for quick transactions. Important recurring people may have expressive 2D presentations, without locking them to a specific puppet technology.
+
+A location anchor must have an authentic place in the district's road/route/arrival topology: the player can recognize a 3D roadside facade and stop there, then enter the 2D interaction. **It is not global teleportation** or a second gameplay world. Every item, cost, permission, time advance, relationship, suspicion, knowledge flag and result continues through the existing canonical application/domain state. From the anchor the player returns to the proper taxi/home/garage context.
+
+Only use additional 3D interiors where **physical spatial gameplay** is a meaningful reason to model them; narrative importance or a shopkeeper alone does not mandate 3D.
+
+Detailed draft integration boundary and examples: [Location Presentation Modes v0.1](world/LOCATION_PRESENTATION_MODES_V0.md). Implementation must coordinate with the existing GameSession/navigation PRs and must not introduce a separate merchant, inventory or world-state engine.
+
 ## Core fantasy
 
 **Survive by learning how to belong somewhere you do not belong.**

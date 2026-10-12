@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" role="img" aria-labelledby="title desc">
+<title id="title">Outsider Driver — provisional aerial city-layout map, v0</title>
+<desc id="desc">Top-down diagram of an alien self-governing charter-port city with six draft districts. Physical cargo basin west, the docks southwest, worker belt northwest, historic junction center, civic core east, rich upper terraces northeast and a dense, functioning but precarious Outer Margin southeast where the undocumented player lives. Roads, supported viaducts and checkpoints connect sectors. Not a navigable open world or an approved canon map.</desc>
+<defs>
+ <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0e6ce"/><stop offset="1" stop-color="#d5c8a7"/></linearGradient>
+ <linearGradient id="sea" x1="0" y1="0" x2="1" y2=".6"><stop stop-color="#153c50"/><stop offset="1" stop-color="#37798a"/></linearGradient>
+ <pattern id="streetGrid" width="36" height="38" patternUnits="userSpaceOnUse"><path d="M36 0H0V38" fill="none" stroke="#7a7b68" stroke-opacity=".17" stroke-width="2"/></pattern>
+ <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%"><feDropShadow dx="1" dy="3" stdDeviation="4" flood-opacity=".15"/></filter>
+ <style>
+ text{font-family:Arial,Helvetica,sans-serif} .district{fill:#203e42;font-weight:bold;font-size:21px;letter-spacing:1.1px;paint-order:stroke fill;stroke:#eadcbe;stroke-width:3px}
+ .sub{fill:#365458;font-size:14px;font-weight:600;paint-order:stroke fill;stroke:#e8d9ba;stroke-width:3px}
+ .minor{fill:#f1e3c1;font-size:13px;font-weight:700;paint-order:stroke fill;stroke:#33515c;stroke-width:3px}
+ .note{font-size:15px;fill:#355159} .boxText{fill:#274149;font-size:15px;font-weight:600}
+ </style>
+</defs>
+<rect width="1400" height="1000" fill="#142b36"/>
+<rect x="35" y="35" width="1330" height="930" rx="20" fill="url(#paper)" stroke="#9b987d" stroke-width="4"/>
+<text x="81" y="92" font-size="36" font-weight="800" letter-spacing="3" fill="#1b3f49">OUTSIDER DRIVER / CITY PLAN 00</text>
+<text x="83" y="124" font-size="16" letter-spacing="1" fill="#556562">PROVISIONAL AERIAL SCHEMATIC — NO CANONICAL CITY NAME · NO LOCKED SCALE</text>
+<g filter="url(#softShadow)">
+ <rect x="82" y="165" width="1190" height="680" fill="#d1c4a6" stroke="#777a64" stroke-width="3" rx="13"/>
+ <rect x="86" y="168" width="1182" height="672" fill="url(#streetGrid)" opacity=".9"/>
+ <path d="M86 177H286 C272 244 289 296 255 339 C229 367 232 421 276 465 C322 518 320 562 284 611 C257 660 277 706 312 749 C327 773 302 810 277 844 H86Z" fill="url(#sea)" stroke="#236876" stroke-width="4"/>
+ <!-- Ancient shore road and repaired quay arms -->
+ <path d="M289 336C263 410 341 483 318 553S287 700 305 817" stroke="#e1d29e" stroke-width="17" fill="none" opacity=".85"/>
+ <path d="M280 582L222 590M283 632L207 651M272 697L210 710M290 760L223 774" stroke="#a89e7e" stroke-width="15" stroke-linecap="square"/>
+ <path d="M312 198L544 177L657 270L603 439L497 479L308 397Z" fill="#97ada0" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
+<text x="451" y="316" class="district" text-anchor="middle">WORKER BELT</text>
+<text x="451" y="340" class="sub" text-anchor="middle">Fabrication · workers</text>
+<path d="M551 440L735 419L817 513L774 660L610 678L527 572Z" fill="#d0b881" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
+<text x="667" y="536" class="district" text-anchor="middle">OLD JUNCTION</text>
+<text x="667" y="560" class="sub" text-anchor="middle">Market · mixing</text>
+<path d="M806 417L1033 397L1140 515L1062 658L804 660L760 528Z" fill="#a5b9b0" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
+<text x="947" y="525" class="district" text-anchor="middle">CIVIC CORE</text>
+<text x="947" y="549" class="sub" text-anchor="middle">Registry · permits</text>
+<path d="M963 203L1203 204L1234 359L1114 462L997 402L923 311Z" fill="#c0bc9f" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
+<text x="1080" y="309" class="district" text-anchor="middle">UPPER TERRACES</text>
+<text x="1080" y="333" class="sub" text-anchor="middle">Private access · influence</text>
+<path d="M797 662L1064 647L1243 742L1197 837L878 843L761 765Z" fill="#b1aa86" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
+<text x="1000" y="733" class="district" text-anchor="middle">OUTER MARGIN</text>
+<text x="1000" y="757" class="sub" text-anchor="middle">Homes · mutual aid · risk</text>
+<path d="M299 560L537 529L607 675L530 839L289 838L248 724Z" fill="#c1a783" stroke="#53635c" stroke-width="3" stroke-linejoin="round" opacity=".96"/>
+<text x="421" y="705" class="district" text-anchor="middle">THE DOCKS</text>
+<text x="421" y="729" class="sub" text-anchor="middle">Freight · customs</text>
+ <rect x="305" y="194" width="920" height="638" fill="url(#streetGrid)" opacity=".45"/>
+ <g transform="translate(385 245)" opacity=".7"><rect x="0" y="0" width="42" height="23" rx="4" fill="#4b625e"/><path d="M7 0V-26H17V0 M26 0V-17H35V0" fill="#4b625e"/><path d="M1 8H41" stroke="#a9c5ad" stroke-width="3"/></g><g transform="translate(483 235)" opacity=".7"><rect x="0" y="0" width="42" height="23" rx="4" fill="#4b625e"/><path d="M7 0V-26H17V0 M26 0V-17H35V0" fill="#4b625e"/><path d="M1 8H41" stroke="#a9c5ad" stroke-width="3"/></g><g transform="translate(341 363)" opacity=".7"><rect x="0" y="0" width="42" height="23" rx="4" fill="#4b625e"/><path d="M7 0V-26H17V0 M26 0V-17H35V0" fill="#4b625e"/><path d="M1 8H41" stroke="#a9c5ad" stroke-width="3"/></g>
+ <path d="M984 259Q1078 205 1189 268" fill="none" stroke="#807f61" stroke-width="4" opacity=".5"/><path d="M1002 284Q1090 224 1196 292" fill="none" stroke="#807f61" stroke-width="4" opacity=".5"/><path d="M1020 309Q1102 243 1203 316" fill="none" stroke="#807f61" stroke-width="4" opacity=".5"/>
+ <!-- Ring corridor: physically continuous land-based road surface -->
+ <path d="M418 232C612 166 997 154 1163 268 C1264 364 1286 667 1197 776 C1117 870 703 857 480 809 C362 790 321 643 396 489" fill="none" stroke="#526a67" stroke-width="24" opacity=".9" stroke-linecap="round"/>
+ <path d="M418 232C612 166 997 154 1163 268 C1264 364 1286 667 1197 776 C1117 870 703 857 480 809 C362 790 321 643 396 489" fill="none" stroke="#decbb0" stroke-width="2" stroke-dasharray="12 15" stroke-linecap="round"/>
+ <!-- Old ground-level avenue from the docks to public marketplace/civic core -->
+ <path d="M399 749C456 652 545 588 681 549S882 532 1080 542" fill="none" stroke="#536d72" stroke-width="23" stroke-linecap="round"/>
+ <path d="M399 749C456 652 545 588 681 549S882 532 1080 542" fill="none" stroke="#e7ce91" stroke-width="3" stroke-dasharray="7 17"/>
+ <!-- Industrial truck spine follows grade and warehouses -->
+ <path d="M373 724C341 560 393 439 438 295" fill="none" stroke="#887965" stroke-width="21" stroke-linecap="round"/>
+ <path d="M373 724C341 560 393 439 438 295" fill="none" stroke="#eed39e" stroke-width="2" stroke-dasharray="5 13"/>
+ <!-- Outer approach from civic/old junction into edge wards -->
+ <path d="M712 565C835 632 892 681 1012 771" stroke="#566f67" stroke-width="18" stroke-linecap="round" fill="none"/>
+ <path d="M712 565C835 632 892 681 1012 771" stroke="#c9baa1" stroke-width="2" stroke-dasharray="6 14" fill="none"/>
+ <!-- Supported viaduct; piers visually below road route -->
+ <rect x="767" y="526" width="14" height="24" fill="#566760" stroke="#d9cfab" stroke-width="2" rx="3"/><rect x="856" y="462" width="14" height="24" fill="#566760" stroke="#d9cfab" stroke-width="2" rx="3"/><rect x="938" y="398" width="14" height="24" fill="#566760" stroke="#d9cfab" stroke-width="2" rx="3"/><rect x="1024" y="344" width="14" height="24" fill="#566760" stroke="#d9cfab" stroke-width="2" rx="3"/>
+ <path d="M739 561C810 475 950 380 1082 320" stroke="#dcc496" stroke-width="27" stroke-linecap="round" fill="none"/>
+ <path d="M739 561C810 475 950 380 1082 320" stroke="#70867c" stroke-width="15" stroke-linecap="round" fill="none"/>
+ <path d="M739 561C810 475 950 380 1082 320" stroke="#fff0ca" stroke-width="2" stroke-dasharray="9 12" fill="none"/>
+ <!-- Charter institutions -->
+ <g transform="translate(921 461)"><rect x="-24" y="-14" width="48" height="27" fill="#f2e3c6" stroke="#315a59" stroke-width="3"/><path d="M-30-14L0-32L30-14Z" fill="#315a59"/><path d="M-8 12V-9M8 12V-9" stroke="#618c88" stroke-width="7"/></g>
+ <g transform="translate(1019 717)"><path d="M-26-2L0-28L26-2V23H-26Z" fill="#e4d6b6" stroke="#5c6556" stroke-width="4"/><rect x="-5" y="4" width="11" height="19" fill="#7a897d"/></g>
+ <!-- Port cargo silhouettes -->
+ <g stroke="#315965" stroke-width="3" fill="#ad9a74">
+ <rect x="316" y="648" width="30" height="12"/><rect x="323" y="670" width="30" height="13"/>
+ <rect x="331" y="689" width="35" height="16"/><rect x="311" y="742" width="36" height="13"/>
+ <rect x="461" y="605" width="51" height="22" rx="7"/>
+ </g>
+ <!-- Historic market concentric symbol -->
+ <g transform="translate(674 598)"><circle r="29" fill="#ccb178" stroke="#53706c" stroke-width="4"/><circle r="15" fill="none" stroke="#46666a" stroke-width="4"/><path d="M-40 0H40M0-40V40" stroke="#46666a" stroke-width="3"/></g>
+ <!-- Proposed Outer Margin resident landmarks; NOT runtime canonical content -->
+ <g transform="translate(915 793)">
+  <circle r="15" fill="#f1dfae" stroke="#31505a" stroke-width="3"/>
+  <path d="M-8-1L0-9L8-1V8H-8Z" fill="#557e76" stroke="#31505a" stroke-width="2"/>
+  <path d="M-2 8V1H3V8" fill="none" stroke="#ecdebc" stroke-width="2"/>
+ </g>
+ <text x="888" y="825" class="minor">GARAGE*</text>
+ <g transform="translate(1109 791)">
+  <circle r="15" fill="#f1dfae" stroke="#31505a" stroke-width="3"/>
+  <path d="M-8-1L0-9L8-1V8H-8Z" fill="#557e76" stroke="#31505a" stroke-width="2"/>
+  <path d="M-4 0H4V7H-4Z" fill="#dfbf83"/>
+ </g>
+ <text x="1084" y="825" class="minor">HOME*</text>
+ <!-- points anchored in EXISTING production fixture (placement conceptual) -->
+ <g transform="translate(393 752)"><circle r="10" fill="#f9e7bc" stroke="#133b46" stroke-width="4"/><circle r="3" fill="#133b46"/></g>
+ <text x="331" y="783" class="minor">TAXI RANK</text>
+ <g transform="translate(511 618)"><circle r="10" fill="#f3d99c" stroke="#153d48" stroke-width="4"/><path d="M-5 0H5M0-5V5" stroke="#153d48" stroke-width="2"/></g>
+ <text x="463" y="590" class="minor">NIGHT CLINIC</text>
+ <!-- Existing route event concept: source fixture ID, not exact geographical placement -->
+ <g transform="translate(452 662)"><path d="M0-15L14-6V7L0 15L-14 7V-6Z" fill="#e4a35b" stroke="#334d53" stroke-width="3"/><text y="5" x="-5" font-size="18" fill="#213e47" font-weight="bold">!</text></g>
+ <text x="347" y="638" class="minor">DOCK CHECK</text>
+ <!-- Indicative secure filters elsewhere -->
+ <g transform="translate(852 465)"><circle r="13" fill="#e3aa68" stroke="#3c5559" stroke-width="4"/><path d="M-5 0H5" stroke="#203f46" stroke-width="3"/></g>
+ <g transform="translate(1120 365)"><circle r="13" fill="#e3aa68" stroke="#3c5559" stroke-width="4"/><path d="M-5 0H5" stroke="#203f46" stroke-width="3"/></g>
+ <!-- coast label -->
+ <text x="160" y="500" fill="#d8e9e3" font-size="24" font-weight="700" letter-spacing="3" transform="rotate(-90 160 500)">CARGO BASIN</text>
+ <text x="235" y="822" fill="#e5dabb" font-size="12" transform="rotate(-90 235 822)">PORT QUAYS</text>
+</g>
+<!-- Compass and legend -->
+<g transform="translate(1203 113)" fill="#214750"><path d="M0-35L10-6L0-10L-10-6Z"/><path d="M0 10L7 29L0 23L-7 29Z" opacity=".4"/><text x="0" y="-45" font-size="18" text-anchor="middle" font-weight="bold">N</text><circle r="7" fill="none" stroke="#214750" stroke-width="2"/></g>
+<rect x="81" y="857" width="1190" height="85" rx="11" fill="#e2d5b7" stroke="#a4987e" stroke-width="2"/>
+<g transform="translate(109 886)"><path d="M0 0H68" stroke="#536d72" stroke-width="17"/><path d="M0 0H68" stroke="#e4cc93" stroke-width="2" stroke-dasharray="7 10"/><text x="80" y="5" class="boxText">Ground arterials</text></g>
+<g transform="translate(381 886)"><path d="M0 0H68" stroke="#70867c" stroke-width="17"/><path d="M0 0H68" stroke="#fff0ca" stroke-width="2" stroke-dasharray="7 10"/><text x="80" y="5" class="boxText">Supported viaduct</text></g>
+<g transform="translate(681 886)"><circle r="11" fill="#e4a35b" stroke="#334d53" stroke-width="3"/><text x="26" y="5" class="boxText">Proposed check node</text></g>
+<text x="109" y="924" class="note">Not to scale · Home* and Garage* are planned in the living Outer Margin, not shipped locations · No hover transport</text>
+</svg>
