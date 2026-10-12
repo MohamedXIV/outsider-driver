@@ -37,16 +37,16 @@ const ILLUSTRATION_URLS = [
 async function loadOwnedIllustration(url: string, signal: AbortSignal): Promise<Texture> {
   const response = await fetch(url, { signal });
   if (!response.ok || !response.headers.get('content-type')?.includes('image/svg+xml')) {
-    throw new Error(`Patchworks illustration unavailable: ${url} (${response.status})`);
+    throw new Error(`Patchworks illustration unavailable: ${url} (${String(response.status)})`);
   }
   const blob = await response.blob();
-  if (signal.aborted) throw new DOMException('Patchworks illustration cancelled.', 'AbortError');
+  signal.throwIfAborted();
   const objectUrl = URL.createObjectURL(blob);
   try {
     const image = new Image();
     image.src = objectUrl;
     await image.decode();
-    if (signal.aborted) throw new DOMException('Patchworks illustration cancelled.', 'AbortError');
+    signal.throwIfAborted();
     return Texture.from(image);
   } finally {
     URL.revokeObjectURL(objectUrl);
