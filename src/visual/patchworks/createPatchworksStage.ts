@@ -48,7 +48,9 @@ async function decodeWithAbort(image: HTMLImageElement, signal: AbortSignal): Pr
     await Promise.race([
       image.decode(),
       new Promise<never>((_resolve, reject) => {
-        onAbort = () => reject(signal.reason ?? new DOMException('Patchworks decode aborted.', 'AbortError'));
+        onAbort = () => {
+          reject(new DOMException('Patchworks decode aborted.', 'AbortError'));
+        };
         signal.addEventListener('abort', onAbort, { once: true });
         if (signal.aborted) onAbort();
       }),
