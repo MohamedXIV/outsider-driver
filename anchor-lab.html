@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Outsider Driver — Patchworks Animated Location Lab</title>
+  <style>
+  :root { font-family: system-ui, -apple-system, sans-serif; color: #e7dbc0; background:#152329; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; }
+  .app { margin:0 auto; max-width:1160px; padding:24px; }
+  header { display:flex; justify-content:space-between; align-items:start; gap:20px; }
+  .eyebrow { color:#b6ab83; letter-spacing:.21em; text-transform:uppercase; font-size:.74rem; }
+  h1 { font-size:clamp(1.3rem,3.4vw,2.5rem); font-weight:600; margin:9px 0 7px; }
+  .subtitle { color:#b3c0b6; margin:0 0 19px; max-width:70ch; line-height:1.5; }
+  .tag { padding:7px 11px; border:1px solid #718079; background:#24383d; border-radius:99px; font-size:.75rem; white-space:nowrap; }
+  .frame { border:3px solid #758175; border-radius:18px; padding:9px; background:#0d1b20; box-shadow:0 16px 44px #0a151aa6; }
+  .stage { aspect-ratio:16/9; display:flex; justify-content:center; align-items:center; background:linear-gradient(130deg,#223f41,#11262c); position:relative; overflow:hidden; border-radius:9px; }
+  .stage canvas { display:block; object-fit:contain; width:100%; }
+  .placeholder { max-width:70%; text-align:center; letter-spacing:.1em; text-transform:uppercase; color:#a4b7ad; }
+  .dialogue { padding:18px 23px; margin-top:12px; border:1px solid #53635b; border-radius:12px; background:#233638; min-height:107px; }
+  .speaker { color:#efc182; font-weight:700; font-size:.82rem; letter-spacing:.14em; margin-bottom:6px; text-transform:uppercase; }
+  .dialogue p { margin:0; line-height:1.55; }
+  .controls { margin-top:18px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  button { border:1px solid #8d987e; color:#17292b; background:#ebd2a1; padding:11px 18px; border-radius:8px; font-weight:700; cursor:pointer; }
+  button:disabled { cursor:default; opacity:.5; }
+  label { display:flex; align-items:center; gap:9px; padding:8px; }
+  input { width:18px; height:18px; accent-color:#b5c1a1; }
+  .status { margin:14px 0; color:#b4c8c0; }
+  pre { color:#90b8a9; background:#102025; padding:13px; border-radius:8px; white-space:pre-wrap; font-size:.78rem; }
+  .footnote { font-size:.79rem; color:#9eb1ac; line-height:1.6; }
+  button:focus-visible, input:focus-visible { outline:3px solid #d1dfbf; outline-offset:4px; }
+  </style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div>
+      <div class="eyebrow">Outsider Driver / 2D ambience laboratory</div>
+      <h1>Patchworks — Parts Counter</h1>
+      <p class="subtitle">A living alien repair shop: animated fan, moving scanline, blinking vendor, drifting vapor and irregular warm practical light.</p>
+    </div>
+    <span class="tag">ART LAB · NOT CANONICAL GAMEPLAY</span>
+  </header>
+  <section class="frame" aria-label="Animated shop scene">
+    <div id="visual-stage" class="stage"><div class="placeholder">Enter the shop to render its first 2D scene</div></div>
+    <div class="dialogue">
+      <div class="speaker">Partskeeper — visual fixture</div>
+      <p>“A quiet motor, patched twice. Still beats the licensed imports. Look, don't touch the registration plate.”</p>
+    </div>
+  </section>
+  <div class="controls">
+    <button id="enter" type="button">Enter animated shop</button>
+    <button id="exit" type="button" disabled>Leave shop</button>
+    <label><input type="checkbox" id="reduced-motion"/>Reduced motion (next entry)</label>
+    <button type="button" onclick="document.getElementById('metrics').textContent=JSON.stringify(window.__outsiderPatchworksLab.inspect(),null,2)">Inspect metrics</button>
+  </div>
+  <p role="status" aria-live="polite" id="status" class="status">Scene not loaded yet.</p>
+  <details><summary>Technical scene diagnostics</summary><pre id="metrics"></pre></details>
+  <p class="footnote">Isolated PixiJS visual probe; no Babylon city is mounted here. Arrival and world-suspend operations are test fixtures. No money, inventory, time, saves or persistent narrative state is changed. This page intentionally does not ship as a normal city destination.</p>
+</main>
+<script type="module" src="/src/visual/patchworks/anchorLab.ts"></script>
+</body>
+</html>
