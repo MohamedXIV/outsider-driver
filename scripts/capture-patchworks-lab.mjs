@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { chromium } from '@playwright/test';
+import { probePatchworksWebglLifecycle } from './probe-patchworks-webgl-lifecycle.mjs';
 
 const output = resolve(process.env.PATCHWORKS_ART_OUTPUT ?? 'docs/visuals/pixi-patchworks');
 const url = 'http://127.0.0.1:5179/anchor-lab.html';
@@ -219,6 +220,9 @@ try {
     throw new Error('Re-entry after cancellation did not clean up: ' + JSON.stringify(recoveredExit));
   }
   await cancelled.close();
+  // Repeated 3D-context ownership observation in a fresh page, with CDP
+  // post-GC heap/DOM counters. This is not a GPU memory benchmark.
+  const webglLifecycle = await probePatchworksWebglLifecycle(browser, url, errorLog, output);
   if (errorLog.length) throw new Error('Page errors: ' + errorLog.join(' | '));
 
   const summary = { kind: 'PixiJS standalone isolated visual probe', start, animated, left, reducedStart, reducedEnd, mobile,
@@ -242,6 +246,12 @@ try {
       label: 'Chromium SwiftShader software path; single sample only, not hardware FPS',
     },
     cancellationRecovery: { cancelImmediate, cancelSettled, recoveredEntry, recoveredExit },
+    webglLifecycle: {
+      cycles: webglLifecycle.cycles,
+      observedContextCreations: webglLifecycle.evidence.distinctContextsSeen,
+      report: 'webgl-lifecycle.json',
+      caveat: 'WebGL context count is diagnostic and does not certify GPU memory release',
+    },
     illustratedAssets: {
       sourceOwnedSvgLayers: 4,
       allFourLoaded: true,
@@ -249,7 +259,7 @@ try {
       intentionalMissingLayerRecovered: true,
       failureState: failedAsset,
     },
-    caveats: ['No real Babylon suspension in isolated lab', 'No GameSession transaction', 'CI SwiftShader timing is NOT player GPU FPS'],
+    caveats: ['No real Babylon suspension in isolated lab', 'No GameSession transaction', 'CI SwiftShader timing is NOT player GPU FPS', 'CDP heap counters are not GPU memory measurements'],
   };
   await writeFile(resolve(output, 'metrics.json'), JSON.stringify(summary, null, 2));
   process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
