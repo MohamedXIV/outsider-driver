@@ -1,0 +1,28 @@
+name: One-shot PixiJS lockfile evidence
+on:
+  push:
+    branches: [feat/86-pixi-patchworks-lab]
+    paths:
+      - .github/workflows/pixi-lock-probe.yml
+jobs:
+  generate-pixi-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Generate real npm lockfile for exact PixiJS version
+        run: |
+          npm install --package-lock-only --save-exact --ignore-scripts pixi.js@8.22.0
+          node -e "const p=require('./package.json'),l=require('./package-lock.json'); if(p.dependencies['pixi.js']!=='8.22.0'||l.packages['node_modules/pixi.js'].version!=='8.22.0')process.exit(2);"
+      - name: Upload canonical npm files (do not commit automatically)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixi-8.22.0-npm-manifest-lock
+          path: |
+            package.json
+            package-lock.json
+          retention-days: 3
