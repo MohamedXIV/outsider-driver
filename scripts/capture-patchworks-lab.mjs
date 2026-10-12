@@ -52,6 +52,34 @@ try {
     throw new Error('Warm practical light did not change alpha');
   }
   await page.screenshot({ path: resolve(output, 'patchworks-desktop.png') });
+  await page.locator('[data-expression="wary"]').click();
+  const wary = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (wary.expression !== 'wary' || !await page.locator('#dialogue-line').textContent().then(s => s?.includes('Inspections?'))) {
+    throw new Error('Accessible shop fixture did not change the Pixi shopkeeper expression');
+  }
+  await page.screenshot({ path: resolve(output, 'patchworks-wary.png') });
+  await page.locator('[data-expression="neutral"]').click();
+  // Synthetic hidden-document property tests the tab visibility handler, not browser tab scheduling.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(120);
+  const hiddenStart = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  await page.waitForTimeout(240);
+  const hiddenEnd = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (hiddenStart.updates !== hiddenEnd.updates) {
+    throw new Error('Hidden document failed to stop Pixi ticker: ' + JSON.stringify({ hiddenStart, hiddenEnd }));
+  }
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(180);
+  const visibleAgain = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (visibleAgain.updates <= hiddenEnd.updates) {
+    throw new Error('Visible document failed to restart the Pixi ticker');
+  }
   await page.locator('#exit').click();
   if (await page.locator('#visual-stage canvas').count() !== 0) {
     throw new Error('Scene canvas remained after exit');
@@ -105,7 +133,9 @@ try {
   if (errorLog.length) throw new Error('Page errors: ' + errorLog.join(' | '));
 
   const summary = { kind: 'PixiJS standalone isolated visual probe', start, animated, left, reducedStart, reducedEnd, mobile,
-    screenshots: ['patchworks-desktop.png', 'patchworks-compact.png'],
+    screenshots: ['patchworks-desktop.png', 'patchworks-wary.png', 'patchworks-compact.png'],
+    expressionFixture: { wary: wary.expression, dialogueUpdated: true },
+    visibilityFixture: { hiddenUpdates: [hiddenStart.updates, hiddenEnd.updates], visibleUpdates: visibleAgain.updates, syntheticEvent: true },
     pixelMotionProof: {
       animatedFramesDiffer: true,
       reducedMotionFramesIdentical: true,

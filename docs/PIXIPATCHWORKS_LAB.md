@@ -7,7 +7,9 @@
 The dependency `pixi.js@8.22.0` is **exact-version locked in a genuine npm-produced** `package-lock.json`. The implementation is isolated under `src/visual/patchworks/` and reachable at `/anchor-lab.html` on the development server. Vite's normal production entry does **not** import the lab, so it does not add the Pixi renderer to the shipped taxi game's JS bundle.
 
 - A 960×540 single Pixi canvas composes the shop's counter, roadside window, refurbished parts shelves, analog monitor, sign/practical lamp and alien partskeeper silhouette.
-- A private ticker animates an overhead fan, screen scanline, fluctuating amber lamp, breathing/blinking character, drifting vapor and fine dust. These are explicit scene-graph transformations; **no physically accurate light simulation** is claimed.
+- A private ticker animates an overhead fan, screen scanline, fluctuating amber lamp, breathing/blinking character, drifting vapor and fine dust. The window now masks a gently drifting street depth layer and an intermittent ground-level alien passer.
+- HTML expression probes ask about a rotor or inspections and update the vendor's rendered eyes/brow/head attitude without modifying Ink, trust or persistent world state. The scene remains a prototype, **not a playable narrative merchant**.
+- The lab defaults its reduced-motion checkbox to the OS preference, allows a user override, and suspends its scene ticker for hidden documents. These are explicit scene-graph transformations; **no physically accurate light simulation** is claimed.
 - Text, buttons, focus, reduced-motion control and technical status remain native HTML outside the GPU canvas.
 - `AnimatedAnchorTransitionController` handles the lab's entry/loading/scene ownership and teardown. The lab's arrival and Babylon suspension ports are **fixtures**; it does NOT simulate an actual taxi arrival.
 - No authoritative credits, inventory, time, Ink transactions or persistent state are connected yet. Do **not** suggest that clicking a button purchases anything in the game.
@@ -27,6 +29,10 @@ The dependency `pixi.js@8.22.0` is **exact-version locked in a genuine npm-produ
 ## Stronger artifact checks — pending exact-head verification
 
 The capture utility additionally verifies that two actual **Pixi canvas screenshots** differ while animation is enabled, and are identical after Reduced Motion is selected. It checks repeat enter→exit (two suspension releases, no stale canvas), plus a real mobile touch exit. These checks must pass on the new exact head before calling the pixel assertions verified; previous successful CI proves animation counters only.
+
+## Follow-up implementation pending verification
+
+A subsequent branch increment adds animated window parallax + street silhouette, three presentation-only shopkeeper expressions, accessibility text choices, OS reduced-motion default, and screenshot checks for dialogue/expression and synthetic visibilitychange ticker suspension/resume. These changes require a **new exact-head CI pass** before being marked proven. No genuine painterly asset pack, city arrival, or purchase was added.
 
 ## Next integration gate (do not skip)
 

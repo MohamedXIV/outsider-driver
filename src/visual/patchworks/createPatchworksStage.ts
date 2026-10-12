@@ -1,13 +1,20 @@
 import { Application, Container, Graphics } from 'pixi.js';
 import type { AnimatedAnchorStage } from '../../app/presentation/AnimatedAnchorTransitionController';
 
+export type PatchworksExpression = 'neutral' | 'curious' | 'wary';
+
 /** A standalone authored 2D ambience study; no route, commerce or saves. */
 export interface PatchworksStage extends AnimatedAnchorStage {
+  /** Presentation-only fixture: an expression is never a relationship or Ink event. */
+  setExpression(expression: PatchworksExpression): void;
   getMetrics(): {
     readonly updates: number;
     readonly fanAngle: number;
     readonly warmLightAlpha: number;
     readonly reducedMotion: boolean;
+    readonly expression: PatchworksExpression;
+    readonly streetOffset: number;
+    readonly passerX: number;
   };
 }
 
@@ -68,7 +75,21 @@ export async function createPatchworksStage(
   street.addChild(panel(94, 179, 55, 66, 8, 0x6f847d));
   street.addChild(panel(177, 159, 59, 86, 13, 0x415e65));
   street.addChild(circle(209, 173, 12, 0xb98755, 0.8));
+  // Ground-level passer: a distinct silhouette outside the reachable shop,
+  // masked by the architectural window rather than drawn over its frame.
+  const passer = new Container();
+  passer.addChild(new Graphics().ellipse(0, 0, 21, 4).fill({ color: 0x0e2934, alpha: 0.6 }));
+  passer.addChild(new Graphics().poly([-12, -5, -19, -31, -9, -49, 10, -49, 19, -28, 12, -5]).fill(0x132e3a));
+  passer.addChild(new Graphics().ellipse(0, -52, 13, 14).fill(0x173843));
+  passer.addChild(new Graphics().poly([-7, -60, -13, -76, 0, -66, 14, -75, 7, -60]).fill(0x173843));
+  passer.addChild(circle(-5, -54, 2, 0xc6a365, 0.8));
+  passer.position.set(-50, 261);
+  passer.visible = false;
+  street.addChild(passer);
   stage.addChild(street);
+  const streetWindowMask = panel(65, 129, 200, 169, 12, 0xffffff);
+  stage.addChild(streetWindowMask);
+  street.mask = streetWindowMask;
   stage.addChild(rect(159, 130, 12, 168, 0x8f8f7a));
   stage.addChild(rect(64, 211, 200, 11, 0x8f8f7a));
 
@@ -119,8 +140,15 @@ export async function createPatchworksStage(
   vendor.addChild(new Graphics().ellipse(0, -52, 52, 64).fill(0x729a8d));
   vendor.addChild(new Graphics().ellipse(-42, -53, 18, 25).fill(0x729a8d));
   vendor.addChild(new Graphics().ellipse(42, -53, 18, 25).fill(0x729a8d));
-  vendor.addChild(circle(-19, -62, 8, 0x253b39));
-  vendor.addChild(circle(19, -62, 8, 0x253b39));
+  const leftEye = circle(-19, -62, 8, 0x253b39);
+  const rightEye = circle(19, -62, 8, 0x253b39);
+  vendor.addChild(leftEye, rightEye);
+  // Expression marks are visual changes only, not dialogue or social state.
+  const curiousMark = circle(35, -111, 5, 0xe3c78c, 0.8);
+  const waryBrow = new Graphics().poly([-36, -81, -8, -74, 10, -76, 37, -83]).stroke({ color: 0x34504b, width: 5 });
+  curiousMark.visible = false;
+  waryBrow.visible = false;
+  vendor.addChild(curiousMark, waryBrow);
   const blink = rect(-34, -71, 67, 16, 0x729a8d);
   blink.alpha = 0;
   vendor.addChild(blink);
@@ -153,6 +181,17 @@ export async function createPatchworksStage(
 
   let elapsed = 0;
   let updates = 0;
+  let expression: PatchworksExpression = 'neutral';
+  const setExpression = (next: PatchworksExpression): void => {
+    if (destroyed) return;
+    expression = next;
+    curiousMark.visible = next === 'curious';
+    waryBrow.visible = next === 'wary';
+    leftEye.scale.y = next === 'wary' ? 0.62 : 1;
+    rightEye.scale.y = next === 'wary' ? 0.62 : 1;
+    vendor.rotation = next === 'curious' ? 0.035 : next === 'wary' ? -0.02 : 0;
+    if (!playing) app.render();
+  };
   let playing = false;
   let destroyed = false;
   const tick = (ticker: { deltaTime: number }): void => {
@@ -160,6 +199,11 @@ export async function createPatchworksStage(
     updates++;
     if (reducedMotion) return;
     fan.rotation += 0.032 * ticker.deltaTime;
+    // Slow depth drift and an occasional pedestrian, physically behind glass.
+    street.x = Math.sin(elapsed * 0.006) * 2.5;
+    const passingCycle = elapsed % 560;
+    passer.visible = passingCycle < 410;
+    passer.x = -50 + passingCycle * 0.65;
     warmGlow.alpha = 0.06 + 0.025 * Math.sin(elapsed * 0.061) +
       (Math.sin(elapsed * 0.191) > 0.91 ? 0.045 : 0);
     lampCore.alpha = 0.77 + 0.16 * Math.sin(elapsed * 0.082);
@@ -198,11 +242,15 @@ export async function createPatchworksStage(
       app.ticker.remove(tick);
       app.destroy(true, { children: true });
     },
+    setExpression,
     getMetrics: () => ({
       updates,
       fanAngle: fan.rotation,
       warmLightAlpha: warmGlow.alpha,
       reducedMotion,
+      expression,
+      streetOffset: street.x,
+      passerX: passer.x,
     }),
   };
 }

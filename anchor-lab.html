@@ -21,6 +21,9 @@
   .dialogue { padding:18px 23px; margin-top:12px; border:1px solid #53635b; border-radius:12px; background:#233638; min-height:107px; }
   .speaker { color:#efc182; font-weight:700; font-size:.82rem; letter-spacing:.14em; margin-bottom:6px; text-transform:uppercase; }
   .dialogue p { margin:0; line-height:1.55; }
+  .dialogue-choices { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
+  .dialogue-choices button { font-size:.83rem; padding:8px 11px; background:#c8d2b7; }
+  .dialogue-choices button:disabled { opacity:.38; }
   .controls { margin-top:18px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
   button { border:1px solid #8d987e; color:#17292b; background:#ebd2a1; padding:11px 18px; border-radius:8px; font-weight:700; cursor:pointer; }
   button:disabled { cursor:default; opacity:.5; }
@@ -38,7 +41,7 @@
     <div>
       <div class="eyebrow">Outsider Driver / 2D ambience laboratory</div>
       <h1>Patchworks — Parts Counter</h1>
-      <p class="subtitle">A living alien repair shop: animated fan, moving scanline, blinking vendor, drifting vapor and irregular warm practical light.</p>
+      <p class="subtitle">A living alien repair shop: animated fan, changing CRT, blinking and expressive vendor, passing street silhouette, drifting vapor and irregular warm practical light.</p>
     </div>
     <span class="tag">ART LAB · NOT CANONICAL GAMEPLAY</span>
   </header>
@@ -46,7 +49,12 @@
     <div id="visual-stage" class="stage"><div class="placeholder">Enter the shop to render its first 2D scene</div></div>
     <div class="dialogue">
       <div class="speaker">Partskeeper — visual fixture</div>
-      <p>“A quiet motor, patched twice. Still beats the licensed imports. Look, don't touch the registration plate.”</p>
+      <p id="dialogue-line" aria-live="polite">“A quiet motor, patched twice. Still beats the licensed imports. Look, don't touch the registration plate.”</p>
+      <div id="dialogue-choices" class="dialogue-choices" role="group" aria-label="Visual expression fixtures only, no game choices">
+        <button type="button" data-expression="curious" disabled>Ask about a rotor</button>
+        <button type="button" data-expression="wary" disabled>Ask about inspections</button>
+        <button type="button" data-expression="neutral" disabled>Change the subject</button>
+      </div>
     </div>
   </section>
   <div class="controls">
@@ -57,7 +65,7 @@
   </div>
   <p role="status" aria-live="polite" id="status" class="status">Scene not loaded yet.</p>
   <details><summary>Technical scene diagnostics</summary><pre id="metrics"></pre></details>
-  <p class="footnote">Isolated PixiJS visual probe; no Babylon city is mounted here. Arrival and world-suspend operations are test fixtures. No money, inventory, time, saves or persistent narrative state is changed. This page intentionally does not ship as a normal city destination.</p>
+  <p class="footnote">Isolated PixiJS visual probe with visual-only dialogue and expression fixtures; no Babylon city is mounted here. Arrival and world-suspend operations are test fixtures. No money, inventory, time, saves or persistent narrative state is changed. This page intentionally does not ship as a normal city destination.</p>
 </main>
 <script type="module" src="/src/visual/patchworks/anchorLab.ts"></script>
 </body>
