@@ -19,6 +19,7 @@ const leave = exitButton;
 const reducedMotion = reduced;
 
 let lastStage: PatchworksStage | null = null;
+let departureCount = 0;
 let pauseCount = 0;
 let resumeCount = 0;
 let errorCount = 0;
@@ -35,7 +36,7 @@ const controller = new AnimatedAnchorTransitionController(
         returnToken: 'LAB-NOT-A-REAL-ARRIVAL',
       };
     },
-    confirmDeparture: () => {},
+    confirmDeparture: () => { departureCount++; },
   },
   {
     create: async (_arrival, signal) => {
@@ -86,6 +87,7 @@ const inspect = (): void => {
   metricsHost.textContent = JSON.stringify({
     phase: controller.phase,
     pauseCount,
+    departureCount,
     resumeCount,
     errorCount,
     ...(live ?? { updates: 0, fanAngle: 0, warmLightAlpha: 0 }),
@@ -115,16 +117,16 @@ const onVisibility = (): void => {
 enter.addEventListener('click', onEnter);
 leave.addEventListener('click', onExit);
 document.addEventListener('visibilitychange', onVisibility);
-window.addEventListener('pagehide', () => controller.dispose(), { once: true });
+window.addEventListener('pagehide', () => { controller.dispose(); }, { once: true });
 if (import.meta.hot !== undefined) {
-  import.meta.hot.dispose(() => controller.dispose());
+  import.meta.hot.dispose(() => { controller.dispose(); });
 }
 
 Reflect.set(window, '__outsiderPatchworksLab', {
   inspect: () => {
     inspect();
     return {
-      phase: controller.phase, pauseCount, resumeCount, errorCount,
+      phase: controller.phase, pauseCount, departureCount, resumeCount, errorCount,
       ...(lastStage?.getMetrics() ?? { updates: 0, fanAngle: 0 }),
     };
   },
