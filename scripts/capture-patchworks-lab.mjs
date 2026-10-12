@@ -1,4 +1,4 @@
-/* global window, setTimeout */
+/* global window, document, Event, setTimeout */
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
