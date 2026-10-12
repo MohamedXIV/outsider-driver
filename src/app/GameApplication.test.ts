@@ -42,7 +42,7 @@ describe('GameApplication', () => {
     const rendering = new FakeRenderingRuntime();
     const session = GameSession.open({
       load: () => null,
-      save: () => {},
+      save: () => undefined,
     });
     const application = new GameApplication(rendering, session);
 
@@ -50,13 +50,13 @@ describe('GameApplication', () => {
     application.start();
     application.dispose();
 
-    expect(() => session.exportState()).toThrow(/disposed/i);
+    expect(() => { session.exportState(); }).toThrow(/disposed/i);
     expect(rendering.disposals).toBe(1);
   });
 
   it('still disposes its session when the renderer throws during cleanup', () => {
     const rendering = new FakeRenderingRuntime();
-    const session = GameSession.open({ load: () => null, save: () => {} });
+    const session = GameSession.open({ load: () => null, save: () => undefined });
     const application = new GameApplication(rendering, session);
     application.start();
 
@@ -64,9 +64,9 @@ describe('GameApplication', () => {
       throw new Error('Renderer cleanup failed');
     };
 
-    expect(() => application.dispose()).toThrow(/Renderer cleanup failed/);
-    expect(() => session.exportState()).toThrow(/disposed/i);
-    expect(() => application.start()).toThrow(/disposed/i);
+    expect(() => { application.dispose(); }).toThrow(/Renderer cleanup failed/);
+    expect(() => { session.exportState(); }).toThrow(/disposed/i);
+    expect(() => { application.start(); }).toThrow(/disposed/i);
   });
 
   it('refuses to restart after disposal', () => {
