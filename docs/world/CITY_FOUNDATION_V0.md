@@ -14,13 +14,15 @@
 
 ## B. Recommended political identity — a chartered autonomous port city-state
 
-**Working hypothesis:** The city is a **self-governing charter port — effectively a city-state**, but dependent on a wider inter-polity transport/trade accord. It can legislate local residence, work permits, ride licenses, commercial districts and public security. It does **not** command the entire planet or galaxy. Customs/outer entry obligations are constrained by external partners, lenders and cargo treaties.
+**User-agreed world direction (2026-10-12):** The city is a **self-governing charter port — effectively a city-state**, but dependent on a wider inter-polity transport/trade accord. It can legislate local residence, work permits, ride licenses, commercial districts and public security. It does **not** command the entire planet or galaxy. Customs/outer entry obligations are constrained by external partners, lenders and cargo treaties.
 
 This balances worldbuilding and narrative gameplay:
 - A believable hard boundary explains why a human can be *inside the city illegally*; entry and work/status are distinct legal questions.
 - Economic dependence on trade, migrants, strangers and contractors clashes with the anti-human ban.
 - Ward law, port customs and privileged private security can disagree without requiring separate nation-scale simulations.
 - The ban is political and socially contested: individual aliens and groups are not uniformly hostile, compassionate or corrupt.
+
+The *independence-with-external-accords* premise is approved; the precise charter, voting arrangements, treaty partners, city name and enforcement procedure remain proposals, not locked canon.
 
 **Three overlapping institutions (draft):**
 1. **Charter Council** — sets city-wide permit policy, budget, public health, policing mandates and transit licenses. Members may be selected by wards, trade associations or negotiated seats; exact constitutional form still open.
@@ -64,6 +66,8 @@ This balances worldbuilding and narrative gameplay:
 | Private Estate/Industrial Security | Upper Terraces and high-value factories | private road access, camera logs, contractual blacklists | who will admit or recommend the driver |
 | Informal Protection Networks | Outer Margin, Old Junction, Docks | local favors, warnings and coercion | useful cover at a cost, betrayal or shifting allegiances |
 
+**Danger at the margins is different from crime everywhere:** see [Outer Margin District v0.1](OUTER_MARGIN_DISTRICT_V0.md) for functioning but precarious households, unequal security, the player's actual home and threat from social leverage as much as official permit enforcement.
+
 A **checkpoint is a designed route event** with discoverable alternatives and persistent consequences, not a high-speed chase/combat system. Enforcement varies by time, event, neighborhood and publicity. A clandestine route may lower permit checks but increase robbery, blackmail, or unreliable pay. Officer/personnel attitudes can differ from policies.
 
 ## F. Social fabric and everyday institutions
@@ -85,9 +89,15 @@ Language is political. **Dock Common** already exists in production, but it need
 
 These are **example hooks**: do not implement or treat them as shipped quests until content and domain contracts are reviewed.
 
+## Player's district — user-confirmed social direction
+
+The player lives **inside the dangerous Outer Margin**, a dense, functioning, severely poor urban district of ordinary families alongside irregular migrants, fugitives, refugees, debtors, and socially excluded residents. It is **not** abandoned, universally lawless or physically ruined. Old but functioning repaired technology, basic services, shops, daily routines and community institutions coexist with exploitation, crime, neighborhood obligations and periodic official raids. Being undocumented gives the player cover through informal housing and work, but makes them blackmailable by anyone who discovers the truth.
+
+The city-state's charter and prosperity therefore coexist with a group it economically uses but legally excludes. Residents' lack of status and protection matters more than constant spectacle of decay. The [detailed Outer Margin draft](OUTER_MARGIN_DISTRICT_V0.md) explores geography, local services, security and house/garage placements without modifying production content.
+
 ## H. Canon-lock candidates vs open decisions
 
-**Strong provisional recommendation:** chartered port city-state; six intertwined urban districts on an old basin; mixed transit heights on physical ground/bridges; institutionally uneven law enforcement; trade/logistics and refit driving inequality; city-wide anti-human exclusion disputed by residents.
+**User agreed:** chartered self-governing port city-state with trade/treaty limits; player lives in a dangerous but functioning poor and excluded district. **Still provisional:** the six-district basin geometry, distribution of powers, mixed-height supported roads, and details of the anti-human law.
 
 **Intentionally undecided:**
 - In-world alien city name, endonym/exonym and administrative title.
@@ -100,7 +110,7 @@ These are **example hooks**: do not implement or treat them as shipped quests un
 
 ## Next decisions in order
 
-1. Agree on **jurisdiction**: full independent city-state vs autonomous charter city constrained by outside treaties (recommended latter).
+1. **Agreed direction:** self-governing charter city-state, still dependent on outside treaties. Keep specific constitutional powers open.
 2. Agree on macro-topology: **old cargo basin + inland civic terraces**, and whether the settlement expands in a crescent or a full ring around water.
 3. Confirm or revise the **six provisional districts**, then give each two landmarks, one economic dependence, one security actor and one meaningful taxi transfer.
 4. Define 2–3 historical founding ruptures; write their visible scars into infrastructure and neighborhoods.
