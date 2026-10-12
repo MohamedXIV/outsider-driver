@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="190" viewBox="0 0 240 190">
+<title>Illustrated Outer Margin street beyond the parts counter window</title>
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#223d53"/><stop offset=".7" stop-color="#54736c"/><stop offset="1" stop-color="#9b7759"/></linearGradient>
+ <linearGradient id="tower" x1="0" y1="0" x2="1" y2=".3"><stop stop-color="#152e39"/><stop offset="1" stop-color="#3c5555"/></linearGradient>
+</defs>
+<rect width="240" height="190" fill="url(#sky)"/>
+<circle cx="190" cy="50" r="29" fill="#e2a868" opacity=".25"/>
+<path d="M-10 101l33 -16V46l21 -10 25 9 13 -18 32 9 16 68ZM113 112V41l32 -15 11 20 25 -11 16 25 27 -3 28 54Z" fill="#334d54"/>
+<path d="M0 110l20 -3V56l23 -12 4 66 29 -9 4 -28 25 -9 4 48 33 -10V24l23 11 5 72 26 -8V49l21 -16 19 12 4 71Z" fill="url(#tower)" stroke="#162c36" stroke-width="3"/>
+<g fill="#caad7e" opacity=".7"><path d="M10 70h6v10h-6Zm14 -7h5v9h-5Zm36 4h6v9h-6Zm24 23h7v10h-7Zm62 -45h6v14h-6Zm20 3h5v11h-5Zm31 18h8v8h-8Z"/></g>
+<path d="M-9 91Q67 104 120 78T248 87" stroke="#a39b79" stroke-width="7" fill="none"/><path d="M-9 93Q67 106 120 80T248 89" stroke="#26383e" stroke-width="2" fill="none"/>
+<!-- supported industrial overpass, not flying traffic -->
+<path d="M-10 125l260 -14 4 15 -264 16Z" fill="#a79577"/><path d="M-10 137l264 -13v9L-10 151Z" fill="#2b4046"/>
+<path d="M51 128l8 52h16l3 -53M190 121l-2 60h17l11 -62" fill="#36474b" stroke="#192f37" stroke-width="4"/>
+<path d="M0 157l240 -12v45H0Z" fill="#394f52"/>
+<path d="M0 182l240 -26" stroke="#c6ad82" stroke-width="5" opacity=".46"/>
+<path d="M9 159l14 -2m18 -1 11 -1m72 -3 24 -2m29 -3 21 -2" stroke="#ceb18d" stroke-width="2" opacity=".7"/>
+<path d="M103 66l19 -8 -2 34 -19 2Z" fill="#af744c" stroke="#192d37" stroke-width="3"/><path d="M108 73l9 2 -1 9 -8 2Z" fill="#efd09a"/>
+<path d="M-5 100Q88 100 245 75" stroke="#182d33" stroke-width="2" fill="none"/>
+</svg>

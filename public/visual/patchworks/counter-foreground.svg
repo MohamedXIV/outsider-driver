@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<title>Patchworks foreground salvaged tool counter and depth framing</title>
+<defs>
+ <linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e1c092"/><stop offset=".23" stop-color="#b29b75"/><stop offset=".75" stop-color="#796d59"/><stop offset="1" stop-color="#374b48"/></linearGradient>
+ <linearGradient id="front" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#776d58"/><stop offset=".6" stop-color="#435251"/><stop offset="1" stop-color="#243a3c"/></linearGradient>
+ <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d2bc91"/><stop offset=".47" stop-color="#5d7971"/><stop offset="1" stop-color="#233d42"/></linearGradient>
+</defs>
+<!-- silhouette of foreground work bench; vendor stands behind this -->
+<path d="M251 372l653 -12 16 83 -677 16Z" fill="url(#top)" stroke="#283d40" stroke-width="8"/>
+<path d="M250 450l663 -14 2 109H256Z" fill="url(#front)" stroke="#23383c" stroke-width="7"/>
+<path d="M265 391l646 -14" stroke="#e9c99a" stroke-width="7" stroke-opacity=".7"/>
+<path d="M257 444l658 -9" stroke="#273c40" stroke-width="10"/>
+<path d="M273 477l620 -7m-612 30 602 -4" stroke="#b59c77" stroke-opacity=".23" stroke-width="4"/>
+<!-- jagged hand-painted wear and bolts -->
+<path d="M305 415l66 -4 -14 8 22 -2m190 -13 63 -7m133 -1 48 -7" stroke="#f1d4a8" opacity=".43" stroke-width="3"/>
+<path d="M307 455l18 -2m12 2 24 -1m355 12 21 -3" stroke="#253f40" stroke-width="3"/>
+<g fill="#d6bc88" stroke="#304442" stroke-width="2"><circle cx="278" cy="450" r="4"/><circle cx="429" cy="446" r="4"/><circle cx="602" cy="442" r="4"/><circle cx="893" cy="437" r="4"/></g>
+<!-- chunky coil pack, repair tool, spools -->
+<path d="M317 339l116 -5 12 38 -128 7Z" fill="#617d74" stroke="#273e41" stroke-width="5"/>
+<path d="M333 343l85 -4 8 18 -84 5Z" fill="#a2a17e" stroke="#314e4b" stroke-width="3"/>
+<g stroke="#263d40" stroke-width="4"><circle cx="353" cy="351" r="9" fill="#d5af72"/><circle cx="388" cy="349" r="9" fill="#d5af72"/><circle cx="421" cy="348" r="9" fill="#d5af72"/></g>
+<path d="M487 342l56 1 18 22 -83 4Z" fill="url(#metal)" stroke="#2c4647" stroke-width="4"/>
+<circle cx="512" cy="351" r="13" fill="#577b76" stroke="#d1ba89" stroke-width="4"/><circle cx="512" cy="351" r="5" fill="#263c42"/>
+<path d="M742 335l109 -7 -7 38 -103 6Z" fill="#354b4e" stroke="#af9873" stroke-width="5"/>
+<path d="M753 339h76m-68 10 44 -1" stroke="#729e91" stroke-width="3"/><circle cx="818" cy="349" r="10" fill="#dba971" stroke="#343f40" stroke-width="3"/>
+<path d="M563 369l77 -4" stroke="#23363a" stroke-width="7"/><path d="M564 367l45 -3" stroke="#d7bf8e" stroke-width="3"/>
+<path d="M659 372l49 -2" stroke="#273f41" stroke-width="6"/>
+<!-- terminal cable looping down the front -->
+<path d="M816 373Q836 415 827 462q-8 31 -2 58" stroke="#142b33" stroke-width="13" fill="none"/>
+<path d="M816 373Q836 415 827 462q-8 31 -2 58" stroke="#638079" stroke-width="4" fill="none" opacity=".8"/>
+<!-- underside ventilation slots -->
+<path d="M334 483l196 -3m-196 12 196 -3m-196 12 196 -3" stroke="#172d32" stroke-width="5" opacity=".72"/>
+<rect y="524" width="960" height="16" fill="#1a2d33"/>
+</svg>

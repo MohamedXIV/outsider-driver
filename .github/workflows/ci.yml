@@ -40,3 +40,16 @@ jobs:
 
       - name: Cross-browser smoke
         run: npm run test:browser
+
+      - name: Capture real Pixi Patchworks lab (branch-only art proof)
+        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feat/86-pixi-patchworks-lab' }}
+        run: node scripts/capture-patchworks-lab.mjs
+
+      - name: Archive Pixi animated scene screenshots and frame diagnostics
+        if: ${{ always() && github.event_name == 'pull_request' && github.head_ref == 'feat/86-pixi-patchworks-lab' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: patchworks-real-pixi-browser-art
+          path: docs/visuals/pixi-patchworks/
+          if-no-files-found: warn
+          retention-days: 3
