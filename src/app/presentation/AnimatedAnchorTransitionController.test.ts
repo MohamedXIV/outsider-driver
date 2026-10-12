@@ -8,226 +8,214 @@ import {
   type WorldRenderSuspensionPort,
 } from './AnimatedAnchorTransitionController';
 
-function stageFixture(): AnimatedAnchorStage & {
-  start: ReturnType<typeof vi.fn>;
-  stop: ReturnType<typeof vi.fn>;
-  dispose: ReturnType<typeof vi.fn>;
-} {
-  return {
+function makeStage() {
+  const start = vi.fn();
+  const stop = vi.fn();
+  const dispose = vi.fn();
+  const stage: AnimatedAnchorStage = {
     canvas: {} as HTMLCanvasElement,
-    start: vi.fn(),
-    stop: vi.fn(),
-    dispose: vi.fn(),
+    start,
+    stop,
+    dispose,
   };
+  return { stage, start, stop, dispose };
 }
 
-function fixture(factory: AnimatedAnchorStageFactory) {
-  const access: LocationAnchorAccessPort = {
-    authorizeArrival: vi.fn((locationId: string) => ({
-      locationId,
-      districtId: 'district:outer-margin',
-      returnToken: 'session-arrival-1',
-    })),
-    confirmDeparture: vi.fn(),
-  };
-  const world: WorldRenderSuspensionPort = {
-    suspend: vi.fn(),
-    resume: vi.fn(),
-  };
+function makeHarness(factory: AnimatedAnchorStageFactory) {
+  const authorizeArrival = vi.fn((locationId: string) => ({
+    locationId,
+    districtId: 'district:outer-margin',
+    returnToken: 'session-arrival-1',
+  }));
+  const confirmDeparture = vi.fn();
+  const suspend = vi.fn();
+  const resume = vi.fn();
+  const showLoading = vi.fn();
+  const showScene = vi.fn();
+  const showError = vi.fn();
+  const clear = vi.fn();
+  const access: LocationAnchorAccessPort = { authorizeArrival, confirmDeparture };
+  const world: WorldRenderSuspensionPort = { suspend, resume };
   const overlay: AnimatedAnchorOverlayPort = {
-    showLoading: vi.fn(),
-    showScene: vi.fn(),
-    showError: vi.fn(),
-    clear: vi.fn(),
+    showLoading, showScene, showError, clear,
   };
+  const controller = new AnimatedAnchorTransitionController(
+    access, factory, world, overlay,
+  );
   return {
-    access,
-    world,
-    overlay,
-    controller: new AnimatedAnchorTransitionController(
-      access, factory, world, overlay,
-    ),
+    controller,
+    authorizeArrival,
+    confirmDeparture,
+    suspend,
+    resume,
+    showLoading,
+    showScene,
+    showError,
+    clear,
   };
 }
 
 describe('AnimatedAnchorTransitionController', () => {
-  it('only presents an authorized arrival, suspends world once and resumes on canonical departure', async () => {
-    const scene = stageFixture();
-    const factory: AnimatedAnchorStageFactory = {
-      create: vi.fn(() => Promise.resolve(scene)),
-    };
-    const { access, world, overlay, controller } = fixture(factory);
+  it('enters an authorized location once, suspends world and confirms canonical departure', async () => {
+    const { stage, start, stop, dispose } = makeStage();
+    const create = vi.fn(() => Promise.resolve(stage));
+    const h = makeHarness({ create });
 
-    expect(await controller.enter('location:patchworks-parts')).toBe(true);
-    expect(controller.phase).toBe('active');
-    expect(access.authorizeArrival).toHaveBeenCalledWith('location:patchworks-parts');
-    expect(world.suspend).toHaveBeenCalledTimes(1);
-    expect(world.suspend).toHaveBeenCalledWith('location-anchor');
-    expect(overlay.showScene).toHaveBeenCalledWith(scene.canvas, {
+    expect(await h.controller.enter('location:patchworks-parts')).toBe(true);
+    expect(h.controller.phase).toBe('active');
+    expect(h.authorizeArrival).toHaveBeenCalledWith('location:patchworks-parts');
+    expect(h.suspend).toHaveBeenCalledTimes(1);
+    expect(h.suspend).toHaveBeenCalledWith('location-anchor');
+    expect(h.showScene).toHaveBeenCalledWith(stage.canvas, {
       locationId: 'location:patchworks-parts',
       districtId: 'district:outer-margin',
       returnToken: 'session-arrival-1',
     });
-    expect(scene.start).toHaveBeenCalledTimes(1);
-    expect(await controller.enter('location:anywhere')).toBe(false);
-    expect(factory.create).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(await h.controller.enter('location:anywhere')).toBe(false);
+    expect(create).toHaveBeenCalledTimes(1);
 
-    expect(controller.exit()).toBe(true);
-    expect(access.confirmDeparture).toHaveBeenCalledTimes(1);
-    expect(scene.stop).toHaveBeenCalledTimes(1);
-    expect(scene.dispose).toHaveBeenCalledTimes(1);
-    expect(world.resume).toHaveBeenCalledTimes(1);
-    expect(world.resume).toHaveBeenCalledWith('location-anchor');
-    expect(controller.phase).toBe('idle');
-    expect(controller.exit()).toBe(false);
-    controller.dispose();
+    expect(h.controller.exit()).toBe(true);
+    expect(h.confirmDeparture).toHaveBeenCalledTimes(1);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(h.resume).toHaveBeenCalledTimes(1);
+    expect(h.resume).toHaveBeenCalledWith('location-anchor');
+    expect(h.controller.phase).toBe('idle');
+    expect(h.controller.exit()).toBe(false);
+    h.controller.dispose();
   });
 
-  it('does not trigger loading or a GPU renderer for an invalid arrival', async () => {
-    const scene = stageFixture();
-    const factory: AnimatedAnchorStageFactory = {
-      create: vi.fn(() => Promise.resolve(scene)),
-    };
-    const { access, world, overlay, controller } = fixture(factory);
-    vi.mocked(access.authorizeArrival).mockImplementation(() => {
+  it('rejects an invalid physical arrival before loading visuals', async () => {
+    const { stage } = makeStage();
+    const create = vi.fn(() => Promise.resolve(stage));
+    const h = makeHarness({ create });
+    h.authorizeArrival.mockImplementation(() => {
       throw new Error('No physical arrival at that location.');
     });
-    await expect(controller.enter('location:locked-shop')).rejects.toThrow('No physical arrival');
-    expect(factory.create).not.toHaveBeenCalled();
-    expect(overlay.showLoading).not.toHaveBeenCalled();
-    expect(world.suspend).not.toHaveBeenCalled();
-    expect(controller.phase).toBe('idle');
-    controller.dispose();
+    await expect(h.controller.enter('location:locked')).rejects.toThrow('No physical arrival');
+    expect(create).not.toHaveBeenCalled();
+    expect(h.showLoading).not.toHaveBeenCalled();
+    expect(h.suspend).not.toHaveBeenCalled();
+    expect(h.controller.phase).toBe('idle');
+    h.controller.dispose();
   });
 
-  it('cancels pending loading without leaking a late Pixi canvas or restarting Babylon', async () => {
-    const scene = stageFixture();
+  it('cancels a pending load without activating late assets', async () => {
+    const { stage, start, dispose } = makeStage();
     let finish!: (scene: AnimatedAnchorStage) => void;
-    let requestSignal: AbortSignal | undefined;
+    let signal: AbortSignal | undefined;
     const pending = new Promise<AnimatedAnchorStage>((resolve) => { finish = resolve; });
-    const factory: AnimatedAnchorStageFactory = {
-      create: vi.fn((_arrival, signal) => {
-        requestSignal = signal;
-        return pending;
-      }),
+    const create: AnimatedAnchorStageFactory['create'] = (_arrival, request) => {
+      signal = request;
+      return pending;
     };
-    const { world, overlay, controller } = fixture(factory);
-
-    const loading = controller.enter('location:patchworks-parts');
-    expect(controller.phase).toBe('loading');
-    expect(controller.exit()).toBe(true);
-    expect(requestSignal?.aborted).toBe(true);
-    expect(controller.phase).toBe('idle');
-    finish(scene);
+    const h = makeHarness({ create });
+    const loading = h.controller.enter('location:shop');
+    expect(h.controller.phase).toBe('loading');
+    expect(h.controller.exit()).toBe(true);
+    expect(signal?.aborted).toBe(true);
+    finish(stage);
     await expect(loading).resolves.toBe(false);
-    expect(scene.dispose).toHaveBeenCalledTimes(1);
-    expect(scene.start).not.toHaveBeenCalled();
-    expect(world.suspend).not.toHaveBeenCalled();
-    expect(world.resume).not.toHaveBeenCalled();
-    expect(overlay.showScene).not.toHaveBeenCalled();
-    controller.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(start).not.toHaveBeenCalled();
+    expect(h.suspend).not.toHaveBeenCalled();
+    expect(h.resume).not.toHaveBeenCalled();
+    expect(h.showScene).not.toHaveBeenCalled();
+    h.controller.dispose();
   });
 
-  it('preserves a newer anchor when a canceled earlier request resolves late', async () => {
-    const stale = stageFixture();
-    const current = stageFixture();
+  it('ignores stale promises when a different shop is now active', async () => {
+    const oldStage = makeStage();
+    const newStage = makeStage();
     let finish!: (scene: AnimatedAnchorStage) => void;
     const pending = new Promise<AnimatedAnchorStage>((resolve) => { finish = resolve; });
     let calls = 0;
-    const factory: AnimatedAnchorStageFactory = {
-      create: vi.fn(() => {
+    const h = makeHarness({
+      create: () => {
         calls++;
-        return calls === 1 ? pending : Promise.resolve(current);
-      }),
-    };
-    const { controller, overlay } = fixture(factory);
-
-    const old = controller.enter('location:old');
-    controller.exit();
-    expect(await controller.enter('location:new')).toBe(true);
-    finish(stale);
+        return calls === 1 ? pending : Promise.resolve(newStage.stage);
+      },
+    });
+    const old = h.controller.enter('location:old');
+    h.controller.exit();
+    expect(await h.controller.enter('location:new')).toBe(true);
+    finish(oldStage.stage);
     await expect(old).resolves.toBe(false);
-    expect(stale.dispose).toHaveBeenCalledTimes(1);
-    expect(current.dispose).not.toHaveBeenCalled();
-    expect(controller.phase).toBe('active');
-    expect(overlay.showScene).toHaveBeenCalledTimes(1);
-    controller.dispose();
+    expect(oldStage.dispose).toHaveBeenCalledTimes(1);
+    expect(newStage.dispose).not.toHaveBeenCalled();
+    expect(h.controller.phase).toBe('active');
+    expect(h.showScene).toHaveBeenCalledTimes(1);
+    h.controller.dispose();
   });
 
-  it('stops the animation ticker in a hidden tab without releasing the Babylon suspension', async () => {
-    const scene = stageFixture();
-    const { controller, world } = fixture({
-      create: () => Promise.resolve(scene),
-    });
-    controller.setVisible(false);
-    expect(await controller.enter('location:shop')).toBe(true);
-    expect(scene.start).not.toHaveBeenCalled();
-    controller.setVisible(true);
-    controller.setVisible(true);
-    expect(scene.start).toHaveBeenCalledTimes(1);
-    controller.setVisible(false);
-    controller.setVisible(false);
-    expect(scene.stop).toHaveBeenCalledTimes(1);
-    expect(world.resume).not.toHaveBeenCalled();
-    controller.dispose();
-    expect(scene.dispose).toHaveBeenCalledTimes(1);
-    expect(world.resume).toHaveBeenCalledTimes(1);
+  it('stops the 2D ticker on tab hide without releasing Babylon suspension', async () => {
+    const { stage, start, stop, dispose } = makeStage();
+    const h = makeHarness({ create: () => Promise.resolve(stage) });
+    h.controller.setVisible(false);
+    expect(await h.controller.enter('location:shop')).toBe(true);
+    expect(start).not.toHaveBeenCalled();
+    h.controller.setVisible(true);
+    h.controller.setVisible(true);
+    expect(start).toHaveBeenCalledTimes(1);
+    h.controller.setVisible(false);
+    h.controller.setVisible(false);
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(h.resume).not.toHaveBeenCalled();
+    h.controller.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(h.resume).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the 2D scene active if the canonical session rejects departure', async () => {
-    const scene = stageFixture();
-    const { controller, access, world } = fixture({
-      create: () => Promise.resolve(scene),
+  it('cannot discard an open scene when the real session rejects departure', async () => {
+    const { stage, dispose } = makeStage();
+    const h = makeHarness({ create: () => Promise.resolve(stage) });
+    expect(await h.controller.enter('location:shop')).toBe(true);
+    h.confirmDeparture.mockImplementation(() => {
+      throw new Error('Cannot depart during unresolved transaction.');
     });
-    expect(await controller.enter('location:shop')).toBe(true);
-    vi.mocked(access.confirmDeparture).mockImplementation(() => {
-      throw new Error('Cannot depart during an unresolved transaction.');
-    });
-    expect(() => controller.exit()).toThrow('unresolved transaction');
-    expect(controller.phase).toBe('active');
-    expect(world.resume).not.toHaveBeenCalled();
-    expect(scene.dispose).not.toHaveBeenCalled();
-    controller.dispose();
+    expect(() => h.controller.exit()).toThrow('unresolved transaction');
+    expect(h.controller.phase).toBe('active');
+    expect(h.resume).not.toHaveBeenCalled();
+    expect(dispose).not.toHaveBeenCalled();
+    h.controller.dispose();
   });
 
-  it('recovers from a rejected asset load with a readable UI error, not a blank renderer', async () => {
-    const { controller, world, overlay } = fixture({
+  it('reports image-load failure in the host UI and leaves the 3D world active', async () => {
+    const h = makeHarness({
       create: () => Promise.reject(new Error('Image decode failed.')),
     });
-    expect(await controller.enter('location:shop')).toBe(false);
-    expect(controller.phase).toBe('idle');
-    expect(world.suspend).not.toHaveBeenCalled();
-    expect(overlay.showError).toHaveBeenCalledWith('Image decode failed.');
-    controller.dispose();
+    expect(await h.controller.enter('location:shop')).toBe(false);
+    expect(h.controller.phase).toBe('idle');
+    expect(h.suspend).not.toHaveBeenCalled();
+    expect(h.showError).toHaveBeenCalledWith('Image decode failed.');
+    h.controller.dispose();
   });
 
-  it('rolls back a failed stage start and never leaves the 3D renderer suspended', async () => {
-    const scene = stageFixture();
-    scene.start.mockImplementation(() => { throw new Error('WebGL context unavailable'); });
-    const { controller, world, overlay } = fixture({
-      create: () => Promise.resolve(scene),
-    });
-    expect(await controller.enter('location:shop')).toBe(false);
-    expect(controller.phase).toBe('idle');
-    expect(scene.dispose).toHaveBeenCalledTimes(1);
-    expect(world.resume).toHaveBeenCalledExactlyOnceWith('location-anchor');
-    expect(overlay.showError).toHaveBeenCalledWith('WebGL context unavailable');
-    controller.dispose();
+  it('releases the 3D suspension when an animated stage fails to start', async () => {
+    const { stage, start, dispose } = makeStage();
+    start.mockImplementation(() => { throw new Error('WebGL context unavailable'); });
+    const h = makeHarness({ create: () => Promise.resolve(stage) });
+    expect(await h.controller.enter('location:shop')).toBe(false);
+    expect(h.controller.phase).toBe('idle');
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(h.resume).toHaveBeenCalledTimes(1);
+    expect(h.resume).toHaveBeenCalledWith('location-anchor');
+    expect(h.showError).toHaveBeenCalledWith('WebGL context unavailable');
+    h.controller.dispose();
   });
 
-  it('disposes a late scene after app teardown and refuses another entry', async () => {
-    const scene = stageFixture();
-    let finish!: (value: AnimatedAnchorStage) => void;
+  it('cleans a scene that arrives after full app disposal', async () => {
+    const { stage, dispose } = makeStage();
+    let finish!: (scene: AnimatedAnchorStage) => void;
     const loading = new Promise<AnimatedAnchorStage>((resolve) => { finish = resolve; });
-    const { controller, world } = fixture({
-      create: () => loading,
-    });
-    const entered = controller.enter('location:shop');
-    controller.dispose();
-    finish(scene);
-    expect(await entered).toBe(false);
-    expect(scene.dispose).toHaveBeenCalledTimes(1);
-    expect(world.suspend).not.toHaveBeenCalled();
-    await expect(controller.enter('location:shop')).rejects.toThrow('disposed');
+    const h = makeHarness({ create: () => loading });
+    const enter = h.controller.enter('location:shop');
+    h.controller.dispose();
+    finish(stage);
+    await expect(enter).resolves.toBe(false);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(h.suspend).not.toHaveBeenCalled();
+    await expect(h.controller.enter('location:shop')).rejects.toThrow('disposed');
   });
 });
