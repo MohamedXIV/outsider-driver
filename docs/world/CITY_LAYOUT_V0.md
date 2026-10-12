@@ -29,6 +29,12 @@ The physical terrain is important. The Docks are at low water level. Older work 
 
 **Player geography (user direction):** the protagonist **lives inside Outer Margin**, the dangerous but thriving low-income district, rather than on an Old Junction border. The current draft places a modest inhabited room in the Lantern Row residential interior and a repair garage at the Patchworks frontage, close to a legal feeder road toward Old Junction. These subareas and garage details remain draft; neither home nor garage coordinates are live #65/PR #74 navigation data. The district's social fabric, physical services and risk asymmetry are developed in [Outer Margin v0.1](OUTER_MARGIN_DISTRICT_V0.md).
 
+## How destinations use 3D streets and 2D location anchors
+
+**Confirmed presentation rule:** the **streets, plazas, buildings, bridges, vehicles and taxi travel remain 3D**, as do the player's bounded **home and garage**. The layout also maps **shops, offices, cafés, clinics, parts counters and small services** as reachable geographic points, but most such interiors are **2D illustrated or VN-style anchors**, not costly 3D explorable rooms. Their exterior architecture can remain visible on the real 3D taxi route; reaching the destination permits a service screen or conversation and returns to the valid city/vehicle state afterward.
+
+**The map is a location/connectivity graph, not a renderer specification:** a detailed Shop `locationId` can refer to a simple but recognizable 3D facade and a rich 2D interaction. This raises social/commercial density without demanding one 3D scene per address. Anchors are not instant travel between unseen neighborhoods, and do not create independent currencies, inventory or suspicion. See [Location Presentation Modes](LOCATION_PRESENTATION_MODES_V0.md) for the production boundary. This new rule does not mean every illustrated building needs a playable door.
+
 ## Ground transport hierarchy (not separate playable floors)
 
 - **Lower Streets:** continuous road contact from quay loading ramps and crowded historic streets. Narrow, low clearance and prone to closure.
