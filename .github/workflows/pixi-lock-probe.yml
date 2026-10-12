@@ -1,7 +1,6 @@
 name: One-shot PixiJS lockfile evidence
 on:
-  push:
-    branches: [feat/86-pixi-patchworks-lab]
+  pull_request:
     paths:
       - .github/workflows/pixi-lock-probe.yml
 jobs:
