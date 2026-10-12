@@ -1,4 +1,4 @@
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { AnimatedAnchorStage } from '../../app/presentation/AnimatedAnchorTransitionController';
 
 export type PatchworksExpression = 'neutral' | 'curious' | 'wary';
@@ -17,7 +17,40 @@ export interface PatchworksStage extends AnimatedAnchorStage {
     readonly passerX: number;
     readonly tickerRunning: boolean;
     readonly destroyed: boolean;
+    readonly illustratedLayerCount: number;
+    readonly ownedTextureCount: number;
   };
+}
+
+/**
+ * Each lab entry owns these decoded textures. Avoid the global Pixi Assets cache:
+ * unload/load races between cancelled and subsequent entries can reuse stale
+ * textures, and no other part of the app needs these illustration resources.
+ */
+const ILLUSTRATION_URLS = [
+  '/visual/patchworks/shop-backplate.svg',
+  '/visual/patchworks/street-vista.svg',
+  '/visual/patchworks/partskeeper.svg',
+  '/visual/patchworks/counter-foreground.svg',
+] as const;
+
+async function loadOwnedIllustration(url: string, signal: AbortSignal): Promise<Texture> {
+  const response = await fetch(url, { signal });
+  if (!response.ok || !response.headers.get('content-type')?.includes('image/svg+xml')) {
+    throw new Error(`Patchworks illustration unavailable: ${url} (${response.status})`);
+  }
+  const blob = await response.blob();
+  if (signal.aborted) throw new DOMException('Patchworks illustration cancelled.', 'AbortError');
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    if (signal.aborted) throw new DOMException('Patchworks illustration cancelled.', 'AbortError');
+    return Texture.from(image);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function rect(x: number, y: number, width: number, height: number, color: number): Graphics {
@@ -59,24 +92,35 @@ export async function createPatchworksStage(
     throw new Error('Patchworks scene request aborted.');
   }
 
-  const stage = app.stage;
-  // The painted-like palette and hand-composed silhouettes are a test scene,
-  // not final artist-approved production backgrounds.
-  stage.addChild(rect(0, 0, 960, 540, 0x243b3f));
-  stage.addChild(rect(0, 0, 960, 148, 0x354e50));
-  stage.addChild(rect(0, 147, 960, 10, 0x75806b));
-  stage.addChild(rect(0, 157, 960, 194, 0x344747));
-  stage.addChild(rect(0, 350, 960, 190, 0x4b4c42));
+  const ownedTextures: Texture[] = [];
+  try {
+    // Sequential decoding also makes aborted entries cheap to unwind.
+    for (const url of ILLUSTRATION_URLS) {
+      ownedTextures.push(await loadOwnedIllustration(url, signal));
+    }
+  } catch (error: unknown) {
+    for (const texture of ownedTextures) texture.destroy();
+    app.destroy(true, { children: true });
+    throw error;
+  }
+  const [backplateTexture, streetTexture, portraitTexture, counterTexture] = ownedTextures;
+  if (!backplateTexture || !streetTexture || !portraitTexture || !counterTexture) {
+    throw new Error('Patchworks illustration layer manifest is incomplete.');
+  }
 
-  // A street-facing window makes this a lived-in place in Outer Margin.
-  stage.addChild(panel(40, 110, 252, 216, 27, 0x172f3c));
-  stage.addChild(panel(51, 120, 230, 195, 22, 0x658a82));
-  stage.addChild(panel(61, 129, 210, 169, 20, 0x223c52));
+  const stage = app.stage;
+  // Source-owned illustrated layers provide the actual texture, silhouettes,
+  // wear, staging and street depth. Pixi owns only compositing/secondary motion.
+  const backplate = new Sprite(backplateTexture);
+  stage.addChild(backplate);
+
+  // The street vignette moves independently behind the painted window frame.
   const street = new Container();
-  street.addChild(rect(75, 238, 180, 24, 0x677576));
-  street.addChild(panel(94, 179, 55, 66, 8, 0x6f847d));
-  street.addChild(panel(177, 159, 59, 86, 13, 0x415e65));
-  street.addChild(circle(209, 173, 12, 0xb98755, 0.8));
+  const streetIllustration = new Sprite(streetTexture);
+  streetIllustration.position.set(65, 129);
+  streetIllustration.width = 200;
+  streetIllustration.height = 169;
+  street.addChild(streetIllustration);
   // Ground-level passer: a distinct silhouette outside the reachable shop,
   // masked by the architectural window rather than drawn over its frame.
   const passer = new Container();
@@ -95,16 +139,6 @@ export async function createPatchworksStage(
   stage.addChild(rect(159, 130, 12, 168, 0x8f8f7a));
   stage.addChild(rect(64, 211, 200, 11, 0x8f8f7a));
 
-  // Aged storage cabinets and salvaged components.
-  for (const [x, w] of [[324, 103], [431, 109], [742, 120]] as const) {
-    stage.addChild(panel(x, 142, w, 221, 10, 0x7d7662));
-    stage.addChild(panel(x + 7, 151, w - 14, 190, 7, 0x344c4c));
-    for (let y = 192; y < 332; y += 65) {
-      stage.addChild(rect(x + 9, y, w - 18, 6, 0xb5a179));
-      stage.addChild(panel(x + 19, y - 29, 35, 26, 9, 0x927f66));
-      stage.addChild(circle(x + 73, y - 14, 13, 0x4f8580));
-    }
-  }
   // Suspended service monitor and its shifting data line.
   stage.addChild(panel(554, 129, 160, 113, 13, 0xbda275));
   stage.addChild(panel(565, 139, 140, 87, 9, 0x102e34));
@@ -115,8 +149,7 @@ export async function createPatchworksStage(
     stage.addChild(rect(577 + i * 17, 172 + (i % 3) * 9, 11, 6, 0x538f88));
   }
   // Overhead analog fixtures, practical not a full shadow-renderer.
-  stage.addChild(rect(603, 38, 7, 70, 0x88745e));
-  stage.addChild(new Graphics().poly([558, 111, 660, 111, 638, 144, 575, 144]).fill(0xb69b71));
+  // Lamp fixture itself is in the backplate; these remain animatable overlays.
   const lampCore = circle(607, 143, 19, 0xf4ce88, 0.8);
   stage.addChild(lampCore);
   const warmGlow = circle(607, 166, 109, 0xe3a15b, 0.07);
@@ -137,11 +170,9 @@ export async function createPatchworksStage(
   // A recurring shopkeeper: idles and blinks while the shop is running.
   const vendor = new Container();
   vendor.position.set(672, 325);
-  vendor.addChild(new Graphics().ellipse(0, 30, 68, 17).fill({ color: 0x15282c, alpha: 0.4 }));
-  vendor.addChild(panel(-58, -3, 118, 95, 30, 0x85765f));
-  vendor.addChild(new Graphics().ellipse(0, -52, 52, 64).fill(0x729a8d));
-  vendor.addChild(new Graphics().ellipse(-42, -53, 18, 25).fill(0x729a8d));
-  vendor.addChild(new Graphics().ellipse(42, -53, 18, 25).fill(0x729a8d));
+  const illustratedPartskeeper = new Sprite(portraitTexture);
+  illustratedPartskeeper.position.set(-115, -170);
+  vendor.addChild(illustratedPartskeeper);
   const leftEye = circle(-19, -62, 8, 0x253b39);
   const rightEye = circle(19, -62, 8, 0x253b39);
   vendor.addChild(leftEye, rightEye);
@@ -156,14 +187,8 @@ export async function createPatchworksStage(
   vendor.addChild(blink);
   stage.addChild(vendor);
 
-  // Warm working counter and foreground objects frame the character.
-  stage.addChild(panel(264, 365, 629, 93, 16, 0xa69375));
-  stage.addChild(rect(270, 381, 619, 18, 0xd0b589));
-  stage.addChild(panel(291, 444, 579, 81, 8, 0x5a534c));
-  stage.addChild(panel(334, 344, 103, 33, 8, 0x69736b));
-  stage.addChild(circle(482, 362, 16, 0x839e85));
-  stage.addChild(panel(767, 329, 76, 42, 9, 0x444f52));
-  stage.addChild(circle(807, 348, 10, 0xe5b76b, 0.8));
+  // Foreground illustrated material passes in front of the partskeeper.
+  stage.addChild(new Sprite(counterTexture));
 
   // Vapor and fine dust: existing geometry only; tick updates transforms.
   const vapor = Array.from({ length: 5 }, (_, i) => {
@@ -255,6 +280,8 @@ export async function createPatchworksStage(
       app.stop();
       app.ticker.remove(tick);
       app.destroy(true, { children: true });
+      // Own, release and never share these four textures across entries.
+      for (const texture of ownedTextures) texture.destroy();
     },
     setExpression,
     getMetrics: () => ({
@@ -267,6 +294,8 @@ export async function createPatchworksStage(
       passerX,
       tickerRunning: playing && !reducedMotion && !destroyed,
       destroyed,
+      illustratedLayerCount: ILLUSTRATION_URLS.length,
+      ownedTextureCount: destroyed ? 0 : ownedTextures.length,
     }),
   };
 }

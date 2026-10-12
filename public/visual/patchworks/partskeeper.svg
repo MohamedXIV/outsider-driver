@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="230" height="240" viewBox="0 0 230 240">
+<title>Partskeeper, an Outer Margin alien mechanic — layered portrait torso without animated eyes</title>
+<defs>
+ <linearGradient id="skin" x1="0" y1="0" x2="1" y2=".85"><stop stop-color="#b3b9a0"/><stop offset=".3" stop-color="#749e90"/><stop offset=".8" stop-color="#49796f"/><stop offset="1" stop-color="#345853"/></linearGradient>
+ <linearGradient id="coat" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ab8c65"/><stop offset=".6" stop-color="#665c4e"/><stop offset="1" stop-color="#3f4844"/></linearGradient>
+ <linearGradient id="rim" x1="0" y1="0" x2="1" y2=".6"><stop stop-color="#d2c196"/><stop offset=".5" stop-color="#7b8677"/><stop offset="1" stop-color="#4a5c58"/></linearGradient>
+</defs>
+<ellipse cx="115" cy="229" rx="89" ry="12" fill="#091b23" opacity=".45"/>
+<!-- workcoat silhouette -->
+<path d="M45 177Q27 184 25 217l16 29h151l16 -27Q199 181 164 167L146 153 78 156Z" fill="url(#coat)" stroke="#243d40" stroke-width="5"/>
+<path d="M79 160l33 31 34 -31 8 84H68Z" fill="#354b4a" stroke="#b1a076" stroke-width="4"/>
+<path d="M92 197l-8 42h66l-8 -44" fill="#546c63" stroke="#2c4849" stroke-width="3"/>
+<path d="M31 219l25 -10 14 37H39Zm173 -2 -25 -12 -10 41h24Z" fill="#4e5a50" stroke="#233c3c" stroke-width="3"/>
+<path d="M85 197l64 0M87 211h63M89 225h63" stroke="#bca27d" stroke-opacity=".4" stroke-width="2"/>
+<!-- ear-fins and expressive face -->
+<path d="M66 100Q21 68 14 91q-4 22 52 47Zm98 0q48 -31 58 -10 3 26 -57 46Z" fill="#638e81" stroke="#2d5654" stroke-width="5"/>
+<path d="M53 103Q42 57 71 29q44 -38 99 4 25 30 14 88 -5 58 -69 70 -63 -10 -68 -59Z" fill="url(#skin)" stroke="#254e4d" stroke-width="5"/>
+<path d="M66 62Q96 43 119 48T172 65" stroke="#d5c9a0" stroke-opacity=".48" stroke-width="7" fill="none"/>
+<path d="M64 91q18 -18 39 -13m28 -1q17 -9 34 11" stroke="#2d625b" stroke-width="5" fill="none"/>
+<path d="M58 119q12 18 32 10m52 0q21 8 34 -10" stroke="#a8c0a2" stroke-opacity=".5" stroke-width="5" fill="none"/>
+<path d="M111 111l-8 24 12 8 12 -8 -9 -26" fill="#538278" stroke="#325b55" stroke-width="3"/>
+<path d="M93 157q24 12 45 -1" fill="none" stroke="#2a5450" stroke-width="5" stroke-linecap="round"/>
+<path d="M103 165q13 4 24 -1" stroke="#cbbaa0" stroke-width="2" fill="none"/>
+<!-- ridged alien crest and salvaged gold head fitting -->
+<path d="M58 64Q65 12 99 19l15 -15 15 14 19 -6 23 37 -27 -12 -27 -12 -33 9Z" fill="url(#rim)" stroke="#345451" stroke-width="5"/>
+<path d="M80 27l9 26m23 -36 2 31m25 -24 -8 27" stroke="#e0cba6" stroke-width="3" opacity=".6"/>
+<path d="M66 170q-4 30 -17 34M165 167q4 25 18 34" stroke="#82a594" stroke-width="6" fill="none"/>
+<!-- repaired apron badges -->
+<path d="M85 205h24v25H85Z" fill="#a88e6a" stroke="#273e40" stroke-width="3"/>
+<path d="M89 214h15m-11 6 7 0" stroke="#2d5352" stroke-width="3"/>
+<circle cx="154" cy="199" r="6" fill="#d3aa73" stroke="#314b48" stroke-width="3"/>
+<path d="M52 188l21 12m101 -14 -23 17" stroke="#d3b080" stroke-width="4" opacity=".65"/>
+</svg>

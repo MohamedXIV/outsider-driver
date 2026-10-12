@@ -37,6 +37,9 @@ try {
   await page.locator('#visual-stage canvas').waitFor({ timeout: 20000 });
   await page.waitForTimeout(500);
   const start = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (start.illustratedLayerCount !== 4 || start.ownedTextureCount !== 4) {
+    throw new Error('Illustrated shop did not own all four source SVG textures: ' + JSON.stringify(start));
+  }
   const earlyCanvas = await page.locator('#visual-stage canvas').screenshot();
   await page.waitForTimeout(700);
   const animated = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
@@ -87,7 +90,7 @@ try {
   }
   const left = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
   if (left.phase !== 'idle' || left.pauseCount !== 1 || left.resumeCount !== 1 ||
-      left.tickerRunning || !left.destroyed) {
+      left.tickerRunning || !left.destroyed || left.ownedTextureCount !== 0) {
     throw new Error('World suspend/release contract failed: ' + JSON.stringify(left));
   }
 
@@ -126,7 +129,7 @@ try {
   const secondExit = await page.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
   if (secondExit.phase !== 'idle' || secondExit.pauseCount !== 2 ||
       secondExit.resumeCount !== 2 || secondExit.departureCount !== 2 ||
-      secondExit.tickerRunning || !secondExit.destroyed ||
+      secondExit.tickerRunning || !secondExit.destroyed || secondExit.ownedTextureCount !== 0 ||
       await page.locator('#visual-stage canvas').count() !== 0) {
     throw new Error('Repeated open/close lifecycle leaked: ' + JSON.stringify(secondExit));
   }
@@ -148,6 +151,22 @@ try {
   if (await compact.locator('#visual-stage canvas').count() !== 0) {
     throw new Error('Compact touch exit left a Pixi canvas mounted');
   }
+  // Failing an authored illustration must recover without mounting a partial
+  // scene, leaking a Pixi canvas or claiming a successful arrival.
+  const unavailable = await browser.newPage({ viewport: { width: 900, height: 760 } });
+  unavailable.on('pageerror', (error) => errorLog.push(error.message));
+  await unavailable.route('**/visual/patchworks/partskeeper.svg', (route) =>
+    route.fulfill({ status: 503, contentType: 'text/plain', body: 'test-only missing illustration' }));
+  await unavailable.goto(url);
+  await unavailable.locator('#enter').click();
+  await unavailable.locator('#status').filter({ hasText: /Scene failed: Patchworks illustration unavailable:/ }).waitFor();
+  const failedAsset = await unavailable.evaluate(() => Reflect.get(window, '__outsiderPatchworksLab').inspect());
+  if (failedAsset.phase !== 'idle' || failedAsset.pauseCount !== 0 ||
+      failedAsset.resumeCount !== 0 || failedAsset.errorCount !== 1 ||
+      await unavailable.locator('#visual-stage canvas').count() !== 0) {
+    throw new Error('Illustration failure did not recover cleanly: ' + JSON.stringify(failedAsset));
+  }
+  await unavailable.close();
   if (errorLog.length) throw new Error('Page errors: ' + errorLog.join(' | '));
 
   const summary = { kind: 'PixiJS standalone isolated visual probe', start, animated, left, reducedStart, reducedEnd, mobile,
@@ -163,6 +182,13 @@ try {
     },
     reducedCurious,
     repeatedExit: secondExit,
+    illustratedAssets: {
+      sourceOwnedSvgLayers: 4,
+      allFourLoaded: true,
+      allFourDisposedOnExit: true,
+      intentionalMissingLayerRecovered: true,
+      failureState: failedAsset,
+    },
     caveats: ['No real Babylon suspension in isolated lab', 'No GameSession transaction', 'CI SwiftShader timing is NOT player GPU FPS'],
   };
   await writeFile(resolve(output, 'metrics.json'), JSON.stringify(summary, null, 2));

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<title>Patchworks workshop painted backplate — Outer Margin</title>
+<defs>
+ <linearGradient id="wall" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#52635b"/><stop offset=".49" stop-color="#3b4c49"/><stop offset="1" stop-color="#202f35"/></linearGradient>
+ <linearGradient id="steel" x1="0" x2="1" y1="0" y2=".45"><stop stop-color="#b1a083"/><stop offset=".44" stop-color="#605d50"/><stop offset=".75" stop-color="#394b49"/><stop offset="1" stop-color="#7b6b58"/></linearGradient>
+ <linearGradient id="wood" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#736856"/><stop offset=".55" stop-color="#3d4642"/><stop offset="1" stop-color="#192b2f"/></linearGradient>
+ <linearGradient id="shadow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#101f27" stop-opacity=".05"/><stop offset="1" stop-color="#071b21" stop-opacity=".8"/></linearGradient>
+ <pattern id="scuff" width="81" height="63" patternUnits="userSpaceOnUse"><path d="M4 47l18 -3m13 7l10 -2m26 -30l8 -3M14 10l15 1" stroke="#d5bc8a" stroke-opacity=".17" stroke-width="1.5"/><path d="M46 30l4 -8m14 37l11 -1" stroke="#0c2027" stroke-opacity=".35" stroke-width="3"/></pattern>
+</defs>
+<path d="M0 0H960V540H0Z" fill="url(#wall)"/><path d="M0 0H960V540H0Z" fill="url(#scuff)"/>
+<path d="M0 0h960v58L0 90Z" fill="#23363a"/><path d="M0 56L960 28V47L0 78Z" fill="#7d8171" opacity=".7"/>
+<path d="M0 112C210 96 425 109 960 84" stroke="#28363a" stroke-width="26" fill="none"/>
+<path d="M0 113C220 100 545 105 960 85" stroke="#a69c78" stroke-width="5" opacity=".75" fill="none"/>
+<path d="M9 32Q116 56 205 24T459 25T754 22T967 25" stroke="#101e24" stroke-width="14" fill="none"/>
+<path d="M9 29Q116 53 205 21T459 22T754 19T967 22" stroke="#967c5e" stroke-width="7" fill="none"/>
+<path d="M0 344L960 329V540H0Z" fill="#343d3d"/><path d="M0 356l960 -17" stroke="#b6a485" stroke-width="8" opacity=".48"/>
+<path d="M0 474l960 -40M0 519l960 -23" stroke="#1b2a31" opacity=".5" stroke-width="6"/>
+<!-- Freight-side window alcove; moving street is composed in front of the dark glass -->
+<path d="M31 104Q38 87 53 87H288q19 0 23 23l-3 229H32Z" fill="#14252e" stroke="#9e9d85" stroke-width="11"/>
+<path d="M47 120Q49 109 61 109H278q12 0 13 12v202H47Z" fill="#112b36" stroke="#506f6f" stroke-width="8"/>
+<path d="M33 322h279v18H33Z" fill="url(#steel)"/>
+<path d="M35 345h286l-18 17H46Z" fill="#1d3034"/>
+<!-- Cabinets: angled silhouette and uneven repainted surfaces -->
+<path d="M316 132l127 -12 6 250 -130 9Z" fill="url(#wood)" stroke="#9a8c6f" stroke-width="6"/>
+<path d="M321 149l118 -11 -2 207 -113 9Z" fill="#263d40"/>
+<path d="M446 108l112 9 -5 255 -117 -5Z" fill="url(#steel)" stroke="#a99a7b" stroke-width="6"/>
+<path d="M459 138l85 4v192l-87 3Z" fill="#2b4244"/>
+<path d="M746 114l151 17 -9 249 -145 -8Z" fill="url(#wood)" stroke="#b3a383" stroke-width="7"/>
+<path d="M757 147l125 12 -6 188 -124 -5Z" fill="#24393d"/>
+<!-- Cabinet shelf beams / repair parts -->
+<g fill="none" stroke="#b3a282" stroke-width="7" stroke-linecap="round">
+ <path d="M324 207l119 -8M324 276l118 -6M457 204h92M458 272h90M756 218l124 4M752 296l127 8"/>
+</g>
+<g stroke="#26363b" stroke-width="4">
+ <path d="M340 159l42 -3 11 29 -45 5Z" fill="#d4aa78"/><path d="M397 156l30 -3 -3 34 -30 2Z" fill="#5a897e"/>
+ <circle cx="371" cy="234" r="22" fill="#a89979"/><circle cx="371" cy="234" r="11" fill="#354b4f"/>
+ <path d="M403 228l25 -7 -3 41 -30 2Z" fill="#66857e"/>
+ <path d="M338 290l40 -5 11 48 -50 7Z" fill="#6b8883"/><circle cx="413" cy="312" r="18" fill="#c1a677"/><circle cx="413" cy="312" r="8" fill="#334348"/>
+ <path d="M474 153l24 -7 9 37 -34 6Z" fill="#967b62"/><path d="M512 158l27 -9 6 40 -37 2Z" fill="#567b78"/>
+ <circle cx="481" cy="236" r="21" fill="#c2ac8a"/><circle cx="481" cy="236" r="12" fill="#1d363d"/>
+ <path d="M508 224l31 -4 -6 42 -33 -5Z" fill="#7c8d75"/>
+ <path d="M469 297l70 -6 -7 39 -68 1Z" fill="#a28f72"/>
+ <circle cx="778" cy="184" r="17" fill="#a5a086"/><circle cx="778" cy="184" r="8" fill="#293f43"/>
+ <path d="M811 170l51 5 -6 36 -51 -4Z" fill="#627d74"/>
+ <path d="M765 235l38 7 -7 36 -39 -8Z" fill="#aa8369"/><circle cx="840" cy="250" r="21" fill="#7f9a89"/><circle cx="840" cy="250" r="9" fill="#26393e"/>
+ <path d="M773 311l53 2 -2 34 -55 -7Z" fill="#6f8079"/><path d="M833 317l37 -3 -3 30 -39 1Z" fill="#beaa86"/>
+</g>
+<!-- hanging refurbished lamps, conduit, painted sign -->
+<path d="M612 44v56" stroke="#ac9b7d" stroke-width="10"/><path d="M607 45v55" stroke="#28383b" stroke-width="3"/>
+<path d="M550 118l13 -25h91l19 25 -23 19H567Z" fill="url(#steel)" stroke="#27383c" stroke-width="5"/>
+<path d="M562 119q50 13 104 0" stroke="#e3c28e" opacity=".68" stroke-width="3" fill="none"/>
+<path d="M330 67l145 -13 1 57 -149 14Z" fill="#a68c66" stroke="#182e32" stroke-width="8"/>
+<path d="M337 75l131 -12 -1 42 -133 11Z" fill="#253d3e"/>
+<text x="347" y="96" fill="#ead5a4" font-size="17" font-weight="bold" font-family="sans-serif" letter-spacing="3" transform="rotate(-5 347 96)">PATCHWORKS</text>
+<path d="M350 104l22 -2 5 -6 8 7 27 -2m15 -1 28 -2" fill="none" stroke="#e5ae6d" stroke-width="2"/>
+<path d="M906 78h48l-4 49 -46 -7Z" fill="#be8c64" stroke="#172f36" stroke-width="5"/><path d="M918 92l23 3 -8 9 4 10 -18 -5Z" fill="#2e5352"/>
+<!-- irregular painted repair marks and screws -->
+<g stroke="#cbb88b" stroke-opacity=".45" fill="none" stroke-linecap="round"><path d="M576 302l38 -5m-26 11 51 -8M918 225l26 9m-21 0 17 5M567 369l27 -6m-17 13 19 -4" stroke-width="2"/><path d="M13 165l13 7m-6 10 15 7M698 83l30 -7m-7 12 12 -3" stroke-width="4"/></g>
+<g fill="#d2bf93" opacity=".65"><circle cx="327" cy="146" r="3"/><circle cx="430" cy="130" r="3"/><circle cx="757" cy="130" r="3"/><circle cx="887" cy="151" r="3"/><circle cx="331" cy="365" r="3"/><circle cx="889" cy="360" r="3"/></g>
+<path d="M0 0H960V540H0Z" fill="url(#shadow)"/>
+</svg>
