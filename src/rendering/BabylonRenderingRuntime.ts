@@ -8,7 +8,7 @@ import type {
 import type { PersonalSpaceDefinition } from '../content/spaces/PersonalSpaceContracts';
 import { productionContent } from '../content/production/ProductionContent';
 import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
-import type { RouteSceneryPresenter } from './routes/RouteSceneryPresenter';
+import { RouteSceneryPresenter } from './routes/RouteSceneryPresenter';
 import { getRouteProgressSnapshot } from '../domain/travel/RouteProgression';
 import type { GameState } from '../persistence/save/gameSave';
 import { entityIdSchema, type RouteSegmentId } from '../domain/ids/EntityId';
@@ -19,9 +19,6 @@ export class BabylonRenderingRuntime
   readonly #engine: Engine;
   readonly #scenes: BabylonSceneOrchestrator;
   #routeScenery: RouteSceneryPresenter | null = null;
-  #routeSceneryConstructor: typeof RouteSceneryPresenter | null = null;
-  #routeSceneryLoad: Promise<void> | null = null;
-  #latestRouteState: GameState | null = null;
   readonly #unsubscribePreferences: () => void;
   readonly #renderFrame = (): void => {
     this.#scenes.render();
@@ -59,7 +56,6 @@ export class BabylonRenderingRuntime
    */
   public syncAuthoredRoute(state: GameState): void {
     this.#assertAlive();
-    this.#latestRouteState = state;
     const taxi = this.#scenes.getTaxiScene();
     const ride = state.rideSession;
     if (taxi === null || state.personalSpaceState.currentSpaceId !== null ||
@@ -101,29 +97,7 @@ export class BabylonRenderingRuntime
     }
 
     if (this.#routeScenery === null) {
-      // The first ride imports the scenery presentation module. Normal
-      // startup/home/garage does not download its mesh/material machinery.
-      if (this.#routeSceneryConstructor === null) {
-        if (this.#routeSceneryLoad === null) {
-          this.#routeSceneryLoad = import('./routes/RouteSceneryPresenter')
-            .then(({ RouteSceneryPresenter: Constructor }) => {
-              this.#routeSceneryConstructor = Constructor;
-              this.#routeSceneryLoad = null;
-              // Use the latest committed state. An older route could already
-              // have ended or the player could have returned to the garage.
-              if (!this.#disposed && this.#latestRouteState !== null) {
-                this.syncAuthoredRoute(this.#latestRouteState);
-              }
-            })
-            .catch((error: unknown) => {
-              this.#routeSceneryLoad = null;
-              // A failed graphics import cannot roll back a successful ride.
-              console.error('Optional route scenery unavailable.', error);
-            });
-        }
-        return;
-      }
-      this.#routeScenery = new this.#routeSceneryConstructor(
+      this.#routeScenery = new RouteSceneryPresenter(
         taxi,
         productionContent.world,
         productionContent.routeExperience,
@@ -147,7 +121,6 @@ export class BabylonRenderingRuntime
   #clearRouteScenery(): void {
     this.#routeScenery?.dispose();
     this.#routeScenery = null;
-    this.#latestRouteState = null;
   }
 
   public showPersonalSpace(
