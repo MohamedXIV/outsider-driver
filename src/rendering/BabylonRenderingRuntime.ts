@@ -11,7 +11,7 @@ import { BabylonSceneOrchestrator } from './scenes/BabylonSceneOrchestrator';
 import { RouteSceneryPresenter } from './routes/RouteSceneryPresenter';
 import { getRouteProgressSnapshot } from '../domain/travel/RouteProgression';
 import type { GameState } from '../persistence/save/gameSave';
-import type { RouteSegmentId } from '../domain/ids/EntityId';
+import { entityIdSchema, type RouteSegmentId } from '../domain/ids/EntityId';
 
 export class BabylonRenderingRuntime
   implements RenderingRuntimePort, PersonalSpacePresentationPort
@@ -75,7 +75,7 @@ export class BabylonRenderingRuntime
       if (finalSegment === undefined) {
         throw new Error('Completed ride is missing its authored final scenery segment.');
       }
-      segmentId = finalSegment;
+      segmentId = entityIdSchema('route-segment').parse(finalSegment);
       progress = 1;
     } else {
       const routeState = ride.routeFlow.routeState;
@@ -91,7 +91,7 @@ export class BabylonRenderingRuntime
         if (finalSegment === undefined) {
           throw new Error('Arrived ride has no authored final scenery segment.');
         }
-        segmentId = finalSegment;
+        segmentId = entityIdSchema('route-segment').parse(finalSegment);
         progress = 1;
       }
     }
