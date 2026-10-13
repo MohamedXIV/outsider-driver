@@ -4,6 +4,8 @@ import {
   foundationPassengerInkSource,
 } from '../content/narrative/foundationPassengerStory';
 import { entityId } from '../domain/ids/EntityId';
+import { productionContent } from '../content/production/ProductionContent';
+import { getCompiledProductionInkStory } from '../content/narrative/productionCompiledInkStories';
 import {
   NarrativeDomainEventSchema,
   type NarrativeDomainEvent,
@@ -11,6 +13,7 @@ import {
 } from './contracts/NarrativeBoundary';
 import { compileInkSource } from './compileInkSource';
 import { InkNarrativeRuntime } from './InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from './createDevelopmentInkRuntimeFromSource';
 
 function createQueries(hasFact: boolean): NarrativeQueryPort {
   return {
@@ -33,6 +36,21 @@ describe('Ink narrative boundary', () => {
       'GAME_REVEAL_FACT',
       'GAME_ADJUST_CITY_ATTENTION',
     ]);
+  });
+
+  it('keeps the production precompiled Ink story byte-for-byte in sync with its authored source', () => {
+    const authored = productionContent.narrativeStories[0];
+
+    const compiled = getCompiledProductionInkStory(authored.id);
+    expect(compiled).toEqual(compileInkSource(authored.source));
+    const emitted: NarrativeDomainEvent[] = [];
+    const runtime = new InkNarrativeRuntime(
+      compiled,
+      createQueries(false),
+      { emit: (event) => { emitted.push(event); } },
+    );
+    expect(runtime.continueUntilChoiceOrEnd().choices).toHaveLength(2);
+    expect(emitted.map((event) => event.type)).toContain('knowledge.reveal');
   });
 
   it('queries domain state and emits typed consequences without storing domain truth in Ink', () => {
@@ -81,7 +99,7 @@ EXTERNAL GAME_REVEAL_FACT(fact_id)
 -> END
 `;
 
-    const runtime = InkNarrativeRuntime.fromInkSource(
+    const runtime = createDevelopmentInkRuntimeFromSource(
       source,
       createQueries(false),
       {

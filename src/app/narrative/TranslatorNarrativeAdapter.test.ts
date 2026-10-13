@@ -3,7 +3,7 @@ import { productionContent } from '../../content/production/ProductionContent';
 import { TranslatorRuntime } from '../../domain/translator/TranslatorRuntime';
 import { TranslatorStateStore } from '../../domain/translator/TranslatorState';
 import { entityId } from '../../domain/ids/EntityId';
-import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from '../../narrative/createDevelopmentInkRuntimeFromSource';
 import type {
   NarrativeEventSink,
   NarrativeQueryPort,
@@ -55,7 +55,7 @@ describe('Translator narrative adapter', () => {
     const translator = new TranslatorNarrativeAdapter(
       new TranslatorRuntime(state),
     );
-    const runtime = InkNarrativeRuntime.fromInkSource(
+    const runtime = createDevelopmentInkRuntimeFromSource(
       translatorStory,
       withTranslatorNarrativeQueries(baseQueries, translator),
       noEvents,
@@ -68,7 +68,7 @@ describe('Translator narrative adapter', () => {
   });
 
   it('fails clearly when authored translation queries have no translator adapter', () => {
-    const runtime = InkNarrativeRuntime.fromInkSource(
+    const runtime = createDevelopmentInkRuntimeFromSource(
       translatorStory,
       baseQueries,
       noEvents,

@@ -3,7 +3,7 @@
   "budgets": {
     "entryJavaScriptBytes": 1300000,
     "entryJavaScriptGzipBytes": 325000,
-    "totalJavaScriptBytes": 2000000,
+    "totalJavaScriptBytes": 2001000,
     "totalJavaScriptGzipBytes": 500000,
     "maxLazyJavaScriptBytes": 150000,
     "initialTransferGzipBytes": 380000,

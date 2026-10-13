@@ -4,7 +4,7 @@ import {
   createSocialStealthState,
 } from '../../domain/social/SocialStealthState';
 import { entityId } from '../../domain/ids/EntityId';
-import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from '../../narrative/createDevelopmentInkRuntimeFromSource';
 import {
   createInitialGameState,
   gameSaveCodec,
@@ -67,7 +67,7 @@ describe('SocialStealthNarrativeAdapter', () => {
     );
     const adapter = new SocialStealthNarrativeAdapter(store);
 
-    const firstRide = InkNarrativeRuntime.fromInkSource(
+    const firstRide = createDevelopmentInkRuntimeFromSource(
       firstRideStory,
       adapter,
       adapter,
@@ -77,7 +77,7 @@ describe('SocialStealthNarrativeAdapter', () => {
     expect(store.hasFact(entityId('fact', 'hidden-service-road'))).toBe(true);
     expect(store.hasClaim(entityId('claim', 'first-origin'))).toBe(true);
 
-    const laterRide = InkNarrativeRuntime.fromInkSource(
+    const laterRide = createDevelopmentInkRuntimeFromSource(
       laterRideStory,
       adapter,
       adapter,

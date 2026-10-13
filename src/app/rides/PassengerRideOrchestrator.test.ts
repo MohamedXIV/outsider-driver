@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createPassengerFixture } from '../../content/passengers/fixtures/passengerFixture';
 import { foundationPassengerInkSource } from '../../content/narrative/foundationPassengerStory';
+import { compileInkSource } from '../../narrative/compileInkSource';
 import { createRouteExperienceFixture } from '../../content/routes/fixtures/routeExperienceFixture';
 import { createRouteMotionFixture } from '../../content/routes/fixtures/routeMotionFixture';
 import { createWorldFixture } from '../../content/world/fixtures/worldFixture';
@@ -84,12 +85,12 @@ function createHarness(options: HarnessOptions = {}) {
     routeExperience: createRouteExperienceFixture(),
     passengers: createPassengerFixture(),
     narrativeStories: {
-      getInkSource: (storyId) => {
+      getCompiledInkStory: (storyId) => {
         if (storyId !== 'foundation-passenger') {
           throw new Error('Unknown narrative story fixture: ' + storyId);
         }
 
-        return foundationPassengerInkSource;
+        return compileInkSource(foundationPassengerInkSource);
       },
     },
     narrativeQueries: {

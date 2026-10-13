@@ -26,6 +26,7 @@ import {
   type WorldContentCatalog,
 } from '../../content/world/WorldContracts';
 import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import type { CompiledInkStory } from '../../narrative/compileInkSource';
 import type { NarrativeTurn } from '../../narrative/contracts/NarrativePresentation';
 import { resolvePassengerPerformanceCue } from './PassengerPerformancePresentation';
 import type {
@@ -46,7 +47,7 @@ import {
 type CompletedRideContract = Extract<RideContract, { status: 'completed' }>;
 
 export interface NarrativeStorySourcePort {
-  getInkSource(storyId: string): string;
+  getCompiledInkStory(storyId: string): CompiledInkStory;
 }
 
 export interface RideCompletionContext {
@@ -562,8 +563,8 @@ export class PassengerRideOrchestrator {
   }
 
   #createNarrative(): InkNarrativeRuntime {
-    return InkNarrativeRuntime.fromInkSource(
-      this.#dependencies.narrativeStories.getInkSource(
+    return new InkNarrativeRuntime(
+      this.#dependencies.narrativeStories.getCompiledInkStory(
         this.#session.narrativeStoryId,
       ),
       this.#dependencies.narrativeQueries,

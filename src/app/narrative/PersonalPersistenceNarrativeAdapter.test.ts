@@ -3,7 +3,7 @@ import { productionContent } from '../../content/production/ProductionContent';
 import { validateProductionContent } from '../../content/validation/ProductionContentValidator';
 import { entityId } from '../../domain/ids/EntityId';
 import { PersonalPersistenceStateStore } from '../../domain/personal/PersonalPersistenceState';
-import { InkNarrativeRuntime } from '../../narrative/InkNarrativeRuntime';
+import { createDevelopmentInkRuntimeFromSource } from '../../narrative/createDevelopmentInkRuntimeFromSource';
 import type {
   NarrativeEventSink,
   NarrativeQueryPort,
@@ -65,7 +65,7 @@ describe('PersonalPersistenceNarrativeAdapter', () => {
       entityId('message', 'first-shift-callback'),
     );
 
-    const runtime = InkNarrativeRuntime.fromInkSource(
+    const runtime = createDevelopmentInkRuntimeFromSource(
       story,
       withPersonalPersistenceNarrativeQueries(
         baseQueries,
