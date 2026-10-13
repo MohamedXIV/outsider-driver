@@ -85,3 +85,28 @@ Bundle attribution on [Actions 37875125039](https://github.com/MohamedXIV/outsid
 The feature adds a versioned v11→v12 migration, strict arrival/save validation and canonical session guards, with only a **323 B increase in measured initial compressed transfer**. More dynamic imports for this roughly 1.2 KB code path would fragment the synchronous authoritative settlement/persistence contract for a cosmetic raw-byte saving. The project already rejects broad splitting of the canonical session because that broke the 150 KB lazy-chunk constraint; see the earlier decision above.
 
 **Proposed reviewable decision:** raise only `totalJavaScriptBytes` **2,001,000 → 2,002,000 B** (+1,000 B, 0.05% of previous cap) to accommodate the measured 831 B overflow; expected immediate headroom **169 B**. The total increase versus the original 2,000,000 B ceiling is **0.10%**. No other thresholds change. The future authored Patchworks route/anchor will require **another explicit architectural and budget review**, not an automatic extension of this small allowance. Keep PR Draft until exact-head CI passes and the cap change is reviewed.
+
+## 2026-10-13 authored Patchworks route / 3D frontage (#86 / PR #90)
+
+[Exact-head pre-lazy CI #38352645252](https://github.com/MohamedXIV/outsider-driver/actions/runs/38352645252) verified **308/308 Vitest (69 files), 42/42 save compatibility, strict TypeScript/lint and build** for the two-segment Docks Clinic → Outer Margin route, origin-safe second dispatch, and a read-only Babylon `RouteSceneryPresenter` integration. This builds an actual rendered stop, not a fictitious 2D teleport. The budget gate was the **only remaining failure** at that head:
+
+| Metric | Measured | Previous cap | Result |
+| --- | ---: | ---: | --- |
+| Entry JavaScript | 1,178,129 B | 1,300,000 B | PASS |
+| Entry gzip | 285,161 B | 325,000 B | PASS |
+| Total JavaScript | **2,010,218 B** | 2,002,000 B | **8,218 B over** |
+| Total gzip | 495,493 B | 500,000 B | PASS |
+| Largest lazy chunk | 127,084 B | 150,000 B | PASS |
+| Initial transfer gzip | **379,515 B** | 380,000 B | PASS (485 B left) |
+
+Compared with the exact-head v12 baseline (2,001,831 B raw total; 377,231 B initial-transfer gzip), this route and visible Babylon frontage added **8,387 B total raw and 2,284 B initial transfer gzip**. This is a legitimate feature cost and the proximity to the initial-transfer limit warrants more than another naive cap increase.
+
+**Architectural response:** pull `RouteSceneryPresenter` out of startup imports. Only request its code at the first actual taxi route, cache its constructor, use the **latest committed** session state on resolve, and ignore work after a scene change or disposal. No additional render loop or mutable game state. This should recover some initial transfer and keeps the heavy route compositor out of home/garage startup. Existing asynchronous arrival handling remains canonical (shop Pixi is still a separate PR).
+
+**Reviewable aggregate-only decision:** provisionally adjust `totalJavaScriptBytes` **2,002,000 → 2,012,000 B** (+10,000 B, **0.50%** of the previous cap). This is measured against an actual +8,218 B shortfall, not a silent relaxation of every limit; anticipated headroom is 1,782 B before the lazy-loader refactor. **No gzip, initial transfer, lazy chunk, startup or WASM ceilings change.** Re-measure exact-head CI after lazy loading and record the final values. Still Draft until acceptance and reviewer acknowledgment. No claim of real device FPS.
+
+### Lazy-loading experiment rejected on measured initial-transfer evidence
+
+[CI #38352927441](https://github.com/MohamedXIV/outsider-driver/actions/runs/38352927441) measured a **dynamic import of RouteSceneryPresenter** instead of the direct typed Babylon renderer integration. Although its entry JavaScript dropped **1,178,129 → 1,112,702 B**, it increased **total JS to 2,011,931 B** and initial module transfer gzip to **380,327 B**, a **327 B failure** against the original 380,000 B cap. Total gzip 497,361 / 500,000 B passed, but the initial transfer did not. The extra runtime/chunk-manifest overhead for deferred imports exceeded the small gain on the counted initial graph.
+
+**Decision: revert the lazy experiment and keep the simpler immediate, read-only scenery presentation.** The prior direct integration [CI #38352645252](https://github.com/MohamedXIV/outsider-driver/actions/runs/38352645252) actually delivered **379,515 B initial transfer** and **2,010,218 B total raw JS**. With the previously proposed reviewable aggregate-only cap of 2,012,000 B, it would leave **1,782 B raw aggregate headroom** and **485 B initial-transfer headroom**, while the compressed initial cap stays untouched. No claim of a performance improvement from the rejected lazy experiment. Exact-head verification required after reverting.

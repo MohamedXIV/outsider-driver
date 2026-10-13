@@ -65,7 +65,10 @@ describe('WorkNetwork', () => {
     expect(offered.map((x) => ({ id: x.job.id, eligible: x.eligible }))).toEqual([
       { id: 'job:docks-official-clinic', eligible: false },
       { id: 'job:docks-underground-clinic', eligible: true },
+      { id: 'job:clinic-to-patchworks', eligible: false },
     ]);
+    expect(offered[2]?.reasons).toContain('underground-access');
+    expect(offered[2]?.reasons).toContain('relationship:completed-rides');
     expect(offered[0]?.reasons).toContain('cover:work-permit');
     const expired = network.listOffers({ day: 2, minuteOfDay: 3 * 60 }, ctx);
     expect(expired.every((x) => x.reasons.includes('availability:expired'))).toBe(true);

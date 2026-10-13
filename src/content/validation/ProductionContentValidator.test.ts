@@ -11,18 +11,34 @@ describe('production content validation', () => {
 
     expect(validated.world.routes.map((route) => route.id)).toEqual([
       'route:docks-night',
+      'route:clinic-to-patchworks',
     ]);
     expect(validated.narrativeStories.map((story) => story.id)).toEqual([
       'foundation-passenger',
     ]);
-    expect(validated.routeMotion.profiles).toHaveLength(1);
+    expect(validated.routeMotion.profiles).toHaveLength(3);
     expect(validated.passengerPerformance.profiles).toHaveLength(2);
-    expect(validated.routeExperience.segmentScenery).toHaveLength(1);
+    expect(validated.routeExperience.segmentScenery).toHaveLength(3);
     expect(validated.translator.languages).toHaveLength(1);
     expect(validated.translator.packs).toHaveLength(2);
     expect(validated.radio.stations).toHaveLength(3);
     expect(validated.radio.broadcasts).toHaveLength(3);
     expect(validated.relationships.profiles).toHaveLength(2);
+    const patchworks = validated.world.locations.find(
+      (location) => location.id === 'location:outer-margin-patchworks',
+    );
+    expect(patchworks?.data.districtId).toBe('district:outer-margin');
+    expect(validated.world.routes.find(
+      (route) => route.id === 'route:clinic-to-patchworks',
+    )?.data).toMatchObject({
+      originLocationId: 'location:docks-clinic',
+      destinationLocationId: 'location:outer-margin-patchworks',
+    });
+    const facade = validated.routeExperience.segmentScenery.find(
+      (scene) => scene.segmentId === 'route-segment:outer-margin-patchworks-approach',
+    );
+    expect(facade?.modules.map((module) => module.id)).toContain('patchworks-illuminated-sign');
+    expect(facade?.modules.map((module) => module.id)).toContain('patchworks-salvage-parts-stand');
     expect(validated.personalSpaces.spaces.map((space) => space.id)).toEqual([
       'personal-space:garage',
       'personal-space:home',

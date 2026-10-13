@@ -147,6 +147,7 @@ function bootstrapSupportedGame(
   let application: GameApplication | null = null;
   let playerShift: PlayerShiftController | null = null;
   let shiftControls: ShiftControlSurface | null = null;
+  let stopRoutePresentation: () => void = () => undefined;
 
   try {
     stopPreferencePersistence = preferences.subscribe((state) => {
@@ -160,6 +161,11 @@ function bootstrapSupportedGame(
     application = new GameApplication(rendering, session);
     application.start();
     playerShift = new PlayerShiftController(session, rendering);
+    // Register after PlayerShiftController: its subscriber switches Babylon
+    // home/taxi scenes first; route scenery then mounts into the current taxi.
+    stopRoutePresentation = session.subscribe((state) => {
+      rendering?.syncAuthoredRoute(state);
+    });
     shiftControls = createShiftControlSurface(
       surface.uiLayer,
       session,
@@ -171,6 +177,7 @@ function bootstrapSupportedGame(
     void runRequestedPersonalSpaceProbe(rendering);
   } catch (error: unknown) {
     shiftControls?.dispose();
+    stopRoutePresentation();
     playerShift?.dispose();
     stopPreferencePersistence();
     if (application !== null) {
@@ -187,9 +194,11 @@ function bootstrapSupportedGame(
   const activeSurface = surface;
   const activePlayerShift = playerShift;
   const activeShiftControls = shiftControls;
+  const activeStopRoutePresentation = stopRoutePresentation;
 
   return (): void => {
     activeShiftControls.dispose();
+    activeStopRoutePresentation();
     activePlayerShift.dispose();
     try {
       activeApplication.dispose();
