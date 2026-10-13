@@ -42,7 +42,7 @@ test('new shift navigates through home, garage and taxi using real persisted sta
   await expect(controls.locator('.shift-controls-status')).toContainText('TAXI');
 
   await controls.locator('.shift-work-board summary').click();
-  await expect(controls.getByText('Backchannel Rider')).toBeVisible();
+  await expect(controls.getByText('Backchannel Rider').first()).toBeVisible();
   await expect(controls.getByText('Clinic Dispatcher')).toBeVisible();
   await expect(controls.getByText(/missing credential: work-permit/)).toBeVisible();
 
