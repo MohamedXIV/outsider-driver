@@ -469,11 +469,11 @@ describe('production GameSession', () => {
     const patchworks = entityId('location', 'outer-margin-patchworks');
     expect(session.listAvailableWork().map((entry) => entry.job.id))
       .not.toContain(patchworksJob);
-    expect(session.listWorkOffers().find((offer) => offer.job.id === patchworksJob))
-      .toMatchObject({
-        eligible: false,
-        reasons: expect.arrayContaining(['underground-access', 'relationship:completed-rides', 'pickup:wrong-location']),
-      });
+    const gated = session.listWorkOffers().find((offer) => offer.job.id === patchworksJob);
+    expect(gated?.eligible).toBe(false);
+    expect(gated?.reasons).toContain('underground-access');
+    expect(gated?.reasons).toContain('relationship:completed-rides');
+    expect(gated?.reasons).toContain('pickup:wrong-location');
     expect(() => { session.execute({ type: 'ride.accept', jobId: patchworksJob }); })
       .toThrow(/pickup does not match/);
 
