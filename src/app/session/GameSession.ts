@@ -228,8 +228,8 @@ export class GameSession {
     }
     const location = productionContent.world.locations.find((item) => item.id === locationId);
     const route = productionContent.world.routes.find((item) => item.id === ride.finalRouteId);
-    if (location === undefined || route === undefined ||
-        route.data.destinationLocationId !== locationId ||
+    if (location === undefined ||
+        route?.data.destinationLocationId !== locationId ||
         ride.destinationLocationId !== locationId) {
       throw new Error('Current taxi stop is not a valid authored route destination.');
     }
