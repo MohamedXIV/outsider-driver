@@ -137,7 +137,9 @@ describe('production GameSession', () => {
   it('projects locked work with reasons but never grants it as available', () => {
     const session = GameSession.open(persistence(new MemoryStorage()));
     const offered = session.listWorkOffers();
-    expect(offered).toHaveLength(2);
+    expect(offered).toHaveLength(3);
+    expect(offered.find((x) => x.job.id === 'job:clinic-to-patchworks')?.reasons)
+      .toContain('pickup:wrong-location');
     const official = offered.find((x) => x.job.id === 'job:docks-official-clinic');
     expect(official?.eligible).toBe(false);
     expect(official?.reasons).toContain('cover:work-permit');
