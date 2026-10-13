@@ -23,6 +23,7 @@ const timestamp = '2026-10-04T07:00:00.000Z';
 function currentEmptyState() {
   return {
     rideSession: null,
+    arrivedLocationId: null,
     gameTime: INITIAL_GAME_TIME,
     socialState: null,
     translatorState: createInitialTranslatorState(),
@@ -50,7 +51,7 @@ describe('gameSaveCodec', () => {
     });
   });
 
-  it('migrates the v1 empty production state through every version into v11', () => {
+  it('migrates the v1 empty production state through every version into v12', () => {
     expect(
       gameSaveCodec.decode({
         schemaVersion: 1,
@@ -119,6 +120,7 @@ describe('gameSaveCodec', () => {
     };
     const v10: Record<string, unknown> = structuredClone(older);
     delete v10.gameTime;
+    delete v10.arrivedLocationId;
     const result = gameSaveCodec.decode({
       schemaVersion: 10,
       savedAt: timestamp,
