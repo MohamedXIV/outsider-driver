@@ -19,6 +19,11 @@ export interface WorkNetworkEntry {
   readonly channel: JobContract['source']['kind'];
 }
 
+export interface WorkOfferEntry extends WorkNetworkEntry {
+  readonly eligible: boolean;
+  readonly reasons: readonly string[];
+}
+
 export function createWorkEligibilityContext(
   economy: EconomyStateStore,
   social: SocialStealthStateStore | null,
@@ -60,6 +65,30 @@ export class WorkNetwork {
 
   public constructor(jobsInput: readonly unknown[]) {
     this.#jobs = jobsInput.map((job) => JobContractSchema.parse(job));
+  }
+
+  /**
+   * Inspect all authored work with actual eligibility and scheduling reasons,
+   * without granting access to offers the player cannot legally accept.
+   */
+  public listOffers(
+    now: GameTime,
+    context: WorkEligibilityContext,
+  ): readonly WorkOfferEntry[] {
+    return this.#jobs.map((job) => {
+      const reasons = [...evaluateJobEligibility(job, context).reasons];
+      if (compareGameTime(now, job.availability.opensAt) < 0) {
+        reasons.unshift('availability:not-yet-open');
+      } else if (compareGameTime(now, job.availability.closesAt) > 0) {
+        reasons.unshift('availability:expired');
+      }
+      return {
+        job,
+        channel: job.source.kind,
+        eligible: reasons.length === 0,
+        reasons,
+      };
+    });
   }
 
   public listAvailable(

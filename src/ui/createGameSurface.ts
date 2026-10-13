@@ -5,6 +5,7 @@ import type {
 
 export interface GameSurface {
   readonly canvas: HTMLCanvasElement;
+  readonly uiLayer: HTMLElement;
   dispose(): void;
 }
 
@@ -203,9 +204,12 @@ export function createGameSurface(
     closeButton,
   );
 
+  const uiLayer = document.createElement('div');
+  uiLayer.className = 'game-ui-layer';
   shell.append(
     instructions,
     canvas,
+    uiLayer,
     settingsButton,
     panel,
   );
@@ -333,6 +337,7 @@ export function createGameSurface(
 
   return {
     canvas,
+    uiLayer,
     dispose: (): void => {
       unsubscribe();
       settingsButton.removeEventListener(
