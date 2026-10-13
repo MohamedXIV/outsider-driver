@@ -236,6 +236,11 @@ export class GameSession {
     return { locationId, districtId: location.data.districtId, rideId: ride.rideId };
   }
 
+  /** The current dispatch pickup comes from canonical arrival, never UI. */
+  #currentPickupLocation(): LocationId {
+    return this.#state.arrivedLocationId ?? entityId('location', 'docks-taxi-rank');
+  }
+
   public listAvailableWork() {
     this.#assertAlive();
     return this.#work.listAvailable(
@@ -246,7 +251,8 @@ export class GameSession {
         this.#stores.personal,
         this.#stores.relationships,
       ),
-    ).map((entry) => ({
+    ).filter((entry) => entry.job.pickupLocationId === this.#currentPickupLocation())
+      .map((entry) => ({
       channel: entry.channel,
       // Never expose mutable references into the authoritative job catalog.
       job: JobContractSchema.parse(entry.job),
@@ -263,11 +269,15 @@ export class GameSession {
         this.#stores.personal,
         this.#stores.relationships,
       ),
-    ).map((entry) => ({
+    ).map((entry) => {
+      const pickupAllowed = entry.job.pickupLocationId === this.#currentPickupLocation();
+      return {
       ...entry,
-      reasons: [...entry.reasons],
+      eligible: entry.eligible && pickupAllowed,
+      reasons: pickupAllowed ? [...entry.reasons] : [...entry.reasons, 'pickup:wrong-location'],
       job: JobContractSchema.parse(entry.job),
-    }));
+      };
+    });
   }
 
   /**
@@ -284,6 +294,9 @@ export class GameSession {
     }
 
     const job = this.#work.getJob(jobId);
+    if (job.pickupLocationId !== this.#currentPickupLocation()) {
+      throw new Error('Dispatch pickup does not match the current taxi location. Travel to pickup first.');
+    }
     const rideId = entityId(
       'ride',
       `${jobId.slice('job:'.length)}-d${String(this.#state.gameTime.day)}-m${String(this.#state.gameTime.minuteOfDay)}`,

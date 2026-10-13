@@ -460,6 +460,82 @@ describe('production GameSession', () => {
     afterReload.dispose();
   });
 
+  it('completes clinic → Patchworks through an authorized second ride, not a teleport', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    const clinicJob = entityId('job', 'docks-underground-clinic');
+    const patchworksJob = entityId('job', 'clinic-to-patchworks');
+    const clinic = entityId('location', 'docks-clinic');
+    const patchworks = entityId('location', 'outer-margin-patchworks');
+    expect(session.listAvailableWork().map((entry) => entry.job.id))
+      .not.toContain(patchworksJob);
+    expect(session.listWorkOffers().find((offer) => offer.job.id === patchworksJob))
+      .toMatchObject({
+        eligible: false,
+        reasons: expect.arrayContaining(['underground-access', 'relationship:completed-rides', 'pickup:wrong-location']),
+      });
+    expect(() => { session.execute({ type: 'ride.accept', jobId: patchworksJob }); })
+      .toThrow(/pickup does not match/);
+
+    session.execute({ type: 'identity.register', displayName: 'Copper Driver' });
+    session.execute({ type: 'ride.accept', jobId: clinicJob });
+    session.execute({ type: 'ride.pickup' });
+    session.execute({ type: 'ride.choose-dialogue', choiceIndex: 0 });
+    session.execute({ type: 'ride.advance', seconds: 3 });
+    session.execute({ type: 'ride.resolve-event', resolution: { type: 'continue' } });
+    session.execute({ type: 'ride.advance', seconds: 3 });
+    session.execute({ type: 'ride.drop-off' });
+    expect(session.requireArrivedTaxiStop(clinic).locationId).toBe(clinic);
+    expect(session.exportState().economyState.credits).toBe(82);
+
+    expect(session.listAvailableWork().map((entry) => entry.job.id))
+      .toContain(patchworksJob);
+    expect(session.listAvailableWork().map((entry) => entry.job.id))
+      .not.toContain(clinicJob);
+    expect(() => { session.execute({ type: 'ride.accept', jobId: clinicJob }); })
+      .toThrow(/pickup does not match/);
+    const atClinic = session.exportState();
+    session.dispose();
+
+    const resumed = GameSession.open(persistence(memory));
+    expect(resumed.exportState()).toEqual(atClinic);
+    resumed.execute({ type: 'ride.accept', jobId: patchworksJob });
+    expect(resumed.exportState().arrivedLocationId).toBeNull();
+    resumed.execute({ type: 'ride.pickup' });
+    resumed.execute({ type: 'ride.choose-dialogue', choiceIndex: 0 });
+    for (let i = 0; i < 20 && resumed.getRidePresentation()?.phase !== 'dropoff-ready'; i += 1) {
+      resumed.execute({ type: 'ride.advance', seconds: 3 });
+    }
+    expect(resumed.getRidePresentation()?.phase).toBe('dropoff-ready');
+    expect(() => { resumed.requireArrivedTaxiStop(patchworks); })
+      .toThrow(/completed-route arrival/);
+    const completed = resumed.execute({ type: 'ride.drop-off' });
+    expect(completed.arrivedLocationId).toBe(patchworks);
+    expect(completed.rideSession).toMatchObject({
+      phase: 'completed',
+      initialRouteId: 'route:clinic-to-patchworks',
+      finalRouteId: 'route:clinic-to-patchworks',
+      destinationLocationId: patchworks,
+    });
+    expect(resumed.requireArrivedTaxiStop(patchworks)).toMatchObject({
+      locationId: patchworks,
+      districtId: 'district:outer-margin',
+    });
+    expect(() => { resumed.requireArrivedTaxiStop(clinic); })
+      .toThrow(/completed-route arrival/);
+    expect(completed.gameTime.day).toBe(1);
+    expect(completed.gameTime.minuteOfDay).toBe(18 * 60 + 19);
+    expect(completed.economyState.credits).toBeGreaterThan(82);
+    const saved = resumed.exportState();
+    resumed.dispose();
+    const restored = GameSession.open(persistence(memory));
+    expect(restored.exportState()).toEqual(saved);
+    expect(restored.requireArrivedTaxiStop(patchworks).locationId).toBe(patchworks);
+    restored.execute({ type: 'space.enter', spaceId: entityId('personal-space', 'garage') });
+    expect(restored.exportState().arrivedLocationId).toBeNull();
+    restored.dispose();
+  });
+
   it('rolls back route progress and world clock when saving a drive step fails', () => {
     const memory = new MemoryStorage();
     const session = GameSession.open(persistence(memory));

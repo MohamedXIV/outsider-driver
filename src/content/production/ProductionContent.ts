@@ -1,6 +1,7 @@
 import source from '../narrative/foundation-passenger.ink?raw';
 import { defaultTaxiSceneDefinition } from '../presentation/defaultTaxiScene';
 import { defaultPersonalSpaceCatalog } from '../spaces/defaultPersonalSpaces';
+import { patchworksRouteContent } from '../world/patchworksRouteContent';
 
 export const productionContent = {
   world: {
@@ -13,6 +14,7 @@ export const productionContent = {
           displayName: 'The Docks',
         },
       },
+      ...patchworksRouteContent.districts,
     ],
     locations: [
       {
@@ -31,6 +33,7 @@ export const productionContent = {
           districtId: 'district:docks',
         },
       },
+      ...patchworksRouteContent.locations,
     ],
     routeEvents: [
       {
@@ -52,6 +55,7 @@ export const productionContent = {
           eventIds: ['route-event:docks-checkpoint'],
         },
       },
+      ...patchworksRouteContent.routeSegments,
     ],
     routes: [
       {
@@ -64,6 +68,7 @@ export const productionContent = {
           segmentIds: ['route-segment:docks-night-01'],
         },
       },
+      ...patchworksRouteContent.routes,
     ],
   },
   passengers: {
@@ -416,6 +421,7 @@ export const productionContent = {
         undergroundAccessDelta: 3,
       },
     },
+    ...patchworksRouteContent.jobs,
   ],
   routeMotion: {
     schemaVersion: 1,
@@ -449,6 +455,7 @@ export const productionContent = {
           },
         ],
       },
+      ...patchworksRouteContent.motionProfiles,
     ],
   },
   routeExperience: {
@@ -475,6 +482,7 @@ export const productionContent = {
         dayAmbientMultiplier: 1.1,
         precipitationAmbientMultiplier: 0.72,
       },
+      ...patchworksRouteContent.districtVisuals,
     ],
     segmentScenery: [
       {
@@ -506,6 +514,7 @@ export const productionContent = {
           },
         ],
       },
+      ...patchworksRouteContent.segmentScenery,
     ],
   },
   translator: {

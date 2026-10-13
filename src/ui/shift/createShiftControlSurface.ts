@@ -104,7 +104,11 @@ export function createShiftControlSurface(
     const identity = session.getProjection();
     status.textContent =
       `${state.location.toUpperCase()} / DAY ${String(state.gameTime.day)} / ${hours}:${minutes} / ${String(state.credits)} CR` +
-      (identity.coverName === null ? '' : ` / ${identity.coverName}`);
+      (identity.coverName === null ? '' : ` / ${identity.coverName}`) +
+      (identity.arrivedLocationId === null ? '' :
+        ` / STOP ${productionContent.world.locations.find(
+          (location) => location.id === identity.arrivedLocationId,
+        )?.data.displayName ?? identity.arrivedLocationId}`);
     identityForm.hidden = identity.hasCoverIdentity;
 
     actions.replaceChildren();
