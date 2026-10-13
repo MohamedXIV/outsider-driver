@@ -297,3 +297,37 @@ body {
   font-size: 0.83em;
 }
 .shift-control-error[hidden] { display: none; }
+
+.shift-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.shift-identity[hidden] { display: none; }
+.shift-identity label {
+  width: 100%;
+  font-size: 0.74em;
+  letter-spacing: 0.08em;
+}
+.shift-identity input {
+  flex: 1;
+  min-width: 8rem;
+  padding: 0.5rem;
+  color: #f0eacb;
+  background: #162220;
+  border: 1px solid #8e977a;
+  border-radius: 0.25rem;
+}
+.shift-identity input:focus-visible {
+  outline: 3px solid #f5deb2;
+  outline-offset: 2px;
+}
+.shift-dialogue-line {
+  font-size: 0.84em;
+  line-height: 1.5;
+  padding: 0.35rem 0;
+  color: #e9dcc2;
+}
+.shift-work-active { font-weight: 700; color: #f5deb2; }

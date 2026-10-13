@@ -3,7 +3,13 @@ import { validatePassengerCatalog } from '../../content/passengers/PassengerCont
 import { validateTranslatorCatalog } from '../../content/translator/TranslatorContracts';
 import { validateWorldContentCatalog } from '../../content/world/WorldContracts';
 import { EconomyStateStore } from '../../domain/economy/EconomyState';
-import type { PersonalSpaceId, RadioStationId, TranslatorPackId } from '../../domain/ids/EntityId';
+import {
+  entityId,
+  type JobId,
+  type PersonalSpaceId,
+  type RadioStationId,
+  type TranslatorPackId,
+} from '../../domain/ids/EntityId';
 import { PersonalPersistenceStateStore } from '../../domain/personal/PersonalPersistenceState';
 import {
   AccessibilityPreferencesStateSchema,
@@ -11,7 +17,11 @@ import {
 } from '../../domain/preferences/AccessibilityPreferencesState';
 import { RadioStateStore } from '../../domain/radio/RadioState';
 import { RelationshipStateStore } from '../../domain/relationships/RelationshipState';
-import { SocialStealthStateStore } from '../../domain/social/SocialStealthState';
+import {
+  SocialStealthStateStore,
+  createSocialStealthState,
+  CoverIdentityProfileSchema,
+} from '../../domain/social/SocialStealthState';
 import { PersonalSpaceStateStore } from '../../domain/spaces/PersonalSpaceState';
 import {
   advanceGameTime,
@@ -19,6 +29,25 @@ import {
 } from '../../domain/time/GameTime';
 import { TranslatorStateStore } from '../../domain/translator/TranslatorState';
 import { JobContractSchema } from '../../domain/work/JobRideContracts';
+import { TranslatorRuntime } from '../../domain/translator/TranslatorRuntime';
+import { getRouteProgressSnapshot } from '../../domain/travel/RouteProgression';
+import type { RouteFlowResolution } from '../travel/RouteFlowController';
+import {
+  PassengerRideOrchestrator,
+  type PassengerRideDependencies,
+  type RidePresentation,
+} from '../rides/PassengerRideOrchestrator';
+import { EconomyRideCompletionAdapter } from '../work/EconomyRideCompletionAdapter';
+import { RelationshipRideCompletionAdapter } from '../relationships/RelationshipRideCompletionAdapter';
+import { SocialStealthNarrativeAdapter } from '../narrative/SocialStealthNarrativeAdapter';
+import {
+  RelationshipNarrativeAdapter,
+  withRelationshipNarrativeQueries,
+  withRelationshipNarrativeEvents,
+} from '../narrative/RelationshipNarrativeAdapter';
+import { PersonalPersistenceNarrativeAdapter, withPersonalPersistenceNarrativeQueries } from '../narrative/PersonalPersistenceNarrativeAdapter';
+import { TranslatorNarrativeAdapter, withTranslatorNarrativeQueries } from '../narrative/TranslatorNarrativeAdapter';
+import type { NarrativeQueryPort } from '../../narrative/contracts/NarrativeBoundary';
 import {
   GameStateV11Schema,
   createInitialGameState,
@@ -36,6 +65,13 @@ export type GameSessionCommand =
   | { readonly type: 'space.leave' }
   | { readonly type: 'space.set-flag'; readonly spaceId: PersonalSpaceId; readonly flagId: string; readonly value: boolean }
   | { readonly type: 'time.advance'; readonly minutes: number }
+  | { readonly type: 'ride.accept'; readonly jobId: JobId }
+  | { readonly type: 'ride.pickup' }
+  | { readonly type: 'ride.choose-dialogue'; readonly choiceIndex: number }
+  | { readonly type: 'ride.advance'; readonly seconds: number }
+  | { readonly type: 'ride.resolve-event'; readonly resolution: RouteFlowResolution }
+  | { readonly type: 'ride.drop-off' }
+  | { readonly type: 'identity.register'; readonly displayName: string }
   | { readonly type: 'radio.tune'; readonly stationId: RadioStationId }
   | { readonly type: 'radio.listen'; readonly listening: boolean }
   | { readonly type: 'translator.activate'; readonly packId: TranslatorPackId }
@@ -48,6 +84,7 @@ export interface GameSessionProjection {
   readonly currentSpaceId: PersonalSpaceId | null;
   readonly activeRidePhase: NonNullable<GameState['rideSession']>['phase'] | null;
   readonly hasCoverIdentity: boolean;
+  readonly coverName: string | null;
   readonly tunedRadioStationId: RadioStationId | null;
   readonly radioListening: boolean;
   readonly ownedTranslatorPackCount: number;
@@ -159,6 +196,7 @@ export class GameSession {
       currentSpaceId: state.personalSpaceState.currentSpaceId,
       activeRidePhase: state.rideSession?.phase ?? null,
       hasCoverIdentity: state.socialState !== null,
+      coverName: state.socialState?.coverIdentity.displayName ?? null,
       tunedRadioStationId: state.radioState.tunedStationId,
       radioListening: state.radioState.listening,
       ownedTranslatorPackCount: state.translatorState.ownedPackIds.length,
@@ -200,6 +238,228 @@ export class GameSession {
     }));
   }
 
+  /**
+   * Accept a canonical job through the production ride orchestrator. The
+   * assignment, pickup, Ink events, route state, world clock and settlement
+   * then share this session's durable command boundary.
+   */
+  #acceptRide(jobId: JobId): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Enter the taxi before accepting a dispatch job.');
+    }
+    if (this.#state.rideSession !== null && this.#state.rideSession.phase !== 'completed') {
+      throw new Error('A ride is already assigned or active.');
+    }
+
+    const job = this.#work.getJob(jobId);
+    const rideId = entityId(
+      'ride',
+      `${jobId.slice('job:'.length)}-d${String(this.#state.gameTime.day)}-m${String(this.#state.gameTime.minuteOfDay)}`,
+    );
+    if (
+      this.#stores.economy.exportState().settledRideIds.includes(rideId) ||
+      this.#state.rideSession?.rideId === rideId
+    ) {
+      throw new Error('A ride has already used this dispatch identity; advance world time.');
+    }
+
+    const ride = PassengerRideOrchestrator.acceptJob(
+      job,
+      rideId,
+      this.#state.gameTime,
+      this.#rideDependencies(),
+    );
+    this.#state = {
+      ...this.#state,
+      rideSession: ride.getSessionSave(),
+    };
+  }
+
+  #rideDependencies(): PassengerRideDependencies {
+    const social = this.#stores.social === null
+      ? null
+      : new SocialStealthNarrativeAdapter(this.#stores.social);
+    const anonymousQueries: NarrativeQueryPort = {
+      hasFact: () => false,
+      hasClaim: () => false,
+      coverIdentityMatches: () => false,
+      wouldContradictClaim: () => false,
+      getPassengerSuspicion: () => 0,
+      getCityAttention: () => 0,
+    };
+    const relationship = new RelationshipNarrativeAdapter(this.#stores.relationships);
+    const queries = withTranslatorNarrativeQueries(
+      withPersonalPersistenceNarrativeQueries(
+        withRelationshipNarrativeQueries(social ?? anonymousQueries, relationship),
+        new PersonalPersistenceNarrativeAdapter(this.#stores.personal),
+      ),
+      new TranslatorNarrativeAdapter(new TranslatorRuntime(this.#stores.translator)),
+    );
+    const economyCompletion = new EconomyRideCompletionAdapter(
+      this.#stores.economy,
+      this.#work,
+    );
+    const relationshipCompletion = new RelationshipRideCompletionAdapter(
+      this.#stores.relationships,
+    );
+    const narrativeEvents = withRelationshipNarrativeEvents(
+      social ?? {
+        emit: () => {
+          throw new Error('Register a player identity before beginning narrative events.');
+        },
+      },
+      relationship,
+    );
+
+    return {
+      world: productionContent.world,
+      motionCatalog: productionContent.routeMotion,
+      routeExperience: productionContent.routeExperience,
+      passengers: productionContent.passengers,
+      narrativeStories: {
+        getInkSource: (storyId) => {
+          const story = productionContent.narrativeStories.find(
+            (candidate) => candidate.id === storyId,
+          );
+          if (story === undefined) throw new Error(`Unknown authored Ink story: ${storyId}`);
+          return story.source;
+        },
+      },
+      narrativeQueries: queries,
+      narrativeEvents,
+      completion: {
+        commit: (context) => {
+          // Both domain stores are rolled back by GameSession.execute when
+          // either stage or durable persistence fails.
+          economyCompletion.commit(context);
+          relationshipCompletion.commit(context);
+        },
+      },
+      workEligibility: createWorkEligibilityContext(
+        this.#stores.economy,
+        this.#stores.social,
+        this.#stores.personal,
+        this.#stores.relationships,
+      ),
+      autopilot: { gameMinutesPerRealSecond: 2 },
+    };
+  }
+
+  #requireRide(): PassengerRideOrchestrator {
+    const ride = this.#state.rideSession;
+    if (ride === null) throw new Error('No ride has been accepted.');
+    return PassengerRideOrchestrator.restore(ride, this.#rideDependencies());
+  }
+
+  public getRidePresentation(): RidePresentation | null {
+    this.#assertAlive();
+    if (this.#state.rideSession === null) return null;
+    return this.#requireRide().getPresentation();
+  }
+
+  #pickupRide(): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Passenger pickup must happen inside the taxi.');
+    }
+    if (this.#stores.social === null) {
+      throw new Error('Register your driver identity before picking up passengers.');
+    }
+    const ride = this.#requireRide();
+    ride.pickup(this.#state.gameTime);
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  #chooseDialogue(choiceIndex: number): void {
+    const ride = this.#requireRide();
+    ride.chooseDialogue(choiceIndex);
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  /**
+   * Derive elapsed world time from the persisted, fractional route position.
+   * Never floor individual step deltas: reloading or a paused checkpoint
+   * would otherwise silently lose world minutes.
+   */
+  #syncRideClock(
+    liveRide: NonNullable<GameState['rideSession']>,
+  ): void {
+    if (liveRide.phase !== 'active' && liveRide.phase !== 'dropoff-ready') {
+      throw new Error('Only an active ride has route time.');
+    }
+    const elapsed = getRouteProgressSnapshot(
+      liveRide.routeFlow.routeState,
+      productionContent.world,
+    ).routeElapsedMinutes;
+    const newTime = advanceGameTime(
+      liveRide.startedAt,
+      Math.floor(elapsed + 1e-9),
+    );
+    const current = this.#state.gameTime;
+    if (current.day > newTime.day ||
+        (current.day === newTime.day &&
+         current.minuteOfDay > newTime.minuteOfDay)) {
+      throw new Error('Ride progress cannot move the world clock backward.');
+    }
+    this.#state = { ...this.#state, gameTime: newTime };
+  }
+
+  #advanceRide(seconds: number): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Taxi must be active to drive the route.');
+    }
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 30) {
+      throw new RangeError('Route step must be between 0 and 30 real seconds.');
+    }
+    const ride = this.#requireRide();
+    const before = ride.getPresentation();
+    if (before.phase !== 'active') {
+      throw new Error('Only an active ride can advance on autopilot.');
+    }
+    if (before.pausedRouteEvent !== null) {
+      throw new Error('Resolve the paused route event before continuing.');
+    }
+    ride.advance(seconds);
+    const save = ride.getSessionSave();
+    this.#syncRideClock(save);
+    this.#state = { ...this.#state, rideSession: save };
+  }
+
+  #resolveRideEvent(resolution: RouteFlowResolution): void {
+    const ride = this.#requireRide();
+    ride.resolveRouteEvent(resolution);
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  #dropOffRide(): void {
+    if (this.#stores.spaces.getCurrentSpaceId() !== null) {
+      throw new Error('Drop-off requires the taxi.');
+    }
+    const ride = this.#requireRide();
+    if (!ride.getPresentation().canDropOff) {
+      throw new Error('The route must arrive before drop-off.');
+    }
+    ride.dropOff(this.#state.gameTime);
+    // Economy, relationship, completed ride and clock share the same
+    // durable command transaction. Any failure restores all domain stores.
+    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+  }
+
+  #registerIdentity(displayName: string): void {
+    if (this.#stores.social !== null) {
+      throw new Error('Driver identity is already registered.');
+    }
+    const identity = CoverIdentityProfileSchema.parse({
+      id: entityId('identity', 'driver'),
+      displayName,
+      // No permit, citizenship or invented claims granted during registration.
+      attributes: [],
+    });
+    this.#stores = {
+      ...this.#stores,
+      social: new SocialStealthStateStore(createSocialStealthState(identity)),
+    };
+  }
+
   public subscribe(listener: (state: GameState) => void): () => void {
     this.#assertAlive();
     this.#listeners.add(listener);
@@ -223,6 +483,12 @@ export class GameSession {
     try {
       switch (command.type) {
         case 'space.enter':
+          if (
+            this.#state.rideSession !== null &&
+            this.#state.rideSession.phase !== 'completed'
+          ) {
+            throw new Error('Finish the active ride before entering a personal space.');
+          }
           this.#stores.spaces.enter(command.spaceId);
           break;
         case 'space.leave':
@@ -248,6 +514,27 @@ export class GameSession {
             ...this.#state,
             gameTime: advanceGameTime(this.#state.gameTime, command.minutes),
           };
+          break;
+        case 'ride.accept':
+          this.#acceptRide(command.jobId);
+          break;
+        case 'ride.pickup':
+          this.#pickupRide();
+          break;
+        case 'ride.choose-dialogue':
+          this.#chooseDialogue(command.choiceIndex);
+          break;
+        case 'ride.advance':
+          this.#advanceRide(command.seconds);
+          break;
+        case 'ride.resolve-event':
+          this.#resolveRideEvent(command.resolution);
+          break;
+        case 'ride.drop-off':
+          this.#dropOffRide();
+          break;
+        case 'identity.register':
+          this.#registerIdentity(command.displayName);
           break;
         case 'radio.tune':
           this.#stores.radio.tune(command.stationId);

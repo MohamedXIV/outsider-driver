@@ -42,12 +42,49 @@ test('new shift navigates through home, garage and taxi using real persisted sta
   const eligibleJob = controls.locator('.shift-work-item[data-eligibility="eligible"]');
   await expect(eligibleJob).toHaveCount(1);
   await eligibleJob.getByRole('button', { name: 'Inspect offer' }).click();
-  await expect(
-    controls.getByText(/Dispatch acceptance becomes available/),
-  ).toBeVisible();
+  await expect(eligibleJob.getByText(/Route:/)).toBeVisible();
+  await eligibleJob.getByRole('button', { name: 'Accept job' }).click();
+  await expect(controls.getByText(/ASSIGNED \/ job:docks-underground-clinic/))
+    .toBeVisible();
+  await page.reload({ waitUntil: 'networkidle' });
+  await expect(controls.getByText(/ASSIGNED \/ job:docks-underground-clinic/))
+    .toBeVisible();
+
+  await controls.getByRole('button', { name: 'Pick up passenger' }).click();
+  await expect(controls.getByRole('alert'))
+    .toContainText(/Register your driver identity/);
+
+  await controls.getByLabel('DRIVER ALIAS / COVER').fill('Night Driver');
+  await controls.getByRole('button', { name: 'Register driver' }).click();
+  await controls.getByRole('button', { name: 'Pick up passenger' }).click();
+  await expect(controls.getByText(/Customs lights sweep every cab/)).toBeVisible();
+  await controls.getByRole('button', { name: 'Ask why.' }).click();
+  await expect(controls.getByText(/Keep moving/)).toBeVisible();
+
+  await controls.getByRole('button', { name: 'Advance autopilot' }).click();
+  await expect(controls.getByText('Checkpoint: customs-light')).toBeVisible();
+  await expect(controls.locator('.shift-controls-status')).toContainText('18:05');
+
+  // A paused checkpoint and its world time survive reload.
+  await page.reload({ waitUntil: 'networkidle' });
+  await expect(controls.getByText('Checkpoint: customs-light')).toBeVisible();
+  await controls.getByRole('button', { name: 'Return to garage' }).click();
+  await expect(controls.getByRole('alert')).toContainText(/Finish the active ride/);
+
+  await controls.getByRole('button', { name: 'Continue checkpoint' }).click();
+  await controls.getByRole('button', { name: 'Advance autopilot' }).click();
+  await expect(controls.getByRole('button', { name: 'Drop off passenger' }))
+    .toBeVisible();
+  await controls.getByRole('button', { name: 'Drop off passenger' }).click();
+  await expect(controls.getByText(/RIDE COMPLETED/)).toBeVisible();
+  await expect(controls.locator('.shift-controls-status')).toContainText('82 CR');
+  await expect(controls.locator('.shift-controls-status')).toContainText('18:08');
 
   await controls.getByRole('button', { name: 'Return to garage' }).click();
   await expect(controls.locator('.shift-controls-status')).toContainText('GARAGE');
   await controls.getByRole('button', { name: 'Return home' }).click();
   await expect(controls.locator('.shift-controls-status')).toContainText('HOME');
+  await page.reload({ waitUntil: 'networkidle' });
+  await expect(controls.locator('.shift-controls-status')).toContainText('HOME');
+  await expect(controls.locator('.shift-controls-status')).toContainText('82 CR');
 });

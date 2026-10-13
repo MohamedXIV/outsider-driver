@@ -10,7 +10,7 @@ import { PlayerShiftController } from './PlayerShiftController';
 function harness(saved = false) {
   let persisted: ReturnType<GameSession['exportState']> | null = null;
   if (saved) {
-    const initial = GameSession.open({ load: () => null, save: () => undefined });
+    const initial = GameSession.open({ load: () => null, save: () => { return; } });
     persisted = initial.exportState();
     initial.dispose();
   }

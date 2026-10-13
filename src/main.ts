@@ -141,7 +141,7 @@ function bootstrapSupportedGame(
     session.dispose();
     throw error;
   }
-  let stopPreferencePersistence: () => void = () => undefined;
+  let stopPreferencePersistence = (): void => { return; };
   let surface: ReturnType<typeof createGameSurface> | null = null;
   let rendering: BabylonRenderingRuntime | null = null;
   let application: GameApplication | null = null;
