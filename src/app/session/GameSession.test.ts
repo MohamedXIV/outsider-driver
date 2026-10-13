@@ -331,9 +331,11 @@ describe('production GameSession', () => {
     expect(() => restored.execute({ type: 'ride.drop-off' }))
       .toThrow(/Storage quota exceeded/);
     expect(restored.exportState()).toEqual(priorCompletion);
+    expect(restored.exportState().arrivedLocationId).toBeNull();
     memory.rejectWrites = false;
 
     const completed = restored.execute({ type: 'ride.drop-off' });
+    expect(completed.arrivedLocationId).toBe('location:docks-clinic');
     expect(completed.rideSession?.phase).toBe('completed');
     expect(completed.gameTime.minuteOfDay).toBe(1088);
     // Gross: 56 base + 8*4 per-minute + 12 bonus = 100.
@@ -407,6 +409,55 @@ describe('production GameSession', () => {
     });
     expect(session.getRidePresentation()?.pausedRouteEvent).toBeNull();
     session.dispose();
+  });
+
+  it('authorizes only a saved completed-route stop, and revokes it on returning to the garage', () => {
+    const memory = new MemoryStorage();
+    const session = GameSession.open(persistence(memory));
+    const clinic = entityId('location', 'docks-clinic');
+    const rank = entityId('location', 'docks-taxi-rank');
+
+    expect(session.exportState().arrivedLocationId).toBeNull();
+    expect(() => { session.requireArrivedTaxiStop(clinic); })
+      .toThrow(/completed-route arrival/);
+    session.execute({ type: 'identity.register', displayName: 'Night Driver' });
+    session.execute({ type: 'ride.accept', jobId: entityId('job', 'docks-underground-clinic') });
+    session.execute({ type: 'ride.pickup' });
+    session.execute({ type: 'ride.advance', seconds: 3 });
+    expect(() => { session.requireArrivedTaxiStop(clinic); })
+      .toThrow(/completed-route arrival/);
+    session.execute({ type: 'ride.resolve-event', resolution: { type: 'continue' } });
+    session.execute({ type: 'ride.advance', seconds: 3 });
+    expect(() => { session.requireArrivedTaxiStop(clinic); })
+      .toThrow(/completed-route arrival/);
+    const finished = session.execute({ type: 'ride.drop-off' });
+    expect(finished.arrivedLocationId).toBe(clinic);
+    expect(session.requireArrivedTaxiStop(clinic)).toEqual({
+      locationId: clinic,
+      districtId: 'district:docks',
+      rideId: finished.rideSession?.rideId,
+    });
+    expect(() => { session.requireArrivedTaxiStop(rank); })
+      .toThrow(/completed-route arrival/);
+    session.dispose();
+
+    // A canonical persisted arrival survives reload without replaying time,
+    // fare or narrative effects. A trip receipt alone cannot revive it.
+    const restored = GameSession.open(persistence(memory));
+    expect(restored.requireArrivedTaxiStop(clinic).locationId).toBe(clinic);
+    restored.execute({
+      type: 'space.enter',
+      spaceId: entityId('personal-space', 'garage'),
+    });
+    expect(restored.exportState().arrivedLocationId).toBeNull();
+    restored.execute({ type: 'space.leave' });
+    expect(restored.exportState().rideSession?.phase).toBe('completed');
+    expect(() => { restored.requireArrivedTaxiStop(clinic); })
+      .toThrow(/completed-route arrival/);
+    restored.dispose();
+    const afterReload = GameSession.open(persistence(memory));
+    expect(afterReload.exportState().arrivedLocationId).toBeNull();
+    afterReload.dispose();
   });
 
   it('rolls back route progress and world clock when saving a drive step fails', () => {

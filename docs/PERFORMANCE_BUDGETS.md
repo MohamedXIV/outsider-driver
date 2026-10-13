@@ -68,3 +68,20 @@ Bundle attribution on [Actions 37875125039](https://github.com/MohamedXIV/outsid
 
 **Decision:** after a reduction of **247,812 B in aggregate JavaScript** versus #76 and large reductions in entry/gzip, the remaining *616 uncompressed bytes* do not justify breaking the initial-transfer budget or adding gameplay/rendering complexity. Increase **only** the aggregate-uncompressed ceiling **2,000,000 → 2,001,000 B** (+1,000 B, **0.05%**); the immediate headroom at this measured revision is just **384 B**. This change does **not** increase actual data downloaded and does **not** change the initial-transfer gzip cap, runtime/WASM, individual lazy-chunk, entry-size, compressed-total or startup deadlines. A future feature such as the active-ride HUD must still measure/re-evaluate its footprint rather than silently raising thresholds again. The exact-head CI must pass before PR #78 is called verified.
 
+
+## 2026-10-13 canonical taxi-stop persistence revision (#86 / PR #89)
+
+[Exact-head attempt #38346716248](https://github.com/MohamedXIV/outsider-driver/actions/runs/38346716248) with save v12 and route-authenticated arrival completed **306/306 unit tests (69 files), 42/42 save-compat tests, content checks, strict lint/typecheck and build**, then failed **only** the aggregate *uncompressed* JavaScript budget:
+
+| Metric | Before new arrival (PR #78) | With v12 arrival | Existing cap | Result |
+| --- | ---: | ---: | ---: | --- |
+| Entry JavaScript | 1,168,527 B | 1,169,742 B | 1,300,000 B | PASS |
+| Entry gzip | 282,553 B | 282,877 B | 325,000 B | PASS |
+| Total JavaScript | 2,000,616 B | **2,001,831 B** | 2,001,000 B | **831 B over** |
+| Total JS gzip | 492,893 B | 493,202 B | 500,000 B | PASS |
+| Largest lazy chunk | 127,084 B | 127,084 B | 150,000 B | PASS |
+| Initial transfer gzip | 376,908 B | 377,231 B | 380,000 B | PASS |
+
+The feature adds a versioned v11→v12 migration, strict arrival/save validation and canonical session guards, with only a **323 B increase in measured initial compressed transfer**. More dynamic imports for this roughly 1.2 KB code path would fragment the synchronous authoritative settlement/persistence contract for a cosmetic raw-byte saving. The project already rejects broad splitting of the canonical session because that broke the 150 KB lazy-chunk constraint; see the earlier decision above.
+
+**Proposed reviewable decision:** raise only `totalJavaScriptBytes` **2,001,000 → 2,002,000 B** (+1,000 B, 0.05% of previous cap) to accommodate the measured 831 B overflow; expected immediate headroom **169 B**. The total increase versus the original 2,000,000 B ceiling is **0.10%**. No other thresholds change. The future authored Patchworks route/anchor will require **another explicit architectural and budget review**, not an automatic extension of this small allowance. Keep PR Draft until exact-head CI passes and the cap change is reviewed.

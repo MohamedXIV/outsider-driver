@@ -7,6 +7,7 @@ import { EconomyStateStore } from '../../domain/economy/EconomyState';
 import {
   entityId,
   type JobId,
+  type LocationId,
   type PersonalSpaceId,
   type RadioStationId,
   type TranslatorPackId,
@@ -50,7 +51,7 @@ import { PersonalPersistenceNarrativeAdapter, withPersonalPersistenceNarrativeQu
 import { TranslatorNarrativeAdapter, withTranslatorNarrativeQueries } from '../narrative/TranslatorNarrativeAdapter';
 import type { NarrativeQueryPort } from '../../narrative/contracts/NarrativeBoundary';
 import {
-  GameStateV11Schema,
+  GameStateV12Schema,
   createInitialGameState,
   type GameState,
 } from '../../persistence/save/gameSave';
@@ -83,6 +84,7 @@ export interface GameSessionProjection {
   readonly gameTime: GameTime;
   readonly credits: number;
   readonly currentSpaceId: PersonalSpaceId | null;
+  readonly arrivedLocationId: LocationId | null;
   readonly activeRidePhase: NonNullable<GameState['rideSession']>['phase'] | null;
   readonly hasCoverIdentity: boolean;
   readonly coverName: string | null;
@@ -166,7 +168,7 @@ export class GameSession {
     restored: boolean,
   ) {
     this.#persistence = persistence;
-    this.#state = GameStateV11Schema.parse(stateInput);
+    this.#state = GameStateV12Schema.parse(stateInput);
     this.#stores = composeStores(this.#state);
     this.#restored = restored;
   }
@@ -177,7 +179,7 @@ export class GameSession {
 
   public exportState(): GameState {
     this.#assertAlive();
-    return GameStateV11Schema.parse({
+    return GameStateV12Schema.parse({
       ...this.#state,
       economyState: this.#stores.economy.exportState(),
       personalSpaceState: this.#stores.spaces.exportState(),
@@ -195,6 +197,7 @@ export class GameSession {
       gameTime: state.gameTime,
       credits: state.economyState.credits,
       currentSpaceId: state.personalSpaceState.currentSpaceId,
+      arrivedLocationId: state.arrivedLocationId,
       activeRidePhase: state.rideSession?.phase ?? null,
       hasCoverIdentity: state.socialState !== null,
       coverName: state.socialState?.coverIdentity.displayName ?? null,
@@ -203,6 +206,34 @@ export class GameSession {
       ownedTranslatorPackCount: state.translatorState.ownedPackIds.length,
       activeTranslatorPackCount: state.translatorState.activePackIds.length,
     };
+  }
+
+  /**
+   * The sole current roadside stop. A historical ride receipt is insufficient:
+   * its location is revoked as soon as the taxi moves to a new dispatch or the
+   * player returns to their home/garage. No renderer can grant arrival.
+   */
+  public requireArrivedTaxiStop(locationId: LocationId): {
+    readonly locationId: LocationId;
+    readonly districtId: (typeof productionContent.world.districts)[number]['id'];
+    readonly rideId: NonNullable<GameState['rideSession']>['rideId'];
+  } {
+    this.#assertAlive();
+    const state = this.exportState();
+    const ride = state.rideSession;
+    if (state.personalSpaceState.currentSpaceId !== null ||
+        state.arrivedLocationId !== locationId ||
+        ride?.phase !== 'completed') {
+      throw new Error('Cannot enter a destination without a current completed-route arrival.');
+    }
+    const location = productionContent.world.locations.find((item) => item.id === locationId);
+    const route = productionContent.world.routes.find((item) => item.id === ride.finalRouteId);
+    if (location === undefined ||
+        route?.data.destinationLocationId !== locationId ||
+        ride.destinationLocationId !== locationId) {
+      throw new Error('Current taxi stop is not a valid authored route destination.');
+    }
+    return { locationId, districtId: location.data.districtId, rideId: ride.rideId };
   }
 
   public listAvailableWork() {
@@ -272,6 +303,7 @@ export class GameSession {
     );
     this.#state = {
       ...this.#state,
+      arrivedLocationId: null,
       rideSession: ride.getSessionSave(),
     };
   }
@@ -442,7 +474,11 @@ export class GameSession {
     ride.dropOff(this.#state.gameTime);
     // Economy, relationship, completed ride and clock share the same
     // durable command transaction. Any failure restores all domain stores.
-    this.#state = { ...this.#state, rideSession: ride.getSessionSave() };
+    this.#state = {
+      ...this.#state,
+      rideSession: ride.getSessionSave(),
+      arrivedLocationId: ride.getSessionSave().destinationLocationId,
+    };
   }
 
   #registerIdentity(displayName: string): void {
@@ -491,6 +527,7 @@ export class GameSession {
             throw new Error('Finish the active ride before entering a personal space.');
           }
           this.#stores.spaces.enter(command.spaceId);
+          this.#state = { ...this.#state, arrivedLocationId: null };
           break;
         case 'space.leave':
           this.#stores.spaces.leave();

@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { RideSessionSaveSchema } from '../../app/rides/RideSessionContracts';
+import { entityIdSchema } from '../../domain/ids/EntityId';
 import {
   EconomyStateSchema,
   createInitialEconomyState,
@@ -36,7 +37,7 @@ import {
 } from '../../domain/time/GameTime';
 import { VersionedSaveCodec } from './VersionedSaveCodec';
 
-export const CURRENT_SAVE_SCHEMA_VERSION = 11 as const;
+export const CURRENT_SAVE_SCHEMA_VERSION = 12 as const;
 
 // Canonical initial shift begins during the authored Docks evening window.
 // This is game-world time, never the computer's wall clock.
@@ -142,7 +143,28 @@ export const GameStateV11Schema = GameStateV10Schema.extend({
   gameTime: GameTimeSchema,
 }).strict();
 
-export type GameState = z.infer<typeof GameStateV11Schema>;
+/**
+ * The taxi has no independently writable location. Its last verified roadside
+ * stop comes exclusively from successful canonical ride settlement, and is
+ * cleared on leaving for a personal space or beginning another dispatch.
+ *
+ * Historical completed rides remain in saves but MUST NOT automatically
+ * grant a present-tense location on migration.
+ */
+export const GameStateV12Schema = GameStateV11Schema.extend({
+  arrivedLocationId: entityIdSchema('location').nullable(),
+}).strict().refine(
+  (state) => state.arrivedLocationId === null ||
+    (state.personalSpaceState.currentSpaceId === null &&
+      state.rideSession?.phase === 'completed' &&
+      state.arrivedLocationId === state.rideSession.destinationLocationId),
+  {
+    path: ['arrivedLocationId'],
+    message: 'Taxi arrival must match the completed ride while parked in the taxi.',
+  },
+);
+
+export type GameState = z.infer<typeof GameStateV12Schema>;
 
 /**
  * Historical v10 saves did not include the world's clock.
@@ -176,7 +198,7 @@ function deriveLegacyGameTime(
 
 export const gameSaveCodec = new VersionedSaveCodec({
   currentVersion: CURRENT_SAVE_SCHEMA_VERSION,
-  currentSchema: GameStateV11Schema,
+  currentSchema: GameStateV12Schema,
   historicalVersions: [
     {
       version: 1,
@@ -217,6 +239,10 @@ export const gameSaveCodec = new VersionedSaveCodec({
     {
       version: 10,
       schema: GameStateV10Schema,
+    },
+    {
+      version: 11,
+      schema: GameStateV11Schema,
     },
   ],
   migrations: [
@@ -340,12 +366,23 @@ export const gameSaveCodec = new VersionedSaveCodec({
         };
       },
     },
+    {
+      fromVersion: 11,
+      toVersion: 12,
+      migrate: (state) => ({
+        ...GameStateV11Schema.parse(state),
+        // Do NOT infer a current stop from an old completed ride: the
+        // driver may have returned to the garage since that historical ride.
+        arrivedLocationId: null,
+      }),
+    },
   ],
 });
 
 export function createInitialGameState(): GameState {
-  return GameStateV11Schema.parse({
+  return GameStateV12Schema.parse({
     rideSession: null,
+    arrivedLocationId: null,
     gameTime: INITIAL_GAME_TIME,
     socialState: null,
     translatorState: createInitialTranslatorState(),

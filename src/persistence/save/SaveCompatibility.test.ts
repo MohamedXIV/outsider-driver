@@ -10,6 +10,7 @@ import v8 from './fixtures/v8.json';
 import v9 from './fixtures/v9.json';
 import v10 from './fixtures/v10.json';
 import v11 from './fixtures/v11.json';
+import v12 from './fixtures/v12.json';
 import {
   CURRENT_SAVE_SCHEMA_VERSION,
   gameSaveCodec,
@@ -33,6 +34,7 @@ const fixtures = [
   v9,
   v10,
   v11,
+  v12,
 ] satisfies readonly HistoricalFixture[];
 
 const stableIdPattern =
@@ -142,6 +144,20 @@ describe('production save compatibility matrix', () => {
       );
     },
   );
+
+  it('never grants a live roadside arrival when migrating historical v11 rides', () => {
+    const migrated = gameSaveCodec.decode(cloneFixture(v11));
+    expect(migrated.state.arrivedLocationId).toBeNull();
+    expect(migrated.state.rideSession?.phase).toBe('assigned');
+    expect(migrated.schemaVersion).toBe(12);
+  });
+
+  it('rejects a forged v12 taxi stop without a completed ride', () => {
+    const tampered = cloneFixture(v12);
+    tampered.state.arrivedLocationId = 'location:migration-destination';
+    expect(() => gameSaveCodec.decode(tampered))
+      .toThrow(/Save state for version 12 is invalid/);
+  });
 
   it('rejects malformed envelopes with an actionable boundary error', () => {
     expect(() => {
